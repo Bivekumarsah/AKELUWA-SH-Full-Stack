@@ -4,8 +4,10 @@ import { FormEvent, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { apiFetch, readableError, User } from "@/app/lib/api";
+import { useGuestOnly } from "@/app/lib/use-session";
 
 export default function LoginPage() {
+  const checkingSession = useGuestOnly();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -20,12 +22,16 @@ export default function LoginPage() {
         method: "POST",
         body: JSON.stringify({ email, password }),
       });
-      window.location.assign(result.user.role === "admin" ? "/admin" : "/account");
+      window.location.replace(result.user.role === "admin" ? "/admin" : "/account");
     } catch (requestError) {
       setError(readableError(requestError));
     } finally {
       setLoading(false);
     }
+  }
+
+  if (checkingSession) {
+    return <main className="portal-shell"><p className="auth-session-state" role="status">Checking your secure session...</p></main>;
   }
 
   return (

@@ -7,9 +7,12 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"mime"
+	"net"
 	"net/http"
 	"net/mail"
 	"net/url"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
@@ -51,10 +54,20 @@ func (a *API) Router() http.Handler {
 	mux.Handle("POST /api/v1/auth/login", a.limitRequests("login", 8, time.Minute, http.HandlerFunc(a.login)))
 	mux.HandleFunc("POST /api/v1/auth/logout", a.logout)
 	mux.Handle("GET /api/v1/auth/me", a.requireAuth(http.HandlerFunc(a.me)))
+	mux.Handle("PATCH /api/v1/account/profile", a.requireAuth(http.HandlerFunc(a.updateProfile)))
+	mux.Handle("POST /api/v1/account/avatar", a.requireAuth(http.HandlerFunc(a.updateAvatar)))
+	mux.Handle("DELETE /api/v1/account/avatar", a.requireAuth(http.HandlerFunc(a.removeAvatar)))
+	mux.Handle("GET /api/v1/account/avatar", a.requireAuth(http.HandlerFunc(a.avatar)))
 	mux.HandleFunc("GET /api/v1/services", a.publicServices)
 	mux.HandleFunc("GET /api/v1/portfolio", a.publicPortfolio)
+	mux.HandleFunc("GET /api/v1/downloads", a.publicDownloads)
+	mux.HandleFunc("GET /api/v1/downloads/{id}/file", a.publicDownloadFile)
+	mux.HandleFunc("GET /api/v1/careers", a.publicCareers)
+	mux.Handle("POST /api/v1/careers/{id}/applications", a.limitRequests("career-application", 5, time.Hour, http.HandlerFunc(a.createCareerApplication)))
 	mux.Handle("POST /api/v1/inquiries", a.limitRequests("inquiry", 5, 10*time.Minute, http.HandlerFunc(a.createInquiry)))
 	mux.Handle("GET /api/v1/account/inquiries", a.requireAuth(http.HandlerFunc(a.accountInquiries)))
+	mux.Handle("GET /api/v1/account/contracts", a.requireAuth(http.HandlerFunc(a.accountContracts)))
+	mux.Handle("POST /api/v1/account/contracts/{id}/sign", a.requireAuth(http.HandlerFunc(a.accountSignContract)))
 
 	mux.Handle("GET /api/v1/admin/stats", a.requireAdmin(http.HandlerFunc(a.adminStats)))
 	mux.Handle("GET /api/v1/admin/users", a.requireAdmin(http.HandlerFunc(a.adminUsers)))
@@ -69,6 +82,24 @@ func (a *API) Router() http.Handler {
 	mux.Handle("POST /api/v1/admin/portfolio", a.requireAdmin(a.auditAdmin(http.HandlerFunc(a.adminCreatePortfolio))))
 	mux.Handle("PUT /api/v1/admin/portfolio/{id}", a.requireAdmin(a.auditAdmin(http.HandlerFunc(a.adminUpdatePortfolio))))
 	mux.Handle("DELETE /api/v1/admin/portfolio/{id}", a.requireAdmin(a.auditAdmin(http.HandlerFunc(a.adminDeletePortfolio))))
+	mux.Handle("GET /api/v1/admin/contracts", a.requireAdmin(http.HandlerFunc(a.adminContracts)))
+	mux.Handle("POST /api/v1/admin/contracts", a.requireAdmin(a.auditAdmin(http.HandlerFunc(a.adminCreateContract))))
+	mux.Handle("PUT /api/v1/admin/contracts/{id}", a.requireAdmin(a.auditAdmin(http.HandlerFunc(a.adminUpdateContract))))
+	mux.Handle("POST /api/v1/admin/contracts/{id}/send", a.requireAdmin(a.auditAdmin(http.HandlerFunc(a.adminSendContract))))
+	mux.Handle("POST /api/v1/admin/contracts/{id}/sign", a.requireAdmin(a.auditAdmin(http.HandlerFunc(a.adminSignContract))))
+	mux.Handle("PATCH /api/v1/admin/contracts/{id}/status", a.requireAdmin(a.auditAdmin(http.HandlerFunc(a.adminContractStatus))))
+	mux.Handle("GET /api/v1/admin/downloads", a.requireAdmin(http.HandlerFunc(a.adminDownloads)))
+	mux.Handle("POST /api/v1/admin/downloads", a.requireAdmin(a.auditAdmin(http.HandlerFunc(a.adminCreateDownload))))
+	mux.Handle("PATCH /api/v1/admin/downloads/{id}", a.requireAdmin(a.auditAdmin(http.HandlerFunc(a.adminUpdateDownload))))
+	mux.Handle("DELETE /api/v1/admin/downloads/{id}", a.requireAdmin(a.auditAdmin(http.HandlerFunc(a.adminDeleteDownload))))
+	mux.Handle("GET /api/v1/admin/careers", a.requireAdmin(http.HandlerFunc(a.adminCareers)))
+	mux.Handle("POST /api/v1/admin/careers", a.requireAdmin(a.auditAdmin(http.HandlerFunc(a.adminCreateCareer))))
+	mux.Handle("PUT /api/v1/admin/careers/{id}", a.requireAdmin(a.auditAdmin(http.HandlerFunc(a.adminUpdateCareer))))
+	mux.Handle("DELETE /api/v1/admin/careers/{id}", a.requireAdmin(a.auditAdmin(http.HandlerFunc(a.adminDeleteCareer))))
+	mux.Handle("GET /api/v1/admin/career-applications", a.requireAdmin(http.HandlerFunc(a.adminCareerApplications)))
+	mux.Handle("PATCH /api/v1/admin/career-applications/{id}", a.requireAdmin(a.auditAdmin(http.HandlerFunc(a.adminUpdateCareerApplication))))
+	mux.Handle("GET /api/v1/admin/career-applications/{id}/resume", a.requireAdmin(http.HandlerFunc(a.adminCareerResume)))
+	mux.Handle("DELETE /api/v1/admin/career-applications/{id}", a.requireAdmin(a.auditAdmin(http.HandlerFunc(a.adminDeleteCareerApplication))))
 
 	return a.recoverPanic(a.logRequests(a.securityHeaders(a.cors(a.protectCookieWrites(mux)))))
 }
@@ -168,6 +199,72 @@ func (a *API) me(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{"user": user})
 }
 
+func (a *API) updateProfile(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		Name string `json:"name"`
+	}
+	if !a.decode(w, r, &input) {
+		return
+	}
+	input.Name = strings.TrimSpace(input.Name)
+	if len(input.Name) < 2 || len(input.Name) > 120 {
+		writeError(w, http.StatusUnprocessableEntity, "name must contain 2 to 120 characters")
+		return
+	}
+	user, err := a.store.UpdateProfile(r.Context(), claimsFromContext(r.Context()).UserID, input.Name)
+	if !a.handleStoreError(w, r, err) {
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"user": user})
+}
+func (a *API) updateAvatar(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, 3<<20)
+	if err := r.ParseMultipartForm(3 << 20); err != nil {
+		writeError(w, http.StatusBadRequest, "profile picture must be no larger than 2 MB")
+		return
+	}
+	file, header, err := r.FormFile("avatar")
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "choose a profile picture")
+		return
+	}
+	defer file.Close()
+	data, err := io.ReadAll(io.LimitReader(file, (2<<20)+1))
+	if err != nil || len(data) == 0 || len(data) > 2<<20 {
+		writeError(w, http.StatusUnprocessableEntity, "profile picture must be between 1 byte and 2 MB")
+		return
+	}
+	contentType := http.DetectContentType(data)
+	if contentType != "image/jpeg" && contentType != "image/png" && contentType != "image/webp" {
+		writeError(w, http.StatusUnsupportedMediaType, "profile picture must be JPG, PNG, or WebP")
+		return
+	}
+	_ = header
+	user, err := a.store.UpdateAvatar(r.Context(), claimsFromContext(r.Context()).UserID, contentType, data)
+	if !a.handleStoreError(w, r, err) {
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"user": user})
+}
+func (a *API) removeAvatar(w http.ResponseWriter, r *http.Request) {
+	user, err := a.store.RemoveAvatar(r.Context(), claimsFromContext(r.Context()).UserID)
+	if !a.handleStoreError(w, r, err) {
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"user": user})
+}
+func (a *API) avatar(w http.ResponseWriter, r *http.Request) {
+	contentType, data, err := a.store.UserAvatar(r.Context(), claimsFromContext(r.Context()).UserID)
+	if !a.handleStoreError(w, r, err) {
+		return
+	}
+	w.Header().Set("Content-Type", contentType)
+	w.Header().Set("Cache-Control", "private, max-age=300")
+	w.Header().Set("Content-Length", fmt.Sprint(len(data)))
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(data)
+}
+
 func (a *API) publicServices(w http.ResponseWriter, r *http.Request) {
 	items, err := a.store.ListServices(r.Context(), false)
 	if err != nil {
@@ -184,6 +281,72 @@ func (a *API) publicPortfolio(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"portfolio": items})
+}
+
+func (a *API) publicDownloads(w http.ResponseWriter, r *http.Request) {
+	items, err := a.store.ListDownloads(r.Context(), false)
+	if err != nil {
+		a.internalError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"downloads": items})
+}
+
+func (a *API) publicDownloadFile(w http.ResponseWriter, r *http.Request) {
+	item, data, err := a.store.DownloadFile(r.Context(), r.PathValue("id"))
+	if !a.handleStoreError(w, r, err) {
+		return
+	}
+	w.Header().Set("Content-Type", item.ContentType)
+	w.Header().Set("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{"filename": item.FileName}))
+	w.Header().Set("Content-Length", fmt.Sprint(len(data)))
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(data)
+}
+
+func (a *API) publicCareers(w http.ResponseWriter, r *http.Request) {
+	items, err := a.store.ListCareers(r.Context(), false)
+	if err != nil {
+		a.internalError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"careers": items})
+}
+
+func (a *API) createCareerApplication(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, 6<<20)
+	if err := r.ParseMultipartForm(6 << 20); err != nil {
+		writeError(w, http.StatusBadRequest, "application and resume must be no larger than 5 MB")
+		return
+	}
+	file, header, err := r.FormFile("resume")
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "attach your resume")
+		return
+	}
+	defer file.Close()
+	data, err := io.ReadAll(io.LimitReader(file, (5<<20)+1))
+	if err != nil || len(data) == 0 || len(data) > 5<<20 {
+		writeError(w, http.StatusUnprocessableEntity, "resume must be between 1 byte and 5 MB")
+		return
+	}
+	contentType := strings.Split(header.Header.Get("Content-Type"), ";")[0]
+	allowed := contentType == "application/pdf" || contentType == "application/msword" || contentType == "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+	if !allowed {
+		writeError(w, http.StatusUnsupportedMediaType, "resume must be a PDF, DOC, or DOCX file")
+		return
+	}
+	item := model.CareerApplication{CareerID: r.PathValue("id"), FullName: strings.TrimSpace(r.FormValue("full_name")), Email: strings.ToLower(strings.TrimSpace(r.FormValue("email"))), Phone: strings.TrimSpace(r.FormValue("phone")), Location: strings.TrimSpace(r.FormValue("location")), LinkedInURL: strings.TrimSpace(r.FormValue("linkedin_url")), PortfolioURL: strings.TrimSpace(r.FormValue("portfolio_url")), CoverNote: strings.TrimSpace(r.FormValue("cover_note")), ResumeName: filepath.Base(strings.ReplaceAll(header.Filename, "\x00", "")), ResumeType: contentType, ResumeSize: int64(len(data))}
+	if r.FormValue("consent") != "true" || len(item.FullName) < 2 || len(item.FullName) > 120 || !validEmail(item.Email) || len(item.Phone) < 5 || len(item.Phone) > 40 || len(item.Location) < 2 || len(item.Location) > 160 || len(item.CoverNote) < 20 || len(item.CoverNote) > 5000 || !validOptionalURL(item.LinkedInURL) || !validOptionalURL(item.PortfolioURL) {
+		writeError(w, http.StatusUnprocessableEntity, "complete the required application fields and consent")
+		return
+	}
+	host, _, _ := net.SplitHostPort(r.RemoteAddr)
+	created, err := a.store.CreateCareerApplication(r.Context(), item, data, host)
+	if !a.handleStoreError(w, r, err) {
+		return
+	}
+	writeJSON(w, http.StatusCreated, map[string]any{"application": created})
 }
 
 func (a *API) createInquiry(w http.ResponseWriter, r *http.Request) {
@@ -219,6 +382,32 @@ func (a *API) accountInquiries(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"inquiries": items})
+}
+
+func (a *API) accountContracts(w http.ResponseWriter, r *http.Request) {
+	items, err := a.store.ListContracts(r.Context(), claimsFromContext(r.Context()).UserID)
+	if err != nil {
+		a.internalError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"contracts": items})
+}
+
+func (a *API) accountSignContract(w http.ResponseWriter, r *http.Request) {
+	signer, signature, ok := a.decodeSignature(w, r)
+	if !ok {
+		return
+	}
+	host, _, _ := net.SplitHostPort(r.RemoteAddr)
+	agent := r.UserAgent()
+	if len(agent) > 500 {
+		agent = agent[:500]
+	}
+	item, err := a.store.SignContract(r.Context(), r.PathValue("id"), claimsFromContext(r.Context()).UserID, "client", signer, signature, host, agent)
+	if !a.handleStoreError(w, r, err) {
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"contract": item})
 }
 
 func (a *API) adminStats(w http.ResponseWriter, r *http.Request) {
@@ -367,6 +556,312 @@ func (a *API) adminDeletePortfolio(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (a *API) adminContracts(w http.ResponseWriter, r *http.Request) {
+	items, err := a.store.ListContracts(r.Context(), "")
+	if err != nil {
+		a.internalError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"contracts": items})
+}
+
+func (a *API) adminCreateContract(w http.ResponseWriter, r *http.Request) {
+	item, ok := a.decodeContract(w, r)
+	if !ok {
+		return
+	}
+	created, err := a.store.CreateContract(r.Context(), item)
+	if !a.handleStoreError(w, r, err) {
+		return
+	}
+	writeJSON(w, http.StatusCreated, map[string]any{"contract": created})
+}
+
+func (a *API) adminUpdateContract(w http.ResponseWriter, r *http.Request) {
+	item, ok := a.decodeContract(w, r)
+	if !ok {
+		return
+	}
+	updated, err := a.store.UpdateContract(r.Context(), r.PathValue("id"), item)
+	if !a.handleStoreError(w, r, err) {
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"contract": updated})
+}
+
+func (a *API) adminSendContract(w http.ResponseWriter, r *http.Request) {
+	item, err := a.store.SendContract(r.Context(), r.PathValue("id"))
+	if !a.handleStoreError(w, r, err) {
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"contract": item})
+}
+
+func (a *API) adminSignContract(w http.ResponseWriter, r *http.Request) {
+	signer, signature, ok := a.decodeSignature(w, r)
+	if !ok {
+		return
+	}
+	item, err := a.store.SignContract(r.Context(), r.PathValue("id"), "", "provider", signer, signature, "", "")
+	if !a.handleStoreError(w, r, err) {
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"contract": item})
+}
+
+func (a *API) adminContractStatus(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		Status string `json:"status"`
+	}
+	if !a.decode(w, r, &input) {
+		return
+	}
+	if input.Status != "completed" && input.Status != "cancelled" {
+		writeError(w, http.StatusUnprocessableEntity, "status must be completed or cancelled")
+		return
+	}
+	item, err := a.store.UpdateContractStatus(r.Context(), r.PathValue("id"), input.Status)
+	if !a.handleStoreError(w, r, err) {
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"contract": item})
+}
+
+func (a *API) decodeSignature(w http.ResponseWriter, r *http.Request) (string, string, bool) {
+	var input struct {
+		SignerName string `json:"signer_name"`
+		Signature  string `json:"signature"`
+	}
+	if !a.decode(w, r, &input) {
+		return "", "", false
+	}
+	input.SignerName = strings.TrimSpace(input.SignerName)
+	if len(input.SignerName) < 2 || len(input.SignerName) > 120 || len(input.Signature) > 300000 || !strings.HasPrefix(input.Signature, "data:image/png;base64,") {
+		writeError(w, http.StatusUnprocessableEntity, "provide a valid signer name and drawn signature")
+		return "", "", false
+	}
+	return input.SignerName, input.Signature, true
+}
+
+func (a *API) decodeContract(w http.ResponseWriter, r *http.Request) (model.Contract, bool) {
+	var item model.Contract
+	if !a.decode(w, r, &item) {
+		return model.Contract{}, false
+	}
+	item.ContractNumber = strings.ToUpper(strings.TrimSpace(item.ContractNumber))
+	item.Title = strings.TrimSpace(item.Title)
+	item.ClientName = strings.TrimSpace(item.ClientName)
+	item.ClientEmail = strings.ToLower(strings.TrimSpace(item.ClientEmail))
+	item.ClientCompany = strings.TrimSpace(item.ClientCompany)
+	item.ProviderName = strings.TrimSpace(item.ProviderName)
+	item.Currency = strings.ToUpper(strings.TrimSpace(item.Currency))
+	start, startErr := time.Parse("2006-01-02", item.StartDate)
+	end, endErr := time.Parse("2006-01-02", item.EndDate)
+	fields := []string{item.Scope, item.Deliverables, item.Milestones, item.PaymentTerms, item.RevisionTerms, item.SupportTerms, item.OwnershipTerms, item.ConfidentialityTerms, item.TerminationTerms, item.DisputeTerms}
+	validTerms := true
+	for _, field := range fields {
+		if len(strings.TrimSpace(field)) < 5 || len(field) > 10000 {
+			validTerms = false
+		}
+	}
+	if item.UserID == "" || len(item.ContractNumber) < 3 || len(item.ContractNumber) > 60 || len(item.Title) < 3 || len(item.Title) > 200 || len(item.ClientName) < 2 || !validEmail(item.ClientEmail) || len(item.ClientCompany) > 160 || len(item.ProviderName) < 2 || len(item.ProviderName) > 160 || len(item.Currency) != 3 || item.AmountCents < 0 || startErr != nil || endErr != nil || end.Before(start) || !validTerms || len(item.SpecialTerms) > 10000 {
+		writeError(w, http.StatusUnprocessableEntity, "contract fields are incomplete or invalid")
+		return model.Contract{}, false
+	}
+	return item, true
+}
+
+func (a *API) adminDownloads(w http.ResponseWriter, r *http.Request) {
+	items, err := a.store.ListDownloads(r.Context(), true)
+	if err != nil {
+		a.internalError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"downloads": items})
+}
+
+var allowedUploadTypes = map[string]struct{}{
+	"application/pdf": {}, "application/zip": {}, "application/msword": {},
+	"application/vnd.openxmlformats-officedocument.wordprocessingml.document": {},
+	"application/vnd.ms-excel": {}, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {},
+	"application/vnd.ms-powerpoint": {}, "application/vnd.openxmlformats-officedocument.presentationml.presentation": {},
+	"image/png": {}, "image/jpeg": {}, "text/plain": {}, "text/csv": {},
+}
+
+func (a *API) adminCreateDownload(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, 11<<20)
+	if err := r.ParseMultipartForm(11 << 20); err != nil {
+		writeError(w, http.StatusBadRequest, "file upload must be no larger than 10 MB")
+		return
+	}
+	file, header, err := r.FormFile("file")
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "choose a file to upload")
+		return
+	}
+	defer file.Close()
+	data, err := io.ReadAll(io.LimitReader(file, (10<<20)+1))
+	if err != nil || len(data) == 0 || len(data) > 10<<20 {
+		writeError(w, http.StatusUnprocessableEntity, "file must be between 1 byte and 10 MB")
+		return
+	}
+	contentType := http.DetectContentType(data)
+	if declared := header.Header.Get("Content-Type"); declared != "" && declared != "application/octet-stream" {
+		contentType = strings.Split(declared, ";")[0]
+	}
+	if _, ok := allowedUploadTypes[contentType]; !ok {
+		writeError(w, http.StatusUnsupportedMediaType, "file type is not allowed; use PDF, Office, ZIP, image, text, or CSV files")
+		return
+	}
+	fileName := filepath.Base(strings.ReplaceAll(header.Filename, "\x00", ""))
+	if fileName == "." || fileName == "" {
+		writeError(w, http.StatusUnprocessableEntity, "file name is invalid")
+		return
+	}
+	position := 0
+	_, _ = fmt.Sscan(r.FormValue("position"), &position)
+	item := model.Download{Title: strings.TrimSpace(r.FormValue("title")), Description: strings.TrimSpace(r.FormValue("description")), FileName: fileName, ContentType: contentType, FileSize: int64(len(data)), Active: r.FormValue("active") == "true", Position: position}
+	if len(item.Title) < 2 || len(item.Title) > 180 || len(item.Description) < 5 || len(item.Description) > 2000 {
+		writeError(w, http.StatusUnprocessableEntity, "provide a valid title and description")
+		return
+	}
+	created, err := a.store.CreateDownload(r.Context(), item, data)
+	if !a.handleStoreError(w, r, err) {
+		return
+	}
+	writeJSON(w, http.StatusCreated, map[string]any{"download": created})
+}
+
+func (a *API) adminUpdateDownload(w http.ResponseWriter, r *http.Request) {
+	var item model.Download
+	if !a.decode(w, r, &item) {
+		return
+	}
+	item.Title = strings.TrimSpace(item.Title)
+	item.Description = strings.TrimSpace(item.Description)
+	if len(item.Title) < 2 || len(item.Title) > 180 || len(item.Description) < 5 || len(item.Description) > 2000 {
+		writeError(w, http.StatusUnprocessableEntity, "provide a valid title and description")
+		return
+	}
+	updated, err := a.store.UpdateDownload(r.Context(), r.PathValue("id"), item)
+	if !a.handleStoreError(w, r, err) {
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"download": updated})
+}
+
+func (a *API) adminDeleteDownload(w http.ResponseWriter, r *http.Request) {
+	if !a.handleStoreError(w, r, a.store.DeleteDownload(r.Context(), r.PathValue("id"))) {
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+func (a *API) adminCareers(w http.ResponseWriter, r *http.Request) {
+	items, err := a.store.ListCareers(r.Context(), true)
+	if err != nil {
+		a.internalError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"careers": items})
+}
+func (a *API) adminCreateCareer(w http.ResponseWriter, r *http.Request) {
+	item, ok := a.decodeCareer(w, r)
+	if !ok {
+		return
+	}
+	created, err := a.store.CreateCareer(r.Context(), item)
+	if !a.handleStoreError(w, r, err) {
+		return
+	}
+	writeJSON(w, http.StatusCreated, map[string]any{"career": created})
+}
+func (a *API) adminUpdateCareer(w http.ResponseWriter, r *http.Request) {
+	item, ok := a.decodeCareer(w, r)
+	if !ok {
+		return
+	}
+	updated, err := a.store.UpdateCareer(r.Context(), r.PathValue("id"), item)
+	if !a.handleStoreError(w, r, err) {
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"career": updated})
+}
+func (a *API) adminDeleteCareer(w http.ResponseWriter, r *http.Request) {
+	if !a.handleStoreError(w, r, a.store.DeleteCareer(r.Context(), r.PathValue("id"))) {
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (a *API) adminCareerApplications(w http.ResponseWriter, r *http.Request) {
+	items, err := a.store.ListCareerApplications(r.Context())
+	if err != nil {
+		a.internalError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"applications": items})
+}
+func (a *API) adminUpdateCareerApplication(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		Status string `json:"status"`
+	}
+	if !a.decode(w, r, &input) {
+		return
+	}
+	valid := map[string]bool{"new": true, "reviewing": true, "shortlisted": true, "interview": true, "rejected": true, "hired": true}
+	if !valid[input.Status] {
+		writeError(w, http.StatusUnprocessableEntity, "invalid application status")
+		return
+	}
+	item, err := a.store.UpdateCareerApplicationStatus(r.Context(), r.PathValue("id"), input.Status)
+	if !a.handleStoreError(w, r, err) {
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"application": item})
+}
+func (a *API) adminCareerResume(w http.ResponseWriter, r *http.Request) {
+	item, data, err := a.store.CareerResume(r.Context(), r.PathValue("id"))
+	if !a.handleStoreError(w, r, err) {
+		return
+	}
+	w.Header().Set("Content-Type", item.ResumeType)
+	w.Header().Set("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{"filename": item.ResumeName}))
+	w.Header().Set("Content-Length", fmt.Sprint(len(data)))
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(data)
+}
+func (a *API) adminDeleteCareerApplication(w http.ResponseWriter, r *http.Request) {
+	if !a.handleStoreError(w, r, a.store.DeleteCareerApplication(r.Context(), r.PathValue("id"))) {
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (a *API) decodeCareer(w http.ResponseWriter, r *http.Request) (model.Career, bool) {
+	var item model.Career
+	if !a.decode(w, r, &item) {
+		return model.Career{}, false
+	}
+	item.Title = strings.TrimSpace(item.Title)
+	item.Department = strings.TrimSpace(item.Department)
+	item.Location = strings.TrimSpace(item.Location)
+	item.EmploymentType = strings.TrimSpace(item.EmploymentType)
+	item.Summary = strings.TrimSpace(item.Summary)
+	item.Responsibilities = strings.TrimSpace(item.Responsibilities)
+	item.Requirements = strings.TrimSpace(item.Requirements)
+	item.ApplyEmail = strings.ToLower(strings.TrimSpace(item.ApplyEmail))
+	validDeadline := true
+	if item.Deadline != "" {
+		_, err := time.Parse("2006-01-02", item.Deadline)
+		validDeadline = err == nil
+	}
+	if len(item.Title) < 2 || len(item.Title) > 180 || len(item.Department) < 2 || len(item.Department) > 100 || len(item.Location) < 2 || len(item.Location) > 120 || len(item.EmploymentType) < 2 || len(item.EmploymentType) > 80 || len(item.Summary) < 10 || len(item.Summary) > 2000 || len(item.Responsibilities) < 10 || len(item.Responsibilities) > 10000 || len(item.Requirements) < 10 || len(item.Requirements) > 10000 || !validEmail(item.ApplyEmail) || !validDeadline {
+		writeError(w, http.StatusUnprocessableEntity, "career fields are incomplete or invalid")
+		return model.Career{}, false
+	}
+	return item, true
 }
 
 func (a *API) decodeService(w http.ResponseWriter, r *http.Request) (model.Service, bool) {

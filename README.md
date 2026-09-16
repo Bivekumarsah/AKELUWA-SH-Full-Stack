@@ -9,6 +9,9 @@ AKELUWA SH combines the existing React/TypeScript marketing website with a Go RE
 - User registration, login, logout, and private inquiry history
 - Admin dashboard with summary metrics
 - Admin management for inquiries, services, portfolio items, and user roles
+- Project contract workflow with locked terms, dual electronic acceptance, content fingerprints, and printable/PDF records
+- Admin-managed downloads and career openings that publish automatically to the public website
+- Private career application workflow with applicant details, resume uploads, candidate statuses, and administrator review
 - HttpOnly signed session cookies, bcrypt password hashing, origin restrictions, and role authorization
 - Automatic PostgreSQL migrations and initial content
 - Docker configurations for local development and an AWS EC2/VPS deployment
@@ -101,11 +104,17 @@ Public routes:
 - `POST /api/v1/auth/logout`
 - `GET /api/v1/services`
 - `GET /api/v1/portfolio`
+- `GET /api/v1/downloads`
+- `GET /api/v1/downloads/{id}/file`
+- `GET /api/v1/careers`
+- `POST /api/v1/careers/{id}/applications`
 - `POST /api/v1/inquiries`
 
 Authenticated user routes:
 
 - `GET /api/v1/auth/me`
 - `GET /api/v1/account/inquiries`
+- `GET /api/v1/account/contracts`
+- `POST /api/v1/account/contracts/{id}/sign`
 
 Administrator routes are under `/api/v1/admin` and require an administrator session.

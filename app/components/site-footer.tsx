@@ -20,28 +20,30 @@ export function SiteFooter() {
 
       <div className="footer-grid">
         <div className="footer-brand-block">
-          <a className="footer-brand" href="#top" aria-label="AKELUWA SH home">
+          <Link className="footer-brand" href="/" aria-label="AKELUWA SH home">
             <span className="footer-brand-logo" aria-hidden="true"><Image src="/company-logo.png" alt="" width={56} height={56} unoptimized /></span>
             <strong>AKELUWA <i>SH</i></strong>
-          </a>
+          </Link>
           <p>A software hub building dependable digital products, cloud systems, cybersecurity foundations and practical AI.</p>
           <a className="footer-email" href="mailto:akeluwasoftwarehub@gmail.com">akeluwasoftwarehub@gmail.com ↗</a>
         </div>
 
         <nav className="footer-column" aria-label="Footer capabilities">
           <p>CAPABILITIES</p>
-          <a href="#systems">Product engineering</a>
-          <a href="#systems">Cloud &amp; DevOps</a>
-          <a href="#systems">Cybersecurity</a>
-          <a href="#systems">AI &amp; automation</a>
+          <Link href="/services#product-engineering">Product engineering</Link>
+          <Link href="/services#cloud-devops">Cloud &amp; DevOps</Link>
+          <Link href="/services#cybersecurity">Cybersecurity</Link>
+          <Link href="/services#ai-automation">AI &amp; automation</Link>
         </nav>
 
         <nav className="footer-column" aria-label="Footer company navigation">
           <p>COMPANY</p>
-          <a href="#origin">Our origin</a>
-          <a href="#portfolio">Selected work</a>
-          <a href="#method">How we work</a>
-          <a href="#contact">Start a project</a>
+          <Link href="/about">Our origin</Link>
+          <Link href="/case-studies">Selected work</Link>
+          <Link href="/#method">How we work</Link>
+          <Link href="/contact">Start a project</Link>
+          <Link href="/careers">Careers</Link>
+          <Link href="/downloads">Downloads</Link>
           <Link href="/login">Client login</Link>
         </nav>
 
@@ -63,11 +65,11 @@ export function SiteFooter() {
       <div className="footer-legal">
         <details id="privacy">
           <summary>Privacy &amp; data care <span>+</span></summary>
-          <p>We do not use tracking cookies. When you submit an inquiry, we store the details you provide so we can respond and manage the project conversation. Account authentication uses a necessary secure session cookie.</p>
+          <p>We do not use tracking cookies. Read the full <Link href="/privacy-policy">privacy policy</Link> for how inquiry and account data are handled.</p>
         </details>
         <details id="terms">
           <summary>Terms of engagement <span>+</span></summary>
-          <p>Project scope, timeline, payment, intellectual property, data handling and support are agreed in writing before delivery begins.</p>
+          <p>Project scope, timeline, payment, intellectual property, data handling and support are agreed in writing. Read the full <Link href="/terms">terms</Link>.</p>
         </details>
       </div>
 

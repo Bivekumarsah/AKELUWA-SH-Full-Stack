@@ -19,6 +19,11 @@ The score is an engineering assessment, not a certification or formal penetratio
 
 ### Website polish and Git hygiene
 
+- Upgraded the admin panel with inquiry pipeline analytics, search and status filters, pagination, CSV exports, inquiry details and email actions, content visibility filters, safer role changes, and responsive empty states.
+- Hardened authentication navigation so signed-in users cannot return to login/register forms through browser history, while restored private pages revalidate the live session.
+- Added a full project-contract workflow: structured commercial and legal terms, draft locking, SHA-256 content fingerprints, client/provider electronic acceptance, signer metadata, lifecycle controls, and print/PDF output.
+- Added admin-managed public resources and career openings, including validated file uploads, visibility controls, download counts, role deadlines, and direct application links.
+- Replaced email-only career applications with a dedicated applicant form, validated resume uploads, consent capture, admin candidate queue, resume access, and recruitment status tracking.
 - Removed the public homepage live-console section that contained `AKELUWA SYSTEM LAB / LIVE`.
 - Centered and balanced the intro/splash screen branding and route labels.
 - Made the public header sticky so navigation remains available while scrolling.
@@ -26,6 +31,9 @@ The score is an engineering assessment, not a certification or formal penetratio
 - Changed the budget field so users can choose a suggested range or type a custom range manually.
 - Balanced the capability strip so `AI INTELLIGENCE` no longer clips on desktop widths.
 - Added portfolio proof points, visible keyboard focus, skip-to-contact navigation, and reduced-motion support.
+- Added SEO support pages for services, about, case studies, contact, privacy policy, terms, careers, and downloads.
+- Added shared inner-page layout styling, route-specific metadata, Organization structured data, sitemap, and robots configuration.
+- Updated public navigation and footer links to point to real pages instead of homepage-only anchors.
 - Fixed the footer email link and added rendered-page regression checks so the removed live section and email typo do not return.
 - Expanded `.gitignore` for local secrets, build output, Cloudflare/Sites runtime files, editor folders, logs, local databases, and backend build artifacts.
 
@@ -65,6 +73,12 @@ The score is an engineering assessment, not a certification or formal penetratio
 - Expanded the rendered-homepage test to verify product metadata, navigation, inquiry UI, and privacy disclosure.
 - Added rendered-page checks for favicon tags and the absence of unsupported Vinext image-proxy URLs.
 - Fixed every ESLint error and warning found by the project rules.
+
+### Shared account profiles
+
+- Moved administrator sign-out from the sidebar into a shared top-right profile menu used by both administrator and client dashboards.
+- Added secure display-name editing and authenticated JPG, PNG, or WebP profile-picture upload with a 2 MB limit.
+- Added profile-picture replacement and removal, responsive avatar-only headers on small screens, and persistent database storage.
 
 ## Verification Results
 

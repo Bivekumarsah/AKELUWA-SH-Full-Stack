@@ -4,8 +4,10 @@ import { FormEvent, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { apiFetch, readableError } from "@/app/lib/api";
+import { useGuestOnly } from "@/app/lib/use-session";
 
 export default function RegisterPage() {
+  const checkingSession = useGuestOnly();
   const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -16,12 +18,16 @@ export default function RegisterPage() {
     setError("");
     try {
       await apiFetch("/auth/register", { method: "POST", body: JSON.stringify(form) });
-      window.location.assign("/account");
+      window.location.replace("/account");
     } catch (requestError) {
       setError(readableError(requestError));
     } finally {
       setLoading(false);
     }
+  }
+
+  if (checkingSession) {
+    return <main className="portal-shell"><p className="auth-session-state" role="status">Checking your secure session...</p></main>;
   }
 
   return (

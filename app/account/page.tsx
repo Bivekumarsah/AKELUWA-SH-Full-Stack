@@ -3,11 +3,16 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { apiFetch, Inquiry, readableError, User } from "@/app/lib/api";
+import AccountContracts from "@/app/components/account-contracts";
+import ProfileMenu from "@/app/components/profile-menu";
+import { apiFetch, Contract, Inquiry, readableError, User } from "@/app/lib/api";
+import { useProtectedPage } from "@/app/lib/use-session";
 
 export default function AccountPage() {
+  useProtectedPage();
   const [user, setUser] = useState<User | null>(null);
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
+  const [contracts, setContracts] = useState<Contract[]>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
 
@@ -15,36 +20,33 @@ export default function AccountPage() {
     Promise.all([
       apiFetch<{ user: User }>("/auth/me"),
       apiFetch<{ inquiries: Inquiry[] }>("/account/inquiries"),
+      apiFetch<{ contracts: Contract[] }>("/account/contracts"),
     ])
-      .then(([profile, inquiryData]) => {
+      .then(([profile, inquiryData, contractData]) => {
         setUser(profile.user);
         setInquiries(inquiryData.inquiries);
+        setContracts(contractData.contracts);
       })
       .catch((requestError) => {
         setError(readableError(requestError));
         if ((requestError as { status?: number }).status === 401) {
-          window.location.assign("/login");
+          window.location.replace("/login");
         }
       })
       .finally(() => setLoading(false));
   }, []);
 
-  async function logout() {
-    await apiFetch("/auth/logout", { method: "POST", body: "{}" }).catch(() => undefined);
-    window.location.assign("/");
-  }
-
   return (
     <main className="dashboard-shell">
       <header className="dashboard-header">
         <Link className="portal-brand" href="/"><Image src="/company-logo.png" alt="" width={48} height={48} unoptimized /><span><strong>AKELUWA</strong> SH</span></Link>
-        <div><span>{user?.email}</span>{user?.role === "admin" && <Link href="/admin">Admin dashboard</Link>}<button type="button" onClick={logout}>Sign out</button></div>
+        <ProfileMenu user={user} onUserChange={setUser} showAdminLink />
       </header>
       <section className="dashboard-main">
         <div className="dashboard-title"><p className="portal-kicker">CLIENT SPACE / PRIVATE</p><h1>{user ? `Hello, ${user.name.split(" ")[0]}.` : "Your account."}</h1><p>Track the project conversations connected to your account.</p></div>
         {loading && <p className="dashboard-state">Loading your account…</p>}
         {error && <p className="form-alert is-error" role="alert">{error}</p>}
-        {!loading && !error && (
+        {!loading && !error && <>
           <div className="account-grid">
             <article className="account-profile"><span>PROFILE</span><strong>{user?.name}</strong><p>{user?.email}</p><Link href="/#contact">Start another project ↗</Link></article>
             <section className="inquiry-history">
@@ -58,7 +60,8 @@ export default function AccountPage() {
               ))}
             </section>
           </div>
-        )}
+          {user && <AccountContracts initialContracts={contracts} user={user} />}
+        </>}
       </section>
     </main>
   );
