@@ -3,15 +3,17 @@
 import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { CircleHelp, ExternalLink, LayoutDashboard, LogOut, Settings2 } from "lucide-react";
 import { API_BASE_URL, apiFetch, readableError, User } from "@/app/lib/api";
 
 type Props = {
   user: User | null;
   onUserChange: (user: User) => void;
   showAdminLink?: boolean;
+  openOnHover?: boolean;
 };
 
-export default function ProfileMenu({ user, onUserChange, showAdminLink = false }: Props) {
+export default function ProfileMenu({ user, onUserChange, showAdminLink = false, openOnHover = false }: Props) {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState("");
@@ -19,6 +21,7 @@ export default function ProfileMenu({ user, onUserChange, showAdminLink = false 
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const hoverCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     function closeMenu(event: MouseEvent) {
@@ -35,10 +38,23 @@ export default function ProfileMenu({ user, onUserChange, showAdminLink = false 
     return () => {
       document.removeEventListener("mousedown", closeMenu);
       document.removeEventListener("keydown", closeOnEscape);
+      if (hoverCloseTimer.current) clearTimeout(hoverCloseTimer.current);
     };
   }, []);
 
+  function openHoverMenu() {
+    if (!openOnHover) return;
+    if (hoverCloseTimer.current) clearTimeout(hoverCloseTimer.current);
+    setOpen(true);
+  }
+
+  function closeHoverMenu() {
+    if (!openOnHover) return;
+    hoverCloseTimer.current = setTimeout(() => setOpen(false), 240);
+  }
+
   const initials = (user?.name || "Account").split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase();
+  const roleLabel = user?.role === "sub_admin" ? "SUB ADMIN" : user?.role === "admin" ? "ADMIN" : "CLIENT";
   const avatarURL = user?.avatar_updated_at
     ? `${API_BASE_URL}/account/avatar?v=${encodeURIComponent(user.avatar_updated_at)}`
     : "";
@@ -113,20 +129,31 @@ export default function ProfileMenu({ user, onUserChange, showAdminLink = false 
 
   return (
     <>
-      <div className="profile-control" ref={menuRef}>
-        <button className="profile-trigger" type="button" onClick={() => setOpen((value) => !value)} aria-haspopup="menu" aria-expanded={open} aria-label="Open profile menu">
+      <div className="profile-control" ref={menuRef} onMouseEnter={openHoverMenu} onMouseLeave={closeHoverMenu}>
+        <button className="profile-trigger" type="button" onClick={() => setOpen((value) => openOnHover ? true : !value)} aria-haspopup="menu" aria-expanded={open} aria-label="Open profile menu">
           <span className="profile-avatar">
-            {avatarURL ? <Image src={avatarURL} alt="" fill sizes="40px" unoptimized /> : initials}
+            {avatarURL ? <Image src={avatarURL} alt="" fill sizes="34px" unoptimized /> : initials}
           </span>
-          <span className="profile-trigger-copy"><strong>{user?.name || "Account"}</strong><small>{user?.role || "user"}</small></span>
-          <span className="profile-chevron" aria-hidden="true">⌄</span>
+          <span className="profile-trigger-copy"><strong>{user?.name || "Account"}</strong><small>{roleLabel}</small></span>
+          <span className="profile-chevron" aria-hidden="true">v</span>
         </button>
         {open && (
           <div className="profile-menu" role="menu">
-            <div className="profile-menu-head"><strong>{user?.name}</strong><span>{user?.email}</span></div>
-            <button type="button" role="menuitem" onClick={beginEdit}>Edit profile</button>
-            {showAdminLink && user?.role === "admin" && <Link href="/admin" role="menuitem">Admin dashboard</Link>}
-            <button className="profile-signout" type="button" role="menuitem" onClick={logout}>Sign out</button>
+            <div className="profile-menu-head">
+              <span className="profile-menu-avatar">
+                {avatarURL ? <Image src={avatarURL} alt="" fill sizes="38px" unoptimized /> : initials}
+              </span>
+              <span className="profile-menu-identity">
+                <strong>{user?.name || "Account"}</strong>
+                <span>{user?.email}</span>
+              </span>
+              <small>{roleLabel}</small>
+            </div>
+            <button type="button" role="menuitem" onClick={beginEdit}><Settings2 aria-hidden="true" />Profile settings</button>
+            {showAdminLink && (user?.role === "admin" || user?.role === "sub_admin") && <Link href="/admin" role="menuitem"><LayoutDashboard aria-hidden="true" />Admin dashboard</Link>}
+            <Link href="/contact" role="menuitem"><CircleHelp aria-hidden="true" />Help center</Link>
+            <Link href="/" target="_blank" role="menuitem"><ExternalLink aria-hidden="true" />Open website</Link>
+            <button className="profile-signout" type="button" role="menuitem" onClick={logout}><LogOut aria-hidden="true" />Sign out</button>
           </div>
         )}
       </div>

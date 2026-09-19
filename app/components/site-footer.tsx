@@ -3,21 +3,7 @@ import Link from "next/link";
 
 export function SiteFooter() {
   return (
-    <footer className="site-footer" id="trust">
-      <div className="footer-trust-band">
-        <div className="footer-trust-icon" aria-hidden="true">
-          <svg viewBox="0 0 28 32">
-            <path d="M14 1.5 25 5.8v8.5c0 7.4-4.3 12.7-11 16.2-6.7-3.5-11-8.8-11-16.2V5.8L14 1.5Z" />
-            <path d="m8.8 15.8 3.1 3.2 7.4-7.5" />
-          </svg>
-        </div>
-        <div>
-          <span>AKELUWA TRUST STANDARD / 001</span>
-          <strong>Clarity before code. Security by design. Ownership without ambiguity.</strong>
-        </div>
-        <p><i /> PROCESS ACTIVE</p>
-      </div>
-
+    <footer className="site-footer">
       <div className="footer-grid">
         <div className="footer-brand-block">
           <Link className="footer-brand" href="/" aria-label="AKELUWA SH home">
@@ -44,7 +30,6 @@ export function SiteFooter() {
           <Link href="/contact">Start a project</Link>
           <Link href="/careers">Careers</Link>
           <Link href="/downloads">Downloads</Link>
-          <Link href="/login">Client login</Link>
         </nav>
 
         <div className="footer-column footer-company-data">

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { InnerPage } from "@/app/components/inner-page";
+import { PublishedServices } from "@/app/components/published-content";
 
 export const metadata: Metadata = {
   title: "Services",
@@ -8,37 +9,6 @@ export const metadata: Metadata = {
   alternates: { canonical: "/services" },
 };
 
-const services = [
-  {
-    id: "product-engineering",
-    number: "01",
-    title: "Product engineering",
-    text: "Web apps, dashboards, APIs, portals and operational software built around real workflows, not just feature lists.",
-    stack: "React / Go / Django / Spring Boot / PostgreSQL",
-  },
-  {
-    id: "cloud-devops",
-    number: "02",
-    title: "Cloud and DevOps",
-    text: "Deployment pipelines, observability, containers and hosting architecture for systems that need to stay dependable.",
-    stack: "Docker / CI-CD / Cloudflare / AWS-ready architecture",
-  },
-  {
-    id: "cybersecurity",
-    number: "03",
-    title: "Cybersecurity foundation",
-    text: "Authentication, authorization, secure configuration, rate limits, headers and safer data handling from the first release.",
-    stack: "Session security / CSRF / Audit logs / Production checks",
-  },
-  {
-    id: "ai-automation",
-    number: "04",
-    title: "AI and automation",
-    text: "Practical AI features, admin assistance, data workflows and automation that reduce repeated manual work.",
-    stack: "AI workflows / Data tools / Admin automation",
-  },
-];
-
 export default function ServicesPage() {
   return (
     <InnerPage
@@ -46,16 +16,7 @@ export default function ServicesPage() {
       title={<>Services built for <em>real operations.</em></>}
       intro="AKELUWA SH connects product, infrastructure, security and intelligent automation so your system can launch cleanly and keep improving."
     >
-      <section className="inner-section service-list" aria-label="AKELUWA services">
-        {services.map((service) => (
-          <article id={service.id} className="inner-card service-card" key={service.id}>
-            <span>{service.number}</span>
-            <h2>{service.title}</h2>
-            <p>{service.text}</p>
-            <small>{service.stack}</small>
-          </article>
-        ))}
-      </section>
+      <PublishedServices />
 
       <section className="inner-section split-proof">
         <div>

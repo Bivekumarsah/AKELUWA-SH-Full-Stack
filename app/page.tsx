@@ -5,58 +5,47 @@ import Image from "next/image";
 import { ProjectInquiryForm } from "@/app/components/project-inquiry-form";
 import { SiteFooter } from "@/app/components/site-footer";
 import { SiteHeader } from "@/app/components/site-header";
-import { apiFetch, PortfolioItem, Service } from "@/app/lib/api";
+import { apiFetch, CompanyBrand, PortfolioItem, Service } from "@/app/lib/api";
+import { ContentStatus } from "@/app/components/published-content";
+import { usePublishedContent } from "@/app/lib/use-published-content";
 
-type DisplayService = Pick<Service, "number" | "title" | "stack"> & { copy: string };
-type ProofPoint = { label: string; value: string };
 
-const fallbackSystems: DisplayService[] = [
-  {
-    number: "01",
-    title: "Build the product",
-    copy: "Interfaces, platforms and financial systems shaped around real human behaviour—not feature lists.",
-    stack: "REACT / DJANGO / SPRING BOOT",
-  },
-  {
-    number: "02",
-    title: "Move through cloud",
-    copy: "Deployment, observability and automation engineered to stay calm while the business moves fast.",
-    stack: "AWS / DEVOPS / PLATFORM",
-  },
-  {
-    number: "03",
-    title: "Defend the system",
-    copy: "Security and intelligent automation designed into the architecture from the first line of code.",
-    stack: "CYBERSECURITY / AI / DATA",
-  },
-];
+function splitTagline(tagline: string): string[] {
+  const explicitLines = tagline.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  if (explicitLines.length > 1) return explicitLines.slice(0, 3);
 
-const fallbackPortfolio: PortfolioItem[] = [
-  { id: "fintech", slug: "fintech-api", title: "Fintech transaction platform", summary: "Secure account, transfer and transaction services designed for traceability and dependable delivery.", technologies: "GO / POSTGRESQL / DOCKER", position: 1, active: true, created_at: "", updated_at: "" },
-  { id: "cooperative", slug: "cooperative-system", title: "Cooperative management system", summary: "Member, savings, loan, collection and reporting workflows connected in one operational system.", technologies: "DJANGO / REACT / POSTGRESQL", position: 2, active: true, created_at: "", updated_at: "" },
-  { id: "transit", slug: "cashless-transit", title: "Cashless public transport", summary: "RFID-based fare payments, wallet services and live administration for public transportation.", technologies: "SPRING BOOT / ANDROID / RFID", position: 3, active: true, created_at: "", updated_at: "" },
-];
+  const phrases = tagline.match(/[^.!?]+[.!?]+|[^.!?]+$/g)?.map((phrase) => phrase.trim()).filter(Boolean) ?? [];
+  if (phrases.length > 1) {
+    return phrases.length <= 3 ? phrases : [phrases[0], phrases[1], phrases.slice(2).join(" ")];
+  }
 
-const fallbackProof: ProofPoint[][] = [
-  [
-    { label: "Focus", value: "Traceable money movement" },
-    { label: "Outcome", value: "Safer account operations" },
-  ],
-  [
-    { label: "Focus", value: "Member workflow clarity" },
-    { label: "Outcome", value: "Cleaner reporting cycles" },
-  ],
-  [
-    { label: "Focus", value: "Fast fare collection" },
-    { label: "Outcome", value: "Cash-light transit flow" },
-  ],
-];
+  const words = tagline.trim().split(/\s+/).filter(Boolean);
+  if (words.length < 4) return [tagline.trim()];
+  const target = tagline.trim().length / 2;
+  let splitAt = 1;
+  let length = words[0].length;
+  for (let index = 1; index < words.length; index += 1) {
+    if (Math.abs(length - target) < Math.abs(length + words[index].length + 1 - target)) break;
+    length += words[index].length + 1;
+    splitAt = index + 1;
+  }
+  return [words.slice(0, splitAt).join(" "), words.slice(splitAt).join(" ")];
+}
+
+const fallbackBrand: CompanyBrand = {
+  display_name: "AKELUWA SH",
+  tagline: "We engineer\nthe invisible edge.",
+  tagline_meaning: "AKELUWA SH turns ambitious ideas into software, cloud systems and intelligent products that move without borders.",
+};
 
 export default function Home() {
   const [pulse, setPulse] = useState(72);
-  const [introActive, setIntroActive] = useState(true);
-  const [systems, setSystems] = useState<DisplayService[]>(fallbackSystems);
-  const [portfolio, setPortfolio] = useState<PortfolioItem[]>(fallbackPortfolio);
+  const servicesContent = usePublishedContent<Service>("services");
+  const portfolioContent = usePublishedContent<PortfolioItem>("portfolio");
+  const systems = servicesContent.items;
+  const portfolio = portfolioContent.items;
+  const [companyBrand, setCompanyBrand] = useState<CompanyBrand>(fallbackBrand);
+  const taglineLines = splitTagline(companyBrand.tagline);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -70,33 +59,19 @@ export default function Home() {
       setPulse(68 + Math.floor(Math.random() * 10));
     }, 1800);
 
-    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const introTimer = window.setTimeout(() => setIntroActive(false), reduceMotion ? 80 : 2300);
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) entry.target.classList.add("is-visible");
+    apiFetch<{ company_brand: CompanyBrand }>("/company-brand")
+      .then(({ company_brand: brand }) => {
+        setCompanyBrand({
+          display_name: brand.display_name.trim() || fallbackBrand.display_name,
+          tagline: brand.tagline.trim() || fallbackBrand.tagline,
+          tagline_meaning: brand.tagline_meaning.trim() || fallbackBrand.tagline_meaning,
         });
-      },
-      { threshold: 0.14 },
-    );
-    document.querySelectorAll(".scroll-reveal").forEach((item) => observer.observe(item));
-
-    apiFetch<{ services: Service[] }>("/services")
-      .then((data) => {
-        if (data.services.length) setSystems(data.services.map((item) => ({ number: item.number, title: item.title, copy: item.summary, stack: item.stack })));
       })
-      .catch(() => undefined);
-    apiFetch<{ portfolio: PortfolioItem[] }>("/portfolio")
-      .then((data) => { if (data.portfolio.length) setPortfolio(data.portfolio); })
       .catch(() => undefined);
 
     return () => {
       window.removeEventListener("pointermove", handlePointer);
       window.clearInterval(ticker);
-      window.clearTimeout(introTimer);
-      observer.disconnect();
     };
   }, []);
 
@@ -114,21 +89,6 @@ export default function Home() {
       </div>
       <div className="cursor-light" aria-hidden="true" />
 
-      <button
-        className={`origin-intro ${introActive ? "is-active" : "is-gone"}`}
-        onClick={() => setIntroActive(false)}
-        aria-label="Enter the AKELUWA SH website"
-        tabIndex={introActive ? 0 : -1}
-      >
-        <span className="intro-kicker">INITIALISING ORIGIN SIGNAL / 001</span>
-        <span className="intro-word" aria-hidden="true">AKELUWA<i>SH</i></span>
-        <span className="intro-route" aria-hidden="true">
-          <b>SOFTWARE</b><i /><b>UI/UX</b><i /><b>CLOUD</b><i /><b>AI</b>
-        </span>
-        <span className="intro-progress"><i /></span>
-        <span className="intro-skip">CLICK TO ENTER ↗</span>
-      </button>
-
       <SiteHeader />
 
       <section className="nova-hero" id="top">
@@ -137,7 +97,7 @@ export default function Home() {
           <span>85.3240° E</span>
         </div>
 
-        <div className="hero-supersign" aria-hidden="true">AKELUWA</div>
+        <div className="hero-supersign" aria-hidden="true">{companyBrand.display_name}</div>
 
         <div className="origin-copy">
           <p className="origin-badge reveal-one">
@@ -145,24 +105,19 @@ export default function Home() {
             <i />
             <span>SOFTWARE HUB / AI ENGINEERING</span>
           </p>
-          <h1>
-            <span className="origin-line reveal-two">We engineer</span>
-            <span className="origin-line edge-line reveal-three">the invisible <em>edge.</em></span>
+          <h1 className="brand-tagline reveal-two" aria-label={companyBrand.tagline.replace(/\s+/g, " ")}>
+            {taglineLines.map((line, index) => {
+              const finalLine = index === taglineLines.length - 1;
+              const finalSpace = finalLine ? line.lastIndexOf(" ") : -1;
+              return (
+                <span className={`origin-line brand-tagline-line ${finalLine ? "edge-line" : ""}`} key={`${line}-${index}`}>
+                  {finalSpace > 0 ? <>{line.slice(0, finalSpace + 1)}<em>{line.slice(finalSpace + 1)}</em></> : line}
+                </span>
+              );
+            })}
           </h1>
+          <p className="brand-tagline-meaning reveal-three">{companyBrand.tagline_meaning}</p>
           <div className="origin-bottom reveal-four">
-            <div className="origin-message">
-              <p>
-                AKELUWA SH turns ambitious ideas into software, cloud systems and
-                intelligent products that move without borders.
-              </p>
-              <div className="trust-mark" aria-label="AKELUWA trust protocol: secure, transparent and accountable">
-                <svg viewBox="0 0 28 32" aria-hidden="true">
-                  <path d="M14 1.5 25 5.8v8.5c0 7.4-4.3 12.7-11 16.2-6.7-3.5-11-8.8-11-16.2V5.8L14 1.5Z" />
-                  <path d="m8.8 15.8 3.1 3.2 7.4-7.5" />
-                </svg>
-                <span><small>ACTIVE</small><strong>Secure · Transparent · Accountable</strong></span>
-              </div>
-            </div>
             <a href="#origin" className="signal-cta">
               <span>FOLLOW THE SIGNAL</span><b aria-hidden="true">↓</b>
             </a>
@@ -268,11 +223,12 @@ export default function Home() {
           </div>
 
           <div className="system-list">
+            <ContentStatus {...servicesContent} empty={!systems.length} />
             {systems.map((system) => (
-              <article className="system-row scroll-reveal" key={system.number}>
+              <article className="system-row" key={system.id}>
                 <span className="system-number">{system.number}</span>
                 <h3>{system.title}</h3>
-                <p>{system.copy}</p>
+                <p>{system.summary}</p>
                 <span className="system-stack">{system.stack}</span>
                 <span className="system-arrow" aria-hidden="true">↗</span>
               </article>
@@ -293,19 +249,12 @@ export default function Home() {
             <p>Products shaped around real operations, clear ownership and technology that can grow after launch.</p>
           </div>
           <div className="portfolio-grid">
+            <ContentStatus {...portfolioContent} empty={!portfolio.length} />
             {portfolio.map((item, index) => (
-              <article className="portfolio-card scroll-reveal" key={item.slug}>
+              <article className="portfolio-card" key={item.slug}>
                 <div><span>{String(index + 1).padStart(2, "0")}</span><i>{item.technologies}</i></div>
                 <h3>{item.title}</h3>
                 <p>{item.summary}</p>
-                <div className="portfolio-proof" aria-label={`${item.title} proof points`}>
-                  {(fallbackProof[index] ?? fallbackProof[0]).map((proof) => (
-                    <span key={proof.label}>
-                      <small>{proof.label}</small>
-                      {proof.value}
-                    </span>
-                  ))}
-                </div>
                 {item.project_url ? <a href={item.project_url} target="_blank" rel="noreferrer">View project ↗</a> : <span className="portfolio-private">PRIVATE DELIVERY / CASE SUMMARY</span>}
               </article>
             ))}

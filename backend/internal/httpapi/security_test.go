@@ -87,3 +87,12 @@ func TestSecurityHeaders(t *testing.T) {
 		}
 	}
 }
+
+func TestLivenessDoesNotRequireDatabase(t *testing.T) {
+	api := testAPI()
+	response := httptest.NewRecorder()
+	api.live(response, httptest.NewRequest(http.MethodGet, "/livez", nil))
+	if response.Code != http.StatusOK {
+		t.Fatalf("live status = %d", response.Code)
+	}
+}

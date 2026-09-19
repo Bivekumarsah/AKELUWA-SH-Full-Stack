@@ -12,6 +12,8 @@
 
 # testing
 /coverage
+/test-results/
+/playwright-report/
 coverage/
 *.lcov
 
@@ -26,6 +28,8 @@ desktop.ini
 *.pem
 *.key
 *.crt
+*.p12
+*.pfx
 *.bak
 *.tmp
 *.temp
@@ -57,6 +61,7 @@ next-env.d.ts
 /.openai/
 /outputs/
 /work/
+/.tmp-review/
 
 # local editor and OS state
 .vscode/

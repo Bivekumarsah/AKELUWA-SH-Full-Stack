@@ -59,7 +59,7 @@ func (l *rateLimiter) allow(key string, maxRequests int, window time.Duration) b
 
 func (a *API) limitRequests(name string, maxRequests int, window time.Duration, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		key := name + ":" + clientIP(r)
+		key := name + ":" + a.clientIP(r)
 		if !a.rateLimits.allow(key, maxRequests, window) {
 			w.Header().Set("Retry-After", formatRetryAfter(window))
 			writeError(w, http.StatusTooManyRequests, "too many requests; please try again later")
@@ -69,11 +69,14 @@ func (a *API) limitRequests(name string, maxRequests int, window time.Duration, 
 	})
 }
 
-func clientIP(r *http.Request) string {
-	if forwardedFor := strings.TrimSpace(r.Header.Get("X-Forwarded-For")); forwardedFor != "" {
-		first, _, _ := strings.Cut(forwardedFor, ",")
-		if ip := net.ParseIP(strings.TrimSpace(first)); ip != nil {
-			return ip.String()
+func (a *API) clientIP(r *http.Request) string {
+	if a.cfg.TrustProxyHeaders {
+		forwardedFor := strings.TrimSpace(r.Header.Get("X-Forwarded-For"))
+		if forwardedFor != "" {
+			first, _, _ := strings.Cut(forwardedFor, ",")
+			if ip := net.ParseIP(strings.TrimSpace(first)); ip != nil {
+				return ip.String()
+			}
 		}
 	}
 

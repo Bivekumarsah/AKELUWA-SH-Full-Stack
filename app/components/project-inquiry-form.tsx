@@ -37,7 +37,7 @@ export function ProjectInquiryForm() {
             value={inquiry.budget}
             onChange={(event) => setInquiry({ ...inquiry, budget: event.target.value })}
             list="budget-ranges"
-            maxLength={120}
+            maxLength={80}
             placeholder="Select or type a custom range"
             autoComplete="off"
           />

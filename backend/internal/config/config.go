@@ -15,12 +15,14 @@ type Config struct {
 	DatabaseURL       string
 	JWTSecret         string
 	JWTIssuer         string
+	MFAEncryptionKey  string
 	SessionTTL        time.Duration
 	CookieName        string
 	CookieDomain      string
 	CookieSecure      bool
 	CookieSameSite    string
 	AllowedOrigins    []string
+	TrustProxyHeaders bool
 	AdminName         string
 	AdminEmail        string
 	AdminPassword     string
@@ -40,10 +42,12 @@ func Load() (Config, error) {
 		DatabaseURL:       strings.TrimSpace(os.Getenv("DATABASE_URL")),
 		JWTSecret:         os.Getenv("JWT_SECRET"),
 		JWTIssuer:         env("JWT_ISSUER", "akeluwa-api"),
+		MFAEncryptionKey:  os.Getenv("MFA_ENCRYPTION_KEY"),
 		CookieName:        env("COOKIE_NAME", "akeluwa_session"),
 		CookieDomain:      strings.TrimSpace(os.Getenv("COOKIE_DOMAIN")),
 		CookieSameSite:    strings.ToLower(env("COOKIE_SAME_SITE", "lax")),
 		AllowedOrigins:    splitCSV(env("CORS_ORIGINS", "http://localhost:3000,http://localhost:5173")),
+		TrustProxyHeaders: envBool("TRUST_PROXY_HEADERS", false),
 		AdminName:         env("ADMIN_NAME", "AKELUWA Administrator"),
 		AdminEmail:        strings.ToLower(strings.TrimSpace(os.Getenv("ADMIN_EMAIL"))),
 		AdminPassword:     os.Getenv("ADMIN_PASSWORD"),
@@ -72,6 +76,12 @@ func Load() (Config, error) {
 	}
 	if len(cfg.JWTSecret) < 32 {
 		return Config{}, fmt.Errorf("JWT_SECRET must contain at least 32 characters")
+	}
+	if cfg.MFAEncryptionKey == "" && cfg.Environment != "production" {
+		cfg.MFAEncryptionKey = cfg.JWTSecret
+	}
+	if len(cfg.MFAEncryptionKey) < 32 {
+		return Config{}, fmt.Errorf("MFA_ENCRYPTION_KEY must contain at least 32 characters")
 	}
 	if cfg.CookieSameSite != "lax" && cfg.CookieSameSite != "strict" && cfg.CookieSameSite != "none" {
 		return Config{}, fmt.Errorf("COOKIE_SAME_SITE must be lax, strict, or none")
@@ -106,8 +116,11 @@ func Load() (Config, error) {
 				return Config{}, fmt.Errorf("production CORS origins must use https")
 			}
 		}
-		if looksLikePlaceholder(cfg.JWTSecret) || looksLikePlaceholder(cfg.AdminPassword) {
+		if looksLikePlaceholder(cfg.JWTSecret) || looksLikePlaceholder(cfg.MFAEncryptionKey) || looksLikePlaceholder(cfg.AdminPassword) {
 			return Config{}, fmt.Errorf("production secrets must not use example or local placeholder values")
+		}
+		if cfg.MFAEncryptionKey == cfg.JWTSecret {
+			return Config{}, fmt.Errorf("MFA_ENCRYPTION_KEY must be different from JWT_SECRET in production")
 		}
 	}
 
@@ -140,6 +153,18 @@ func env(key, fallback string) string {
 		return value
 	}
 	return fallback
+}
+
+func envBool(key string, fallback bool) bool {
+	value := strings.TrimSpace(os.Getenv(key))
+	if value == "" {
+		return fallback
+	}
+	parsed, err := strconv.ParseBool(value)
+	if err != nil {
+		return fallback
+	}
+	return parsed
 }
 
 func splitCSV(value string) []string {

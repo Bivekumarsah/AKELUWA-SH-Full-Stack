@@ -53,7 +53,12 @@ func main() {
 	}
 
 	tokens := auth.NewManager(cfg.JWTSecret, cfg.JWTIssuer, cfg.SessionTTL)
-	api := httpapi.New(cfg, data, tokens, logger)
+	secretCipher, err := auth.NewSecretCipher(cfg.MFAEncryptionKey)
+	if err != nil {
+		logger.Error("MFA encryption initialization failed", "error", err)
+		os.Exit(1)
+	}
+	api := httpapi.New(cfg, data, tokens, secretCipher, logger)
 	server := &http.Server{
 		Addr:              cfg.Address,
 		Handler:           api.Router(),

@@ -26,7 +26,7 @@ func TestRateLimiterBlocksAfterLimitUntilWindowResets(t *testing.T) {
 	}
 }
 
-func TestClientIPUsesFirstForwardedAddress(t *testing.T) {
+func TestClientIPUsesForwardedAddressOnlyForTrustedProxy(t *testing.T) {
 	request, err := http.NewRequest(http.MethodPost, "/api/v1/auth/login", nil)
 	if err != nil {
 		t.Fatal(err)
@@ -34,7 +34,12 @@ func TestClientIPUsesFirstForwardedAddress(t *testing.T) {
 	request.RemoteAddr = "10.0.0.10:12345"
 	request.Header.Set("X-Forwarded-For", "203.0.113.9, 10.0.0.10")
 
-	if got := clientIP(request); got != "203.0.113.9" {
-		t.Fatalf("clientIP() = %q, want %q", got, "203.0.113.9")
+	api := &API{}
+	if got := api.clientIP(request); got != "10.0.0.10" {
+		t.Fatalf("untrusted clientIP() = %q, want remote address", got)
+	}
+	api.cfg.TrustProxyHeaders = true
+	if got := api.clientIP(request); got != "203.0.113.9" {
+		t.Fatalf("trusted clientIP() = %q, want forwarded address", got)
 	}
 }

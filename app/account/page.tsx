@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import AccountContracts from "@/app/components/account-contracts";
 import ProfileMenu from "@/app/components/profile-menu";
-import { apiFetch, Contract, Inquiry, readableError, User } from "@/app/lib/api";
+import { apiFetch, Contract, Inquiry, Invoice, readableError, User } from "@/app/lib/api";
 import { useProtectedPage } from "@/app/lib/use-session";
 
 export default function AccountPage() {
@@ -13,6 +13,7 @@ export default function AccountPage() {
   const [user, setUser] = useState<User | null>(null);
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [contracts, setContracts] = useState<Contract[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
 
@@ -21,11 +22,13 @@ export default function AccountPage() {
       apiFetch<{ user: User }>("/auth/me"),
       apiFetch<{ inquiries: Inquiry[] }>("/account/inquiries"),
       apiFetch<{ contracts: Contract[] }>("/account/contracts"),
+      apiFetch<{ invoices: Invoice[] }>("/account/invoices"),
     ])
-      .then(([profile, inquiryData, contractData]) => {
+      .then(([profile, inquiryData, contractData, invoiceData]) => {
         setUser(profile.user);
         setInquiries(inquiryData.inquiries);
         setContracts(contractData.contracts);
+        setInvoices(invoiceData.invoices);
       })
       .catch((requestError) => {
         setError(readableError(requestError));
@@ -43,7 +46,7 @@ export default function AccountPage() {
         <ProfileMenu user={user} onUserChange={setUser} showAdminLink />
       </header>
       <section className="dashboard-main">
-        <div className="dashboard-title"><p className="portal-kicker">CLIENT SPACE / PRIVATE</p><h1>{user ? `Hello, ${user.name.split(" ")[0]}.` : "Your account."}</h1><p>Track the project conversations connected to your account.</p></div>
+        <div className="dashboard-title"><p className="portal-kicker">CUSTOMER SPACE / PRIVATE</p><h1>{user ? `Hello, ${user.name.split(" ")[0]}.` : "Your account."}</h1><p>Track the project conversations connected to your account.</p></div>
         {loading && <p className="dashboard-state">Loading your account…</p>}
         {error && <p className="form-alert is-error" role="alert">{error}</p>}
         {!loading && !error && <>
@@ -60,6 +63,17 @@ export default function AccountPage() {
               ))}
             </section>
           </div>
+          <section className="inquiry-history account-invoice-history">
+            <div className="panel-heading"><div><span>INVOICES</span><strong>{invoices.length.toString().padStart(2, "0")}</strong></div></div>
+            {invoices.length === 0 ? <p className="dashboard-state">No invoices have been issued to this account.</p> : invoices.map((invoice) => (
+              <article className="inquiry-card" key={invoice.id}>
+                <div><span>Due {new Date(`${invoice.due_date}T00:00:00`).toLocaleDateString()}</span><b className={`status-${invoice.status}`}>{invoice.status}</b></div>
+                <h2>{invoice.invoice_number}</h2>
+                <p>{invoice.items.map((item) => item.description).join(", ")}</p>
+                <strong>{invoice.currency} {(invoice.balance_cents / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} due</strong>
+              </article>
+            ))}
+          </section>
           {user && <AccountContracts initialContracts={contracts} user={user} />}
         </>}
       </section>

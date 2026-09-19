@@ -32,12 +32,12 @@ export default function RegisterPage() {
 
   return (
     <main className="portal-shell">
-      <Link className="portal-brand" href="/" aria-label="Return to AKELUWA SH">
-        <Image src="/company-logo.png" alt="" width={48} height={48} priority unoptimized />
-        <span><strong>AKELUWA</strong> SH</span>
-      </Link>
       <section className="auth-card">
-        <p className="portal-kicker">CLIENT ACCOUNT / CREATE</p>
+        <Link className="auth-brand" href="/" aria-label="Return to AKELUWA SH">
+          <Image src="/company-logo.png" alt="" width={48} height={48} priority unoptimized />
+          <span>SH</span>
+        </Link>
+        <p className="portal-kicker">CUSTOMER ACCOUNT / CREATE</p>
         <h1>Start with<br /><em>clarity.</em></h1>
         <p className="portal-intro">Create an account to keep project inquiries and progress connected to you.</p>
         <form className="portal-form" onSubmit={submit}>

@@ -2,13 +2,149 @@ export const API_BASE_URL = (
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api/v1"
 ).replace(/\/$/, "");
 
+export type AdminPermission =
+  | "overview.view"
+  | "inquiries.view" | "inquiries.update"
+  | "contracts.view" | "contracts.create" | "contracts.update"
+  | "services.view" | "services.create" | "services.update" | "services.delete"
+  | "portfolio.view" | "portfolio.create" | "portfolio.update" | "portfolio.delete"
+  | "downloads.view" | "downloads.create" | "downloads.update" | "downloads.delete"
+  | "careers.view" | "careers.create" | "careers.update" | "careers.delete"
+  | "accounts.view" | "accounts.create" | "accounts.update" | "accounts.delete";
+
 export type User = {
   id: string;
   name: string;
   email: string;
-  role: "user" | "admin";
+  role: "user" | "admin" | "sub_admin";
+  admin_permissions: AdminPermission[];
+  account_active: boolean;
+  mfa_enabled: boolean;
   created_at: string;
   avatar_updated_at?: string;
+};
+
+export type AdminAuditLog = {
+  id: number;
+  actor_id?: string;
+  actor_name?: string;
+  method: string;
+  path: string;
+  status: number;
+  source_ip: string;
+  user_agent: string;
+  created_at: string;
+};
+
+export type AdminActionRequest = {
+  id: string;
+  requester_id: string;
+  requester_name: string;
+  action: string;
+  target_id: string;
+  target_label: string;
+  status: "pending" | "processing" | "approved" | "rejected" | "failed";
+  reviewed_by?: string;
+  reviewer_name?: string;
+  review_note: string;
+  failure_message: string;
+  created_at: string;
+  reviewed_at?: string;
+};
+
+export type DeferredActionResponse = {
+  queued?: boolean;
+  action_request?: AdminActionRequest;
+};
+
+export type CompanyAccount = {
+  display_name: string;
+  legal_name: string;
+  tagline: string;
+  tagline_meaning: string;
+  primary_email: string;
+  support_email: string;
+  careers_email: string;
+  phone: string;
+  website_url: string;
+  registration_number: string;
+  tax_id: string;
+  address_line: string;
+  city: string;
+  region: string;
+  postal_code: string;
+  country: string;
+  timezone: string;
+  currency: string;
+  linkedin_url: string;
+  github_url: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CompanyBrand = Pick<
+  CompanyAccount,
+  "display_name" | "tagline" | "tagline_meaning"
+>;
+
+export type InvoiceItem = {
+  id: string;
+  description: string;
+  quantity: number;
+  unit_price_cents: number;
+  position: number;
+};
+
+export type Invoice = {
+  id: string;
+  contract_id?: string;
+  user_id?: string;
+  invoice_number: string;
+  client_name: string;
+  client_email: string;
+  client_company?: string;
+  issue_date: string;
+  due_date: string;
+  currency: string;
+  subtotal_cents: number;
+  tax_cents: number;
+  discount_cents: number;
+  total_cents: number;
+  paid_cents: number;
+  balance_cents: number;
+  notes: string;
+  status: "sent" | "partial" | "paid" | "overdue" | "void";
+  items: InvoiceItem[];
+  created_at: string;
+  updated_at: string;
+};
+
+export type AccountingTransaction = {
+  id: string;
+  invoice_id?: string;
+  invoice_number?: string;
+  direction: "income" | "expense";
+  category: string;
+  description: string;
+  counterparty: string;
+  amount_cents: number;
+  currency: string;
+  payment_method: "cash" | "bank_transfer" | "card" | "mobile_wallet" | "cheque" | "other";
+  reference: string;
+  receipt_number?: string;
+  transaction_date: string;
+  notes: string;
+  status: "posted" | "void";
+  created_at: string;
+  updated_at: string;
+};
+
+export type AccountingSummary = {
+  currency: string;
+  income_cents: number;
+  expense_cents: number;
+  net_cents: number;
+  receivable_cents: number;
 };
 
 export type Service = {

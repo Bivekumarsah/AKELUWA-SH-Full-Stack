@@ -3,13 +3,136 @@ package model
 import "time"
 
 type User struct {
-	ID              string     `json:"id"`
-	Name            string     `json:"name"`
-	Email           string     `json:"email"`
-	Role            string     `json:"role"`
-	PasswordHash    string     `json:"-"`
-	CreatedAt       time.Time  `json:"created_at"`
-	AvatarUpdatedAt *time.Time `json:"avatar_updated_at,omitempty"`
+	ID               string     `json:"id"`
+	Name             string     `json:"name"`
+	Email            string     `json:"email"`
+	Role             string     `json:"role"`
+	AdminPermissions []string   `json:"admin_permissions"`
+	AccountActive    bool       `json:"account_active"`
+	PasswordHash     string     `json:"-"`
+	MFASecret        []byte     `json:"-"`
+	MFAEnabled       bool       `json:"mfa_enabled"`
+	CreatedAt        time.Time  `json:"created_at"`
+	AvatarUpdatedAt  *time.Time `json:"avatar_updated_at,omitempty"`
+}
+
+type AdminAuditLog struct {
+	ID        int64     `json:"id"`
+	ActorID   string    `json:"actor_id,omitempty"`
+	ActorName string    `json:"actor_name,omitempty"`
+	Method    string    `json:"method"`
+	Path      string    `json:"path"`
+	Status    int       `json:"status"`
+	SourceIP  string    `json:"source_ip"`
+	UserAgent string    `json:"user_agent"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+type AdminActionRequest struct {
+	ID             string     `json:"id"`
+	RequesterID    string     `json:"requester_id"`
+	RequesterName  string     `json:"requester_name"`
+	Action         string     `json:"action"`
+	TargetID       string     `json:"target_id"`
+	TargetLabel    string     `json:"target_label"`
+	Status         string     `json:"status"`
+	ReviewedBy     string     `json:"reviewed_by,omitempty"`
+	ReviewerName   string     `json:"reviewer_name,omitempty"`
+	ReviewNote     string     `json:"review_note"`
+	FailureMessage string     `json:"failure_message"`
+	CreatedAt      time.Time  `json:"created_at"`
+	ReviewedAt     *time.Time `json:"reviewed_at,omitempty"`
+}
+
+type CompanyAccount struct {
+	DisplayName        string    `json:"display_name"`
+	LegalName          string    `json:"legal_name"`
+	Tagline            string    `json:"tagline"`
+	TaglineMeaning     string    `json:"tagline_meaning"`
+	PrimaryEmail       string    `json:"primary_email"`
+	SupportEmail       string    `json:"support_email"`
+	CareersEmail       string    `json:"careers_email"`
+	Phone              string    `json:"phone"`
+	WebsiteURL         string    `json:"website_url"`
+	RegistrationNumber string    `json:"registration_number"`
+	TaxID              string    `json:"tax_id"`
+	AddressLine        string    `json:"address_line"`
+	City               string    `json:"city"`
+	Region             string    `json:"region"`
+	PostalCode         string    `json:"postal_code"`
+	Country            string    `json:"country"`
+	Timezone           string    `json:"timezone"`
+	Currency           string    `json:"currency"`
+	LinkedInURL        string    `json:"linkedin_url"`
+	GitHubURL          string    `json:"github_url"`
+	CreatedAt          time.Time `json:"created_at"`
+	UpdatedAt          time.Time `json:"updated_at"`
+}
+
+type CompanyBrand struct {
+	DisplayName    string `json:"display_name"`
+	Tagline        string `json:"tagline"`
+	TaglineMeaning string `json:"tagline_meaning"`
+}
+
+type InvoiceItem struct {
+	ID             string  `json:"id"`
+	Description    string  `json:"description"`
+	Quantity       float64 `json:"quantity"`
+	UnitPriceCents int64   `json:"unit_price_cents"`
+	Position       int     `json:"position"`
+}
+
+type Invoice struct {
+	ID            string        `json:"id"`
+	ContractID    string        `json:"contract_id,omitempty"`
+	UserID        string        `json:"user_id,omitempty"`
+	InvoiceNumber string        `json:"invoice_number"`
+	ClientName    string        `json:"client_name"`
+	ClientEmail   string        `json:"client_email"`
+	ClientCompany string        `json:"client_company,omitempty"`
+	IssueDate     string        `json:"issue_date"`
+	DueDate       string        `json:"due_date"`
+	Currency      string        `json:"currency"`
+	SubtotalCents int64         `json:"subtotal_cents"`
+	TaxCents      int64         `json:"tax_cents"`
+	DiscountCents int64         `json:"discount_cents"`
+	TotalCents    int64         `json:"total_cents"`
+	PaidCents     int64         `json:"paid_cents"`
+	BalanceCents  int64         `json:"balance_cents"`
+	Notes         string        `json:"notes"`
+	Status        string        `json:"status"`
+	Items         []InvoiceItem `json:"items"`
+	CreatedAt     time.Time     `json:"created_at"`
+	UpdatedAt     time.Time     `json:"updated_at"`
+}
+
+type AccountingTransaction struct {
+	ID              string    `json:"id"`
+	InvoiceID       string    `json:"invoice_id,omitempty"`
+	InvoiceNumber   string    `json:"invoice_number,omitempty"`
+	Direction       string    `json:"direction"`
+	Category        string    `json:"category"`
+	Description     string    `json:"description"`
+	Counterparty    string    `json:"counterparty"`
+	AmountCents     int64     `json:"amount_cents"`
+	Currency        string    `json:"currency"`
+	PaymentMethod   string    `json:"payment_method"`
+	Reference       string    `json:"reference"`
+	ReceiptNumber   string    `json:"receipt_number,omitempty"`
+	TransactionDate string    `json:"transaction_date"`
+	Notes           string    `json:"notes"`
+	Status          string    `json:"status"`
+	CreatedAt       time.Time `json:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at"`
+}
+
+type AccountingSummary struct {
+	Currency        string `json:"currency"`
+	IncomeCents     int64  `json:"income_cents"`
+	ExpenseCents    int64  `json:"expense_cents"`
+	NetCents        int64  `json:"net_cents"`
+	ReceivableCents int64  `json:"receivable_cents"`
 }
 
 type Service struct {

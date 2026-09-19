@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { apiFetch, User } from "@/app/lib/api";
 
 function destinationFor(user: User) {
-  return user.role === "admin" ? "/admin" : "/account";
+  return user.role === "admin" || user.role === "sub_admin" ? "/admin" : "/account";
 }
 
 export function useGuestOnly() {
@@ -47,7 +47,7 @@ export function useProtectedPage(options: { requireAdmin?: boolean } = {}) {
       if (!event.persisted) return;
       try {
         const { user } = await apiFetch<{ user: User }>("/auth/me", { cache: "no-store" });
-        if (options.requireAdmin && user.role !== "admin") {
+        if (options.requireAdmin && user.role !== "admin" && user.role !== "sub_admin") {
           window.location.replace("/account");
         }
       } catch {

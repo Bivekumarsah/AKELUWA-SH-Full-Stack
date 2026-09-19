@@ -3,7 +3,7 @@
 import { FormEvent, useMemo, useState } from "react";
 import ContractDocument from "@/app/components/contract-document";
 import SignaturePad from "@/app/components/signature-pad";
-import { apiFetch, Contract, readableError, User } from "@/app/lib/api";
+import { AdminPermission, apiFetch, Contract, readableError, User } from "@/app/lib/api";
 
 const defaultTerms = {
   scope: "Describe the included product features, platforms, integrations, environments, and boundaries of the engagement.",
@@ -19,6 +19,8 @@ const defaultTerms = {
   special_terms: "",
 };
 
+const can = (user: User | null, permission: AdminPermission) => user?.role === "admin" || Boolean(user?.admin_permissions.includes(permission));
+
 function newContract(users: User[]): Contract {
   const client = users.find((user) => user.role === "user");
   const now = new Date();
@@ -27,7 +29,7 @@ function newContract(users: User[]): Contract {
   return { id: "", user_id: client?.id || "", contract_number: `AK-${now.getFullYear()}-${String(now.getTime()).slice(-6)}`, title: "Software development agreement", client_name: client?.name || "", client_email: client?.email || "", client_company: "", provider_name: "AKELUWA SH", currency: "USD", amount_cents: 0, start_date: date(now), end_date: date(end), ...defaultTerms, status: "draft", version: 1, content_hash: "", provider_signer_name: "", client_signer_name: "", created_at: "", updated_at: "" };
 }
 
-export default function ContractManagement({ initialContracts, users, adminName, onContractsChange }: { initialContracts: Contract[]; users: User[]; adminName: string; onContractsChange: (contracts: Contract[]) => void }) {
+export default function ContractManagement({ initialContracts, users, adminName, administrator, onContractsChange }: { initialContracts: Contract[]; users: User[]; adminName: string; administrator: User | null; onContractsChange: (contracts: Contract[]) => void }) {
   const [contracts, setContracts] = useState(initialContracts);
   const [editing, setEditing] = useState<Contract | null>(null);
   const [viewing, setViewing] = useState<Contract | null>(null);
@@ -37,6 +39,8 @@ export default function ContractManagement({ initialContracts, users, adminName,
   const [saving, setSaving] = useState(false);
   const [signature, setSignature] = useState("");
   const [signerName, setSignerName] = useState(adminName);
+  const canCreate = can(administrator, "contracts.create");
+  const canUpdate = can(administrator, "contracts.update");
   const filtered = useMemo(() => contracts.filter((item) => [item.contract_number, item.title, item.client_name, item.client_company, item.status].some((value) => value?.toLowerCase().includes(query.toLowerCase()))), [contracts, query]);
 
   function update(item: Contract) {
@@ -50,6 +54,7 @@ export default function ContractManagement({ initialContracts, users, adminName,
     event.preventDefault(); setSaving(true); setError("");
     try {
       if (!editing) return;
+      if (!can(administrator, editing.id ? "contracts.update" : "contracts.create")) { setError(`${editing.id ? "Edit" : "Create"} permission is not assigned.`); return; }
       const { id: _id, status: _status, version: _version, content_hash: _hash, provider_signer_name: _providerName, provider_signature: _providerSignature, provider_signed_at: _providerSignedAt, client_signer_name: _clientName, client_signature: _clientSignature, client_signed_at: _clientSignedAt, sent_at: _sentAt, created_at: _createdAt, updated_at: _updatedAt, ...payload } = editing;
       void [_id, _status, _version, _hash, _providerName, _providerSignature, _providerSignedAt, _clientName, _clientSignature, _clientSignedAt, _sentAt, _createdAt, _updatedAt];
       const response = await apiFetch<{ contract: Contract }>(editing.id ? `/admin/contracts/${editing.id}` : "/admin/contracts", { method: editing.id ? "PUT" : "POST", body: JSON.stringify(payload) });
@@ -58,16 +63,19 @@ export default function ContractManagement({ initialContracts, users, adminName,
   }
 
   async function send(item: Contract) {
+    if (!can(administrator, "contracts.update")) { setError("Edit permission is not assigned."); return; }
     if (!window.confirm("Send and lock this contract? Commercial terms cannot be edited after this step.")) return;
     try { const response = await apiFetch<{ contract: Contract }>(`/admin/contracts/${item.id}/send`, { method: "POST", body: "{}" }); update(response.contract); setNotice("Contract locked and available to the client."); } catch (requestError) { setError(readableError(requestError)); }
   }
 
   async function sign(item: Contract) {
+    if (!can(administrator, "contracts.update")) { setError("Edit permission is not assigned."); return; }
     if (!signature || signerName.trim().length < 2) { setError("Enter the authorized signer name and draw a signature."); return; }
     try { const response = await apiFetch<{ contract: Contract }>(`/admin/contracts/${item.id}/sign`, { method: "POST", body: JSON.stringify({ signer_name: signerName, signature }) }); update(response.contract); setSignature(""); setNotice("Provider acceptance recorded."); } catch (requestError) { setError(readableError(requestError)); }
   }
 
   async function finish(item: Contract, status: "completed" | "cancelled") {
+    if (!can(administrator, "contracts.update")) { setError("Edit permission is not assigned."); return; }
     if (!window.confirm(`Mark this contract as ${status}?`)) return;
     try { const response = await apiFetch<{ contract: Contract }>(`/admin/contracts/${item.id}/status`, { method: "PATCH", body: JSON.stringify({ status }) }); update(response.contract); } catch (requestError) { setError(readableError(requestError)); }
   }

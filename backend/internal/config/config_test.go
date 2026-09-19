@@ -10,10 +10,12 @@ func setValidEnvironment(t *testing.T) {
 	t.Setenv("APP_ENV", "test")
 	t.Setenv("DATABASE_URL", "postgres://user:password@localhost:5432/akeluwa?sslmode=disable")
 	t.Setenv("JWT_SECRET", "test-secret-with-more-than-thirty-two-characters")
+	t.Setenv("MFA_ENCRYPTION_KEY", "test-mfa-key-with-more-than-thirty-two-characters")
 	t.Setenv("CORS_ORIGINS", "http://localhost:5173")
 	t.Setenv("COOKIE_SECURE", "false")
 	t.Setenv("COOKIE_SAME_SITE", "lax")
 	t.Setenv("SESSION_TTL", "24h")
+	t.Setenv("TRUST_PROXY_HEADERS", "false")
 	t.Setenv("ADMIN_EMAIL", "")
 	t.Setenv("ADMIN_PASSWORD", "")
 }
@@ -25,7 +27,7 @@ func TestLoadAcceptsValidTestConfiguration(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Load returned an error: %v", err)
 	}
-	if cfg.Environment != "test" || cfg.MaxHeaderBytes == 0 || cfg.ReadHeaderTimeout == 0 {
+	if cfg.Environment != "test" || cfg.TrustProxyHeaders || cfg.MaxHeaderBytes == 0 || cfg.ReadHeaderTimeout == 0 {
 		t.Fatalf("unexpected configuration: %#v", cfg)
 	}
 }

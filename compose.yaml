@@ -27,6 +27,7 @@ services:
       SESSION_TTL: 24h
       COOKIE_SECURE: "false"
       COOKIE_SAME_SITE: lax
+      TRUST_PROXY_HEADERS: "false"
       CORS_ORIGINS: http://localhost:3000,http://localhost:5173,http://localhost:5174
       ADMIN_NAME: AKELUWA Administrator
       ADMIN_EMAIL: admin@localhost.test
