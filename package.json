@@ -8,26 +8,27 @@
   "scripts": {
     "install:ci": "bash scripts/install-ci.sh",
     "dev": "node scripts/with-wrangler-log.mjs vite",
-    "build": "node scripts/with-wrangler-log.mjs vinext build",
+    "build": "node scripts/with-wrangler-log.mjs vite build",
     "start": "node scripts/with-wrangler-log.mjs vinext start",
-    "test": "npm run typecheck && npm run build && node --test tests/*.test.mjs",
-    "test:docs": "node --test tests/documentation.test.mjs",
+    "test": "npm run typecheck && npm run build && node --import ./tests/register-worker-loader.mjs --test tests/*.test.mjs",
+    "test:docs": "node --import ./tests/register-worker-loader.mjs --test tests/documentation.test.mjs",
     "typecheck": "tsc --noEmit",
     "test:browser": "playwright test",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
-    "db:generate": "drizzle-kit generate"
+    "audit:production": "npm audit --omit=dev --audit-level=high",
+    "check": "npm run lint && npm test && npm run audit:production"
   },
   "dependencies": {
     "drizzle-orm": "0.45.2",
     "lucide-react": "^1.47.0",
-    "next": "16.2.6",
+    "next": "16.3.7",
     "qrcode": "^1.5.4",
-    "react": "19.2.6",
-    "react-dom": "19.2.6"
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
   },
   "devDependencies": {
-    "@cloudflare/vite-plugin": "1.37.1",
-    "@cloudflare/workers-types": "^4.20260702.1",
+    "@cloudflare/vite-plugin": "1.62.0",
+    "@cloudflare/workers-types": "5.20260929.1",
     "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "4.2.1",
     "@types/node": "22.19.19",
@@ -35,16 +36,19 @@
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "6.0.2",
-    "@vitejs/plugin-rsc": "0.5.26",
-    "drizzle-kit": "0.31.10",
+    "@vitejs/plugin-rsc": "0.5.34",
     "eslint": "9.39.4",
     "eslint-config-next": "16.2.6",
-    "react-server-dom-webpack": "19.2.6",
+    "react-server-dom-webpack": "19.3.0",
     "tailwindcss": "4.2.1",
     "typescript": "5.9.3",
-    "vinext": "0.0.50",
-    "vite": "8.0.13",
-    "wrangler": "4.92.0"
+    "vinext": "1.0.0",
+    "vite": "8.3.1",
+    "wrangler": "4.143.0"
+  },
+  "overrides": {
+    "fflate": "0.7.5",
+    "undici": "7.30.0"
   },
   "type": "module",
   "displayName": "NOVA/STACK IT Website Concept"

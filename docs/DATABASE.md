@@ -38,11 +38,15 @@ careers
 | `accounting_transactions` | Payments, expenses, receipts, and void records |
 | `admin_audit_logs` | Immutable admin write audit trail |
 | `admin_action_requests` | Delayed destructive-action approval workflow |
+| `mfa_recovery_codes` | Hashed, single-use administrator recovery codes |
+| `api_rate_limits` | Shared request limits across API instances |
 
 ## Data Integrity Rules
 
 - User emails are unique case-insensitively.
 - Inquiry, contract, and invoice records link to the owning customer where applicable.
+- Contract creation validates that the selected active client account owns the contract email. Visibility and client signing use the immutable user ID, avoiding trust in an unverified email-only claim.
+- Sent contracts snapshot company legal/contact identifiers and include them in the SHA-256 content fingerprint so later company-account edits do not rewrite an issued document.
 - Contract and invoice foreign keys preserve records by restricting unsafe deletion or setting optional links to null.
 - Invoice line items and payments are calculated server-side; clients do not choose trusted totals.
 - A posted accounting transaction is voided through a replacement status, preserving financial history.
@@ -65,6 +69,8 @@ careers
 | `010_sub_admin_rbac.sql` | Sub-administrator role, active state, permissions |
 | `011_granular_admin_approvals.sql` | Fine-grained permissions and action review records |
 | `012_client_invoice_access.sql` | Invoice customer ownership |
+| `013_security_operations.sql` | MFA recovery codes and distributed API rate limits |
+| `014_contract_identity.sql` | Locked company legal/contact identity snapshots for issued contracts |
 
 ## Migration Rules
 
@@ -79,4 +85,4 @@ careers
 
 `compose.yaml` creates the local `akeluwa` PostgreSQL database and mounts it in the `akeluwa_postgres` Docker volume. Resetting that volume destroys local data; do it only when intentionally recreating the local environment.
 
-Production uses the `postgres_data` named volume from `deploy/compose.prod.yaml`. Backups and restore drills are an operational requirement before relying on production data.
+Production uses the `postgres_data` named volume from `deploy/compose.prod.yaml`. Follow `docs/OPERATIONS.md` for encrypted off-host backups and restore drills.

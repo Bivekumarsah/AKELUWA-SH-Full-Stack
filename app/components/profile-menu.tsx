@@ -3,7 +3,7 @@
 import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { CircleHelp, ExternalLink, LayoutDashboard, LogOut, Settings2 } from "lucide-react";
+import { CircleHelp, Copy, ExternalLink, LayoutDashboard, LogOut, Settings2, ShieldCheck } from "lucide-react";
 import { API_BASE_URL, apiFetch, readableError, User } from "@/app/lib/api";
 
 type Props = {
@@ -20,6 +20,9 @@ export default function ProfileMenu({ user, onUserChange, showAdminLink = false,
   const [avatar, setAvatar] = useState<File | null>(null);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [mfaCode, setMFACode] = useState("");
+  const [recoveryCodes, setRecoveryCodes] = useState<string[]>([]);
+  const [recoveryCopied, setRecoveryCopied] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const hoverCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -127,6 +130,33 @@ export default function ProfileMenu({ user, onUserChange, showAdminLink = false,
     window.location.replace("/");
   }
 
+  async function regenerateRecoveryCodes() {
+    setSaving(true);
+    setError("");
+    try {
+      const response = await apiFetch<{ recovery_codes: string[] }>("/auth/mfa/recovery-codes", {
+        method: "POST",
+        body: JSON.stringify({ code: mfaCode }),
+      });
+      setRecoveryCodes(response.recovery_codes);
+      setMFACode("");
+    } catch (requestError) {
+      setError(readableError(requestError));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function copyRecoveryCodes() {
+    try {
+      await navigator.clipboard.writeText(recoveryCodes.join("\n"));
+      setRecoveryCopied(true);
+      window.setTimeout(() => setRecoveryCopied(false), 2000);
+    } catch {
+      setError("Copy was unavailable. Store each recovery code manually.");
+    }
+  }
+
   return (
     <>
       <div className="profile-control" ref={menuRef} onMouseEnter={openHoverMenu} onMouseLeave={closeHoverMenu}>
@@ -167,6 +197,18 @@ export default function ProfileMenu({ user, onUserChange, showAdminLink = false,
               <label>Email<input value={user?.email || ""} readOnly aria-readonly="true" /></label>
               <label>Profile picture<input type="file" accept="image/jpeg,image/png,image/webp" onChange={chooseAvatar} /></label>
               <p className="profile-file-note">JPG, PNG or WebP. Maximum 2 MB.{avatar ? ` Selected: ${avatar.name}` : ""}</p>
+              {(user?.role === "admin" || user?.role === "sub_admin") && <section className="profile-security" aria-labelledby="profile-security-title">
+                <div><ShieldCheck aria-hidden="true" /><strong id="profile-security-title">MFA recovery codes</strong></div>
+                {!recoveryCodes.length ? <>
+                  <p>Generate a new single-use set. Existing recovery codes will stop working.</p>
+                  <label>Current authenticator code<input inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} value={mfaCode} onChange={(event) => setMFACode(event.target.value.replace(/\D/g, "").slice(0, 6))} /></label>
+                  <button type="button" onClick={regenerateRecoveryCodes} disabled={saving || mfaCode.length !== 6}>Generate new codes</button>
+                </> : <>
+                  <p>Store these codes securely. They will not be shown again after this dialog closes.</p>
+                  <div className="profile-recovery-codes">{recoveryCodes.map((code) => <code key={code}>{code}</code>)}</div>
+                  <button type="button" onClick={copyRecoveryCodes}><Copy aria-hidden="true" />{recoveryCopied ? "Copied" : "Copy all codes"}</button>
+                </>}
+              </section>}
               {error && <p className="form-alert is-error" role="alert">{error}</p>}
               <div className="profile-modal-actions">
                 {user?.avatar_updated_at && <button className="profile-remove" type="button" onClick={removePhoto} disabled={saving}>Remove photo</button>}

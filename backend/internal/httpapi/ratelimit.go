@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -16,9 +17,10 @@ type rateLimitBucket struct {
 }
 
 type rateLimiter struct {
-	now     func() time.Time
-	mu      sync.Mutex
-	buckets map[string]rateLimitBucket
+	now               func() time.Time
+	mu                sync.Mutex
+	buckets           map[string]rateLimitBucket
+	distributedChecks atomic.Uint64
 }
 
 func newRateLimiter(now func() time.Time) *rateLimiter {
@@ -60,8 +62,27 @@ func (l *rateLimiter) allow(key string, maxRequests int, window time.Duration) b
 func (a *API) limitRequests(name string, maxRequests int, window time.Duration, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		key := name + ":" + a.clientIP(r)
-		if !a.rateLimits.allow(key, maxRequests, window) {
-			w.Header().Set("Retry-After", formatRetryAfter(window))
+		allowed := false
+		retryAfter := window
+		if a.store == nil {
+			allowed = a.rateLimits.allow(key, maxRequests, window)
+		} else {
+			var err error
+			allowed, retryAfter, err = a.store.AllowRateLimit(r.Context(), key, maxRequests, window)
+			if err != nil {
+				a.logger.Error("distributed rate limit failed", "key", name, "error", err)
+				writeError(w, http.StatusServiceUnavailable, "request protection is temporarily unavailable")
+				return
+			}
+			if a.rateLimits.distributedChecks.Add(1)%1000 == 0 {
+				if err := a.store.PurgeExpiredRateLimits(r.Context()); err != nil {
+					a.logger.Warn("rate limit cleanup failed", "error", err)
+				}
+			}
+		}
+		if !allowed {
+			a.metrics.rateLimitRejected.Add(1)
+			w.Header().Set("Retry-After", formatRetryAfter(retryAfter))
 			writeError(w, http.StatusTooManyRequests, "too many requests; please try again later")
 			return
 		}

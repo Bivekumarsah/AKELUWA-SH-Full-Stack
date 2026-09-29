@@ -1,10 +1,38 @@
 package auth
 
 import (
+	"bytes"
 	"encoding/base32"
+	"strings"
 	"testing"
 	"time"
 )
+
+func TestRecoveryCodesAreUniqueAndHashNormalized(t *testing.T) {
+	codes, err := GenerateRecoveryCodes(10)
+	if err != nil {
+		t.Fatalf("GenerateRecoveryCodes returned an error: %v", err)
+	}
+	seen := make(map[string]struct{}, len(codes))
+	for _, code := range codes {
+		if _, exists := seen[code]; exists {
+			t.Fatalf("duplicate recovery code generated: %s", code)
+		}
+		seen[code] = struct{}{}
+		hash, ok := RecoveryCodeHash(code)
+		if !ok {
+			t.Fatalf("generated recovery code was rejected: %s", code)
+		}
+		compact := strings.ToLower(strings.ReplaceAll(code, "-", ""))
+		normalizedHash, ok := RecoveryCodeHash(compact)
+		if !ok || !bytes.Equal(hash, normalizedHash) {
+			t.Fatal("recovery code hashing should ignore case and separators")
+		}
+	}
+	if _, ok := RecoveryCodeHash("not-a-valid-code"); ok {
+		t.Fatal("invalid recovery code was accepted")
+	}
+}
 
 func TestPasswordHashRoundTrip(t *testing.T) {
 	hash, err := HashPassword("correct-horse-battery-staple")

@@ -54,6 +54,47 @@ test("desktop authentication forms keep their primary actions in view", async ({
   }
 });
 
+test("administrator enrollment requires recovery codes to be saved", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.route("**/api/v1/auth/**", async route => {
+    const path = new URL(route.request().url()).pathname;
+    if (path.endsWith("/auth/me")) {
+      await route.fulfill({ status: 401, json: { error: "authentication required" } });
+      return;
+    }
+    if (path.endsWith("/auth/login")) {
+      await route.fulfill({ status: 202, json: {
+        mfa_required: true,
+        enrollment_required: true,
+        challenge_token: "challenge",
+        secret: "JBSWY3DPEHPK3PXP",
+        otpauth_uri: "otpauth://totp/AKELUWA%20SH:admin@example.com?secret=JBSWY3DPEHPK3PXP&issuer=AKELUWA+SH",
+      } });
+      return;
+    }
+    await route.fulfill({ status: 200, json: {
+      user: { id: "admin", name: "Admin", email: "admin@example.com", role: "admin", admin_permissions: [], account_active: true, mfa_enabled: true, created_at: "2026-01-01T00:00:00Z" },
+      recovery_codes: Array.from({ length: 10 }, (_, index) => `ABCD-EFGH-JKLM-${String(index).padStart(4, "2")}`),
+    } });
+  });
+
+  await page.goto("/login");
+  await page.getByLabel("Email address").fill("admin@example.com");
+  await page.getByLabel("Password").fill("correct-horse-battery-staple");
+  await page.getByRole("button", { name: "Sign in securely" }).click();
+  await expect(page.getByLabel("Authenticator enrollment QR code")).toBeVisible();
+  await page.getByLabel("Authenticator code").fill("123456");
+  await page.getByRole("button", { name: "Enable MFA and continue" }).click();
+
+  const continueButton = page.getByRole("button", { name: "Continue to administration" });
+  await expect(page.getByRole("heading", { name: "Save recovery." })).toBeVisible();
+  await expect(page.locator(".recovery-code-panel code")).toHaveCount(10);
+  await expect(continueButton).toBeDisabled();
+  await page.getByLabel("I stored these codes securely").check();
+  await expect(continueButton).toBeEnabled();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});
+
 for (const width of [360, 390, 768, 1440]) {
   test(`public layouts fit ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });

@@ -203,6 +203,13 @@ export type Contract = {
   client_email: string;
   client_company?: string;
   provider_name: string;
+  provider_legal_name: string;
+  provider_email: string;
+  provider_phone: string;
+  provider_website: string;
+  provider_registration_number: string;
+  provider_tax_id: string;
+  provider_address: string;
   currency: string;
   amount_cents: number;
   start_date: string;

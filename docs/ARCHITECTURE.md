@@ -42,7 +42,7 @@ The frontend must not be trusted to protect a record. A hidden button or absent 
 
 ## Authentication And Authorization
 
-Sessions are signed HttpOnly cookies. Passwords use bcrypt. Administrators and sub-administrators require TOTP MFA after password verification.
+Sessions are signed HttpOnly cookies. Passwords use bcrypt. Administrators and sub-administrators require TOTP MFA after password verification and receive hashed, single-use recovery codes. Sensitive public endpoints use PostgreSQL-coordinated limits so protection is consistent across replicas.
 
 | Request type | Protection |
 |---|---|
@@ -70,6 +70,8 @@ Internet -> Caddy (HTTPS) -> Go API -> PostgreSQL
 ```
 
 Caddy is the only public production container. The API and database remain on the private Docker network. The browser frontend must be built with the public API URL.
+
+The API publishes Prometheus metrics only on its private network; Caddy blocks the metrics path publicly. Database backup and restore-drill scripts live under `deploy/`, and the production operations procedure is documented in `docs/OPERATIONS.md`.
 
 ## Ownership Rules
 

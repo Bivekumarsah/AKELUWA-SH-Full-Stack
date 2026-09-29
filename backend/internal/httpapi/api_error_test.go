@@ -1,7 +1,12 @@
 package httpapi
 
 import (
+	"bytes"
+	"encoding/base64"
 	"errors"
+	"image"
+	"image/color"
+	"image/png"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -72,6 +77,50 @@ func TestDecodeCompanyAccount(t *testing.T) {
 	request = httptest.NewRequest(http.MethodPut, "/api/v1/admin/company-account", strings.NewReader(invalidBody))
 	if _, ok := api.decodeCompanyAccount(response, request); ok || response.Code != http.StatusUnprocessableEntity {
 		t.Fatalf("invalid timezone: expected 422, got %d", response.Code)
+	}
+}
+
+func TestDecodeContractRequiresRegisteredClientID(t *testing.T) {
+	body := `{
+		"contract_number":"ak-2026-101","title":"Website delivery agreement",
+		"client_name":"Future Client","client_email":"CLIENT@EXAMPLE.COM","provider_name":"AKELUWA SH",
+		"currency":"npr","amount_cents":150000,"start_date":"2026-10-01","end_date":"2026-11-15",
+		"scope":"Build the agreed website.","deliverables":"Production website and source code.",
+		"milestones":"Design, development, review, and launch.","payment_terms":"Fifty percent deposit and balance on acceptance.",
+		"revision_terms":"Two revision rounds are included.","support_terms":"Thirty days of defect support.",
+		"ownership_terms":"Custom work transfers after full payment.","confidentiality_terms":"Both parties protect confidential information.",
+		"termination_terms":"Material breach requires notice and a cure period.","dispute_terms":"Disputes follow the law and venue stated by the parties.",
+		"special_terms":""
+	}`
+	api := &API{cfg: config.Config{MaxRequestBytes: 1 << 20}}
+	response := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodPost, "/api/v1/admin/contracts", strings.NewReader(body))
+	if _, ok := api.decodeContract(response, request); ok || response.Code != http.StatusUnprocessableEntity {
+		t.Fatalf("contract without a selected client: expected 422, got %d", response.Code)
+	}
+}
+
+func TestDecodeSignatureRequiresRealPNG(t *testing.T) {
+	canvas := image.NewRGBA(image.Rect(0, 0, 300, 100))
+	for x := 30; x < 120; x++ {
+		canvas.Set(x, 50, color.RGBA{R: 23, G: 37, B: 84, A: 255})
+	}
+	var pngBuffer bytes.Buffer
+	if err := png.Encode(&pngBuffer, canvas); err != nil {
+		t.Fatalf("encode test signature: %v", err)
+	}
+	pngData := base64.StdEncoding.EncodeToString(pngBuffer.Bytes())
+	api := &API{cfg: config.Config{MaxRequestBytes: 1 << 20}}
+	response := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodPost, "/api/v1/account/contracts/id/sign", strings.NewReader(`{"signer_name":"Client Name","signature":"data:image/png;base64,`+pngData+`"}`))
+	if _, _, ok := api.decodeSignature(response, request); !ok {
+		t.Fatalf("valid PNG signature was rejected with status %d: %s", response.Code, response.Body.String())
+	}
+
+	response = httptest.NewRecorder()
+	request = httptest.NewRequest(http.MethodPost, "/api/v1/account/contracts/id/sign", strings.NewReader(`{"signer_name":"Client Name","signature":"data:image/png;base64,bm90LWEtcG5n"}`))
+	if _, _, ok := api.decodeSignature(response, request); ok || response.Code != http.StatusUnprocessableEntity {
+		t.Fatalf("fake PNG signature: expected 422, got %d", response.Code)
 	}
 }
 

@@ -57,6 +57,7 @@ next-env.d.ts
 *.tsbuildinfo
 /dist/
 /.wrangler/
+/.vinext/
 /.sites-runtime/
 /.openai/
 /outputs/
@@ -74,9 +75,13 @@ next-env.d.ts
 *.sqlite
 *.sqlite3
 *.dump
+/deploy/backups/
 
 # backend build artifacts
 backend/bin/
 backend/tmp/
+backend/api
 backend/*.exe
 backend/*.test
+backend/*.out
+backend/*.prof

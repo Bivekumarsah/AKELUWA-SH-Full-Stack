@@ -191,6 +191,13 @@ type Contract struct {
 	ClientEmail          string     `json:"client_email"`
 	ClientCompany        string     `json:"client_company,omitempty"`
 	ProviderName         string     `json:"provider_name"`
+	ProviderLegalName    string     `json:"provider_legal_name"`
+	ProviderEmail        string     `json:"provider_email"`
+	ProviderPhone        string     `json:"provider_phone"`
+	ProviderWebsite      string     `json:"provider_website"`
+	ProviderRegistration string     `json:"provider_registration_number"`
+	ProviderTaxID        string     `json:"provider_tax_id"`
+	ProviderAddress      string     `json:"provider_address"`
 	Currency             string     `json:"currency"`
 	AmountCents          int64      `json:"amount_cents"`
 	StartDate            string     `json:"start_date"`

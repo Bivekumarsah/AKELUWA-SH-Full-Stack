@@ -14,6 +14,7 @@ type LoginResponse = {
   challenge_token?: string;
   secret?: string;
   otpauth_uri?: string;
+  recovery_codes?: string[];
 };
 
 export default function LoginPage() {
@@ -29,6 +30,10 @@ export default function LoginPage() {
   const [qrError, setQRError] = useState("");
   const [copied, setCopied] = useState(false);
   const [code, setCode] = useState("");
+  const [recoveryMode, setRecoveryMode] = useState(false);
+  const [recoveryCodes, setRecoveryCodes] = useState<string[]>([]);
+  const [recoveryCodesCopied, setRecoveryCodesCopied] = useState(false);
+  const [recoveryCodesSaved, setRecoveryCodesSaved] = useState(false);
   const qrCanvas = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -79,10 +84,15 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
     try {
-      await apiFetch<{ user: User }>("/auth/mfa/verify", {
+      const result = await apiFetch<LoginResponse>("/auth/mfa/verify", {
         method: "POST",
         body: JSON.stringify({ challenge_token: challengeToken, code }),
       });
+      if (result.recovery_codes?.length) {
+        setRecoveryCodes(result.recovery_codes);
+        setCode("");
+        return;
+      }
       window.location.replace("/admin");
     } catch (requestError) {
       setError(readableError(requestError));
@@ -99,6 +109,10 @@ export default function LoginPage() {
     setQRError("");
     setCopied(false);
     setCode("");
+    setRecoveryMode(false);
+    setRecoveryCodes([]);
+    setRecoveryCodesCopied(false);
+    setRecoveryCodesSaved(false);
     setPassword("");
     setError("");
   }
@@ -113,20 +127,39 @@ export default function LoginPage() {
     }
   }
 
+  async function copyRecoveryCodes() {
+    try {
+      await navigator.clipboard.writeText(recoveryCodes.join("\n"));
+      setRecoveryCodesCopied(true);
+      window.setTimeout(() => setRecoveryCodesCopied(false), 2000);
+    } catch {
+      setError("Copy was unavailable. Store each recovery code manually.");
+    }
+  }
+
   if (checkingSession) {
     return <main className="portal-shell"><p className="auth-session-state" role="status">Checking your secure session...</p></main>;
   }
 
   return (
     <main className="portal-shell">
-      <section className={`auth-card${enrollmentRequired ? " has-mfa-enrollment" : ""}`}>
+      <section className={`auth-card${enrollmentRequired || recoveryCodes.length ? " has-mfa-enrollment" : ""}`}>
         <Link className="auth-brand" href="/" aria-label="Return to AKELUWA SH">
           <Image src="/company-logo.png" alt="" width={48} height={48} priority unoptimized />
           <span>SH</span>
         </Link>
-        <p className="portal-kicker">SECURE ACCOUNT ACCESS / {challengeToken ? "002" : "001"}</p>
-        <h1>{challengeToken ? <>Verify<br /><em>access.</em></> : <>Welcome<br /><em>back.</em></>}</h1>
-        {!challengeToken ? <>
+        <p className="portal-kicker">SECURE ACCOUNT ACCESS / {recoveryCodes.length ? "003" : challengeToken ? "002" : "001"}</p>
+        <h1>{recoveryCodes.length ? <>Save<br /><em>recovery.</em></> : challengeToken ? <>Verify<br /><em>access.</em></> : <>Welcome<br /><em>back.</em></>}</h1>
+        {recoveryCodes.length ? <>
+          <p className="portal-intro">Store these single-use codes in a secure password manager. They will not be shown again.</p>
+          <div className="recovery-code-panel" aria-label="MFA recovery codes">
+            {recoveryCodes.map((recoveryCode) => <code key={recoveryCode}>{recoveryCode}</code>)}
+          </div>
+          <button className="recovery-copy" type="button" onClick={copyRecoveryCodes}>{recoveryCodesCopied ? "Copied" : "Copy all codes"}</button>
+          <label className="recovery-confirm"><input type="checkbox" checked={recoveryCodesSaved} onChange={(event) => setRecoveryCodesSaved(event.target.checked)} />I stored these codes securely</label>
+          {error && <p className="form-alert is-error" role="alert">{error}</p>}
+          <button className="portal-primary" type="button" disabled={!recoveryCodesSaved} onClick={() => window.location.replace("/admin")}>Continue to administration</button>
+        </> : !challengeToken ? <>
           <p className="portal-intro">Customers, administrators, and authorized staff use this secure sign-in. Your account access is assigned automatically after verification.</p>
           <form className="portal-form" onSubmit={submit}>
             <label>Email address<input type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} required /></label>
@@ -136,7 +169,7 @@ export default function LoginPage() {
           </form>
           <p className="auth-switch">New to AKELUWA? <Link href="/register">Create an account</Link></p>
         </> : <>
-          <p className="portal-intro">{enrollmentRequired ? "Add the setup key to your authenticator app, then enter its six-digit code." : "Enter the six-digit code from your authenticator app."}</p>
+          <p className="portal-intro">{enrollmentRequired ? "Add the setup key to your authenticator app, then enter its six-digit code." : recoveryMode ? "Enter one unused recovery code." : "Enter the six-digit code from your authenticator app."}</p>
           {enrollmentRequired && <div className="mfa-enrollment">
             <div className="mfa-qr-panel">
               <canvas ref={qrCanvas} width={240} height={240} role="img" aria-label="Authenticator enrollment QR code" />
@@ -146,10 +179,11 @@ export default function LoginPage() {
           </div>}
           {qrError && <p className="form-alert is-error" role="alert">{qrError}</p>}
           <form className="portal-form" onSubmit={verifyCode}>
-            <label>Authenticator code<input className="mfa-code-input" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} value={code} onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))} required autoFocus /></label>
+            <label>{recoveryMode ? "Recovery code" : "Authenticator code"}<input className="mfa-code-input" inputMode={recoveryMode ? "text" : "numeric"} autoComplete={recoveryMode ? "off" : "one-time-code"} pattern={recoveryMode ? "[A-HJ-NP-Z2-9-]{16,19}" : "[0-9]{6}"} maxLength={recoveryMode ? 19 : 6} value={code} onChange={(event) => setCode(recoveryMode ? event.target.value.toUpperCase().replace(/[^A-HJ-NP-Z2-9-]/g, "").slice(0, 19) : event.target.value.replace(/\D/g, "").slice(0, 6))} required autoFocus /></label>
             {error && <p className="form-alert is-error" role="alert">{error}</p>}
-            <button className="portal-primary" type="submit" disabled={loading || code.length !== 6}>{loading ? "Verifying..." : enrollmentRequired ? "Enable MFA and continue" : "Verify and continue"}</button>
+            <button className="portal-primary" type="submit" disabled={loading || (recoveryMode ? code.replaceAll("-", "").length !== 16 : code.length !== 6)}>{loading ? "Verifying..." : enrollmentRequired ? "Enable MFA and continue" : "Verify and continue"}</button>
           </form>
+          {!enrollmentRequired && <button className="auth-back" type="button" onClick={() => { setRecoveryMode((current) => !current); setCode(""); setError(""); }}>{recoveryMode ? "Use authenticator code" : "Use a recovery code"}</button>}
           <button className="auth-back" type="button" onClick={restartLogin}>Back to sign in</button>
         </>}
       </section>

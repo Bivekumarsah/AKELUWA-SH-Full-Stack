@@ -148,6 +148,8 @@ Migrations execute once, in number order. Never edit a migration that may have r
 | `010_sub_admin_rbac.sql` | Sub-administrator role, active status, and permissions |
 | `011_granular_admin_approvals.sql` | Action-level permissions and full-admin destructive-action reviews |
 | `012_client_invoice_access.sql` | Customer ownership for invoice access |
+| `013_security_operations.sql` | Hashed MFA recovery codes and shared rate limits |
+| `014_contract_identity.sql` | Locked company identity snapshots for issued contracts |
 
 ## API Guide
 
@@ -155,7 +157,7 @@ The router is the complete API source of truth: `backend/internal/httpapi/api.go
 
 | API area | Base path | Examples |
 |---|---|---|
-| Health | `/livez`, `/readyz`, `/healthz` | Process liveness and database readiness |
+| Health | `/livez`, `/readyz`, `/healthz`, `/metrics` | Process health and private-network Prometheus metrics |
 | Authentication | `/api/v1/auth` | Register, login, MFA verification, current user, logout |
 | Public content | `/api/v1` | Services, portfolio, company brand, downloads, careers, inquiry submission |
 | Customer account | `/api/v1/account` | Profile, avatar, inquiries, contracts, invoices, contract signing |
@@ -212,6 +214,7 @@ Production requires independent strong secrets for `JWT_SECRET`, `MFA_ENCRYPTION
 | `npm test` | TypeScript, production build, rendered-page tests, CSV tests |
 | `npm run test:browser` | Playwright public navigation, recovery, auth layout, and responsive checks |
 | `npm run test:docs` | Documentation structure and source-reference validation |
+| `npm run audit:production` | Fails on high-severity production dependency advisories |
 | `go test ./...` from `backend/` | Go unit tests and integration tests when configured |
 
 PostgreSQL-backed Go tests require an isolated `TEST_DATABASE_URL`. They create temporary records and must never target a production database.
@@ -268,6 +271,8 @@ When frontend and API use different top-level domains, set `COOKIE_SAME_SITE=non
 ## Operational Notes
 
 - `/livez` confirms that the Go process is running; `/readyz` confirms database connectivity.
+- `/metrics` is available to private-network monitoring and blocked at the public proxy.
+- Run `deploy/backup-db.sh` on a protected schedule and `deploy/verify-backup.sh` in a restore drill; see `docs/OPERATIONS.md`.
 - Use `IMPROVEMENTS.md` for completed engineering work, remaining risks, and the security/testing history.
 - Keep `.env.local`, `backend/.env`, and `deploy/.env` private.
 - Do not edit generated build output, Docker database volumes, or completed production migrations manually.

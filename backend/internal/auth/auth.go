@@ -19,6 +19,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+const recoveryCodeAlphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+
 type Claims struct {
 	UserID      string `json:"uid"`
 	Role        string `json:"role"`
@@ -155,6 +157,42 @@ func GenerateTOTPSecret() (string, error) {
 		return "", fmt.Errorf("generate TOTP secret: %w", err)
 	}
 	return base32.StdEncoding.WithPadding(base32.NoPadding).EncodeToString(value), nil
+}
+
+func GenerateRecoveryCodes(count int) ([]string, error) {
+	if count < 1 || count > 20 {
+		return nil, fmt.Errorf("recovery code count must be between 1 and 20")
+	}
+	codes := make([]string, count)
+	for index := range codes {
+		random := make([]byte, 16)
+		if _, err := rand.Read(random); err != nil {
+			return nil, fmt.Errorf("generate recovery code: %w", err)
+		}
+		var value strings.Builder
+		for position, item := range random {
+			if position > 0 && position%4 == 0 {
+				value.WriteByte('-')
+			}
+			value.WriteByte(recoveryCodeAlphabet[int(item)&31])
+		}
+		codes[index] = value.String()
+	}
+	return codes, nil
+}
+
+func RecoveryCodeHash(code string) ([]byte, bool) {
+	normalized := strings.ToUpper(strings.ReplaceAll(strings.TrimSpace(code), "-", ""))
+	if len(normalized) != 16 {
+		return nil, false
+	}
+	for _, character := range normalized {
+		if !strings.ContainsRune(recoveryCodeAlphabet, character) {
+			return nil, false
+		}
+	}
+	digest := sha256.Sum256([]byte(normalized))
+	return digest[:], true
 }
 
 func TOTPURI(secret, account, issuer string) string {

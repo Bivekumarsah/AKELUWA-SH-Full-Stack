@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/akeluwa/software-hub/backend/internal/model"
 	"github.com/jackc/pgx/v5"
@@ -379,7 +380,9 @@ func (s *Store) DashboardStats(ctx context.Context) (model.DashboardStats, error
 }
 
 const contractColumns = `id::text, user_id::text, COALESCE(inquiry_id::text, ''), contract_number, title,
-	client_name, client_email, COALESCE(client_company, ''), provider_name, currency, amount_cents,
+	client_name, client_email, COALESCE(client_company, ''), provider_name, provider_legal_name,
+	provider_email, provider_phone, provider_website, provider_registration_number, provider_tax_id,
+	provider_address, currency, amount_cents,
 	start_date::text, end_date::text, scope, deliverables, milestones, payment_terms, revision_terms,
 	support_terms, ownership_terms, confidentiality_terms, termination_terms, dispute_terms, special_terms,
 	status, version, content_hash, provider_signer_name, provider_signature, provider_signed_at,
@@ -392,7 +395,9 @@ type scanner interface {
 func scanContract(row scanner) (model.Contract, error) {
 	var item model.Contract
 	err := row.Scan(&item.ID, &item.UserID, &item.InquiryID, &item.ContractNumber, &item.Title,
-		&item.ClientName, &item.ClientEmail, &item.ClientCompany, &item.ProviderName, &item.Currency, &item.AmountCents,
+		&item.ClientName, &item.ClientEmail, &item.ClientCompany, &item.ProviderName, &item.ProviderLegalName,
+		&item.ProviderEmail, &item.ProviderPhone, &item.ProviderWebsite, &item.ProviderRegistration,
+		&item.ProviderTaxID, &item.ProviderAddress, &item.Currency, &item.AmountCents,
 		&item.StartDate, &item.EndDate, &item.Scope, &item.Deliverables, &item.Milestones, &item.PaymentTerms,
 		&item.RevisionTerms, &item.SupportTerms, &item.OwnershipTerms, &item.ConfidentialityTerms,
 		&item.TerminationTerms, &item.DisputeTerms, &item.SpecialTerms, &item.Status, &item.Version,
@@ -428,14 +433,18 @@ func (s *Store) ListContracts(ctx context.Context, userID string) ([]model.Contr
 func (s *Store) CreateContract(ctx context.Context, item model.Contract) (model.Contract, error) {
 	row := s.pool.QueryRow(ctx, `INSERT INTO contracts (
 		user_id, inquiry_id, contract_number, title, client_name, client_email, client_company,
-		provider_name, currency, amount_cents, start_date, end_date, scope, deliverables, milestones,
+		provider_name, provider_legal_name, provider_email, provider_phone, provider_website,
+		provider_registration_number, provider_tax_id, provider_address,
+		currency, amount_cents, start_date, end_date, scope, deliverables, milestones,
 		payment_terms, revision_terms, support_terms, ownership_terms, confidentiality_terms,
 		termination_terms, dispute_terms, special_terms
-	) VALUES ($1, NULLIF($2, '')::uuid, $3, $4, $5, lower($6), NULLIF($7, ''), $8, $9, $10,
-		$11::date, $12::date, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)
+	) VALUES ($1, NULLIF($2, '')::uuid, $3, $4, $5, lower($6), NULLIF($7, ''), $8, $9, $10, $11, $12,
+		$13, $14, $15, $16, $17, $18::date, $19::date, $20, $21, $22, $23, $24,
+		$25, $26, $27, $28, $29, $30)
 	RETURNING `+contractColumns, item.UserID, item.InquiryID, item.ContractNumber, item.Title, item.ClientName,
-		item.ClientEmail, item.ClientCompany, item.ProviderName, item.Currency, item.AmountCents, item.StartDate,
-		item.EndDate, item.Scope, item.Deliverables, item.Milestones, item.PaymentTerms, item.RevisionTerms,
+		item.ClientEmail, item.ClientCompany, item.ProviderName, item.ProviderLegalName, item.ProviderEmail,
+		item.ProviderPhone, item.ProviderWebsite, item.ProviderRegistration, item.ProviderTaxID, item.ProviderAddress,
+		item.Currency, item.AmountCents, item.StartDate, item.EndDate, item.Scope, item.Deliverables, item.Milestones, item.PaymentTerms, item.RevisionTerms,
 		item.SupportTerms, item.OwnershipTerms, item.ConfidentialityTerms, item.TerminationTerms, item.DisputeTerms, item.SpecialTerms)
 	return scanContract(row)
 }
@@ -443,13 +452,17 @@ func (s *Store) CreateContract(ctx context.Context, item model.Contract) (model.
 func (s *Store) UpdateContract(ctx context.Context, id string, item model.Contract) (model.Contract, error) {
 	row := s.pool.QueryRow(ctx, `UPDATE contracts SET user_id=$2, inquiry_id=NULLIF($3, '')::uuid,
 		contract_number=$4, title=$5, client_name=$6, client_email=lower($7), client_company=NULLIF($8, ''),
-		provider_name=$9, currency=$10, amount_cents=$11, start_date=$12::date, end_date=$13::date,
-		scope=$14, deliverables=$15, milestones=$16, payment_terms=$17, revision_terms=$18,
-		support_terms=$19, ownership_terms=$20, confidentiality_terms=$21, termination_terms=$22,
-		dispute_terms=$23, special_terms=$24, version=version+1
+		provider_name=$9, provider_legal_name=$10, provider_email=$11, provider_phone=$12,
+		provider_website=$13, provider_registration_number=$14, provider_tax_id=$15, provider_address=$16,
+		currency=$17, amount_cents=$18, start_date=$19::date, end_date=$20::date,
+		scope=$21, deliverables=$22, milestones=$23, payment_terms=$24, revision_terms=$25,
+		support_terms=$26, ownership_terms=$27, confidentiality_terms=$28, termination_terms=$29,
+		dispute_terms=$30, special_terms=$31, version=version+1
 		WHERE id=$1 AND status='draft' RETURNING `+contractColumns, id, item.UserID, item.InquiryID,
 		item.ContractNumber, item.Title, item.ClientName, item.ClientEmail, item.ClientCompany, item.ProviderName,
-		item.Currency, item.AmountCents, item.StartDate, item.EndDate, item.Scope, item.Deliverables, item.Milestones,
+		item.ProviderLegalName, item.ProviderEmail, item.ProviderPhone, item.ProviderWebsite,
+		item.ProviderRegistration, item.ProviderTaxID, item.ProviderAddress, item.Currency, item.AmountCents,
+		item.StartDate, item.EndDate, item.Scope, item.Deliverables, item.Milestones,
 		item.PaymentTerms, item.RevisionTerms, item.SupportTerms, item.OwnershipTerms, item.ConfidentialityTerms,
 		item.TerminationTerms, item.DisputeTerms, item.SpecialTerms)
 	result, err := scanContract(row)
@@ -457,12 +470,22 @@ func (s *Store) UpdateContract(ctx context.Context, id string, item model.Contra
 }
 
 func (s *Store) SendContract(ctx context.Context, id string) (model.Contract, error) {
-	row := s.pool.QueryRow(ctx, `UPDATE contracts SET status='pending', sent_at=now(),
-		content_hash=encode(digest(concat_ws('|', contract_number, version::text, title, client_name,
-		client_email, provider_name, currency, amount_cents::text, start_date::text, end_date::text,
-		scope, deliverables, milestones, payment_terms, revision_terms, support_terms, ownership_terms,
-		confidentiality_terms, termination_terms, dispute_terms, special_terms), 'sha256'), 'hex')
-		WHERE id=$1 AND status='draft' RETURNING `+contractColumns, id)
+	row := s.pool.QueryRow(ctx, `WITH updated AS (
+		UPDATE contracts AS c SET status='pending', sent_at=now(),
+		provider_name=COALESCE(NULLIF(ca.display_name, ''), c.provider_name),
+		provider_legal_name=ca.legal_name, provider_email=ca.primary_email, provider_phone=ca.phone,
+		provider_website=ca.website_url, provider_registration_number=ca.registration_number,
+		provider_tax_id=ca.tax_id, provider_address=concat_ws(', ', NULLIF(ca.address_line, ''),
+			NULLIF(ca.city, ''), NULLIF(ca.region, ''), NULLIF(ca.postal_code, ''), NULLIF(ca.country, '')),
+		content_hash=encode(digest(concat_ws('|', c.contract_number, c.version::text, c.title, c.client_name,
+		c.client_email, COALESCE(NULLIF(ca.display_name, ''), c.provider_name), ca.legal_name, ca.primary_email,
+		ca.phone, ca.website_url, ca.registration_number, ca.tax_id, ca.address_line, ca.city, ca.region,
+		ca.postal_code, ca.country, c.currency, c.amount_cents::text, c.start_date::text, c.end_date::text,
+		c.scope, c.deliverables, c.milestones, c.payment_terms, c.revision_terms, c.support_terms, c.ownership_terms,
+		c.confidentiality_terms, c.termination_terms, c.dispute_terms, c.special_terms), 'sha256'), 'hex')
+		FROM company_account AS ca WHERE c.id=$1 AND c.status='draft' AND ca.singleton=true
+		RETURNING c.*
+	) SELECT `+contractColumns+` FROM updated`, id)
 	item, err := scanContract(row)
 	return item, mapNotFound(err)
 }
@@ -675,6 +698,83 @@ func (s *Store) EnableUserMFA(ctx context.Context, id string) error {
 		return ErrNotFound
 	}
 	return nil
+}
+
+func (s *Store) EnableUserMFAWithRecoveryCodes(ctx context.Context, id string, hashes [][]byte) error {
+	if len(hashes) == 0 {
+		return fmt.Errorf("at least one MFA recovery code is required")
+	}
+	return s.WithTransaction(ctx, func(tx *Store) error {
+		command, err := tx.pool.Exec(ctx, `UPDATE users SET mfa_enabled=true WHERE id=$1 AND mfa_secret IS NOT NULL`, id)
+		if err != nil {
+			return err
+		}
+		if command.RowsAffected() == 0 {
+			return ErrNotFound
+		}
+		if _, err := tx.pool.Exec(ctx, `DELETE FROM mfa_recovery_codes WHERE user_id=$1`, id); err != nil {
+			return err
+		}
+		for _, hash := range hashes {
+			if _, err := tx.pool.Exec(ctx, `INSERT INTO mfa_recovery_codes (user_id, code_hash) VALUES ($1, $2)`, id, hash); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
+func (s *Store) ReplaceMFARecoveryCodes(ctx context.Context, id string, hashes [][]byte) error {
+	if len(hashes) == 0 {
+		return fmt.Errorf("at least one MFA recovery code is required")
+	}
+	return s.WithTransaction(ctx, func(tx *Store) error {
+		if _, err := tx.pool.Exec(ctx, `DELETE FROM mfa_recovery_codes WHERE user_id=$1`, id); err != nil {
+			return err
+		}
+		for _, hash := range hashes {
+			if _, err := tx.pool.Exec(ctx, `INSERT INTO mfa_recovery_codes (user_id, code_hash) VALUES ($1, $2)`, id, hash); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
+func (s *Store) ConsumeMFARecoveryCode(ctx context.Context, id string, hash []byte) (bool, error) {
+	command, err := s.pool.Exec(ctx, `UPDATE mfa_recovery_codes
+		SET used_at=now()
+		WHERE user_id=$1 AND code_hash=$2 AND used_at IS NULL`, id, hash)
+	if err != nil {
+		return false, err
+	}
+	return command.RowsAffected() == 1, nil
+}
+
+func (s *Store) AllowRateLimit(ctx context.Context, key string, maxRequests int, window time.Duration) (bool, time.Duration, error) {
+	var count int
+	var expiresAt time.Time
+	err := s.pool.QueryRow(ctx, `
+		INSERT INTO api_rate_limits (key, request_count, expires_at)
+		VALUES ($1, 1, now() + ($2 * interval '1 second'))
+		ON CONFLICT (key) DO UPDATE SET
+			request_count = CASE WHEN api_rate_limits.expires_at <= now() THEN 1 ELSE api_rate_limits.request_count + 1 END,
+			expires_at = CASE WHEN api_rate_limits.expires_at <= now() THEN now() + ($2 * interval '1 second') ELSE api_rate_limits.expires_at END
+		RETURNING request_count, expires_at
+	`, key, int64(window/time.Second)).Scan(&count, &expiresAt)
+	if err != nil {
+		return false, 0, err
+	}
+	retryAfter := time.Until(expiresAt)
+	if retryAfter < time.Second {
+		retryAfter = time.Second
+	}
+	return count <= maxRequests, retryAfter, nil
+}
+
+func (s *Store) PurgeExpiredRateLimits(ctx context.Context) error {
+	_, err := s.pool.Exec(ctx, `DELETE FROM api_rate_limits WHERE expires_at < now() - interval '1 hour'`)
+	return err
 }
 
 func (s *Store) CreateAdminAuditLog(ctx context.Context, item model.AdminAuditLog) error {

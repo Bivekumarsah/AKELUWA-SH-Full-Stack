@@ -1,10 +1,13 @@
 package httpapi
 
 import (
+	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"image/png"
 	"io"
 	"log/slog"
 	"math"
@@ -88,6 +91,7 @@ type API struct {
 	logger     *slog.Logger
 	origins    map[string]struct{}
 	rateLimits *rateLimiter
+	metrics    apiMetrics
 }
 
 func New(cfg config.Config, data *store.Store, tokens *auth.Manager, mfaSecrets *auth.SecretCipher, logger *slog.Logger) *API {
@@ -103,9 +107,11 @@ func (a *API) Router() http.Handler {
 	mux.HandleFunc("GET /livez", a.live)
 	mux.HandleFunc("GET /readyz", a.health)
 	mux.HandleFunc("GET /healthz", a.health)
+	mux.HandleFunc("GET /metrics", a.prometheusMetrics)
 	mux.Handle("POST /api/v1/auth/register", a.limitRequests("register", 5, time.Hour, http.HandlerFunc(a.register)))
 	mux.Handle("POST /api/v1/auth/login", a.limitRequests("login", 8, time.Minute, http.HandlerFunc(a.login)))
 	mux.Handle("POST /api/v1/auth/mfa/verify", a.limitRequests("mfa-verify", 8, time.Minute, http.HandlerFunc(a.verifyMFA)))
+	mux.Handle("POST /api/v1/auth/mfa/recovery-codes", a.requireAdmin(a.limitRequests("mfa-recovery-regenerate", 3, time.Minute, a.auditAdmin(http.HandlerFunc(a.regenerateMFARecoveryCodes)))))
 	mux.HandleFunc("POST /api/v1/auth/logout", a.logout)
 	mux.Handle("GET /api/v1/auth/me", a.requireAuth(http.HandlerFunc(a.me)))
 	mux.Handle("PATCH /api/v1/account/profile", a.requireAuth(http.HandlerFunc(a.updateProfile)))
@@ -172,7 +178,7 @@ func (a *API) Router() http.Handler {
 	mux.Handle("GET /api/v1/admin/career-applications/{id}/resume", a.requireAdminPermission(permissionCareersView, http.HandlerFunc(a.adminCareerResume)))
 	mux.Handle("DELETE /api/v1/admin/career-applications/{id}", a.requireAdminPermission(permissionCareersDelete, a.auditAdmin(http.HandlerFunc(a.adminDeleteCareerApplication))))
 
-	return a.recoverPanic(a.logRequests(a.securityHeaders(a.cors(a.protectCookieWrites(mux)))))
+	return a.recoverPanic(a.measureRequests(a.logRequests(a.securityHeaders(a.cors(a.protectCookieWrites(mux))))))
 }
 
 func (a *API) health(w http.ResponseWriter, r *http.Request) {
@@ -325,12 +331,31 @@ func (a *API) verifyMFA(w http.ResponseWriter, r *http.Request) {
 		a.internalError(w, r, err)
 		return
 	}
-	if !auth.ValidateTOTP(secret, input.Code, time.Now().UTC()) {
-		writeError(w, http.StatusUnauthorized, "invalid authenticator code")
+	valid := auth.ValidateTOTP(secret, input.Code, time.Now().UTC())
+	recoveryCodeUsed := false
+	if !valid && user.MFAEnabled {
+		if hash, ok := auth.RecoveryCodeHash(input.Code); ok {
+			valid, err = a.store.ConsumeMFARecoveryCode(r.Context(), user.ID, hash)
+			if err != nil {
+				a.internalError(w, r, err)
+				return
+			}
+			recoveryCodeUsed = valid
+		}
+	}
+	if !valid {
+		writeError(w, http.StatusUnauthorized, "invalid authenticator or recovery code")
 		return
 	}
+	var recoveryCodes []string
 	if !user.MFAEnabled {
-		if err := a.store.EnableUserMFA(r.Context(), user.ID); err != nil {
+		var hashes [][]byte
+		recoveryCodes, hashes, err = newRecoveryCodes()
+		if err != nil {
+			a.internalError(w, r, err)
+			return
+		}
+		if err := a.store.EnableUserMFAWithRecoveryCodes(r.Context(), user.ID, hashes); err != nil {
 			a.internalError(w, r, err)
 			return
 		}
@@ -340,7 +365,76 @@ func (a *API) verifyMFA(w http.ResponseWriter, r *http.Request) {
 		a.internalError(w, r, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"user": user})
+	if recoveryCodeUsed {
+		a.recordSecurityAudit(r, user.ID, "/api/v1/auth/mfa/recovery-code-used", http.StatusOK)
+	}
+	response := map[string]any{"user": user}
+	if len(recoveryCodes) > 0 {
+		response["recovery_codes"] = recoveryCodes
+	}
+	writeJSON(w, http.StatusOK, response)
+}
+
+func (a *API) regenerateMFARecoveryCodes(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		Code string `json:"code"`
+	}
+	if !a.decode(w, r, &input) {
+		return
+	}
+	user, ok := r.Context().Value(adminUserKey).(model.User)
+	if !ok || len(user.MFASecret) == 0 {
+		writeError(w, http.StatusForbidden, "administrator MFA is required")
+		return
+	}
+	secret, err := a.mfaSecrets.Decrypt(user.MFASecret)
+	if err != nil {
+		a.internalError(w, r, err)
+		return
+	}
+	if !auth.ValidateTOTP(secret, input.Code, time.Now().UTC()) {
+		writeError(w, http.StatusUnauthorized, "invalid authenticator code")
+		return
+	}
+	codes, hashes, err := newRecoveryCodes()
+	if err != nil {
+		a.internalError(w, r, err)
+		return
+	}
+	if err := a.store.ReplaceMFARecoveryCodes(r.Context(), user.ID, hashes); err != nil {
+		a.internalError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"recovery_codes": codes})
+}
+
+func newRecoveryCodes() ([]string, [][]byte, error) {
+	codes, err := auth.GenerateRecoveryCodes(10)
+	if err != nil {
+		return nil, nil, err
+	}
+	hashes := make([][]byte, 0, len(codes))
+	for _, code := range codes {
+		hash, ok := auth.RecoveryCodeHash(code)
+		if !ok {
+			return nil, nil, fmt.Errorf("generated an invalid recovery code")
+		}
+		hashes = append(hashes, hash)
+	}
+	return codes, hashes, nil
+}
+
+func (a *API) recordSecurityAudit(r *http.Request, actorID, path string, status int) {
+	agent := r.UserAgent()
+	if len(agent) > 500 {
+		agent = agent[:500]
+	}
+	if err := a.store.CreateAdminAuditLog(r.Context(), model.AdminAuditLog{
+		ActorID: actorID, Method: r.Method, Path: path, Status: status,
+		SourceIP: a.clientIP(r), UserAgent: agent,
+	}); err != nil {
+		a.logger.Error("security audit persistence failed", "actor_id", actorID, "path", path, "error", err)
+	}
 }
 
 func (a *API) logout(w http.ResponseWriter, _ *http.Request) {
@@ -1109,6 +1203,14 @@ func (a *API) adminCreateContract(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	if !a.validateContractClient(w, r, item) {
+		return
+	}
+	item, err := a.withCompanyContractIdentity(r.Context(), item)
+	if err != nil {
+		a.internalError(w, r, err)
+		return
+	}
 	created, err := a.store.CreateContract(r.Context(), item)
 	if !a.handleStoreError(w, r, err) {
 		return
@@ -1119,6 +1221,14 @@ func (a *API) adminCreateContract(w http.ResponseWriter, r *http.Request) {
 func (a *API) adminUpdateContract(w http.ResponseWriter, r *http.Request) {
 	item, ok := a.decodeContract(w, r)
 	if !ok {
+		return
+	}
+	if !a.validateContractClient(w, r, item) {
+		return
+	}
+	item, err := a.withCompanyContractIdentity(r.Context(), item)
+	if err != nil {
+		a.internalError(w, r, err)
 		return
 	}
 	updated, err := a.store.UpdateContract(r.Context(), r.PathValue("id"), item)
@@ -1175,7 +1285,29 @@ func (a *API) decodeSignature(w http.ResponseWriter, r *http.Request) (string, s
 		return "", "", false
 	}
 	input.SignerName = strings.TrimSpace(input.SignerName)
-	if len(input.SignerName) < 2 || len(input.SignerName) > 120 || len(input.Signature) > 300000 || !strings.HasPrefix(input.Signature, "data:image/png;base64,") {
+	const prefix = "data:image/png;base64,"
+	encoded := strings.TrimPrefix(input.Signature, prefix)
+	data, decodeErr := base64.StdEncoding.DecodeString(encoded)
+	config, imageErr := png.DecodeConfig(bytes.NewReader(data))
+	validImage := decodeErr == nil && imageErr == nil && len(data) <= 225000 && config.Width >= 200 && config.Width <= 4096 && config.Height >= 80 && config.Height <= 1024
+	if validImage {
+		decoded, err := png.Decode(bytes.NewReader(data))
+		validImage = err == nil
+		inkPixels := 0
+		if validImage {
+			bounds := decoded.Bounds()
+			for y := bounds.Min.Y; y < bounds.Max.Y && inkPixels < 24; y++ {
+				for x := bounds.Min.X; x < bounds.Max.X && inkPixels < 24; x++ {
+					r, g, b, alpha := decoded.At(x, y).RGBA()
+					if alpha > 0x1000 && (r < 0xe000 || g < 0xe000 || b < 0xe000) {
+						inkPixels++
+					}
+				}
+			}
+			validImage = inkPixels >= 24
+		}
+	}
+	if len(input.SignerName) < 2 || len(input.SignerName) > 120 || len(input.Signature) > 300000 || !strings.HasPrefix(input.Signature, prefix) || !validImage {
 		writeError(w, http.StatusUnprocessableEntity, "provide a valid signer name and drawn signature")
 		return "", "", false
 	}
@@ -1196,18 +1328,59 @@ func (a *API) decodeContract(w http.ResponseWriter, r *http.Request) (model.Cont
 	item.Currency = strings.ToUpper(strings.TrimSpace(item.Currency))
 	start, startErr := time.Parse("2006-01-02", item.StartDate)
 	end, endErr := time.Parse("2006-01-02", item.EndDate)
-	fields := []string{item.Scope, item.Deliverables, item.Milestones, item.PaymentTerms, item.RevisionTerms, item.SupportTerms, item.OwnershipTerms, item.ConfidentialityTerms, item.TerminationTerms, item.DisputeTerms}
+	fields := []*string{&item.Scope, &item.Deliverables, &item.Milestones, &item.PaymentTerms, &item.RevisionTerms, &item.SupportTerms, &item.OwnershipTerms, &item.ConfidentialityTerms, &item.TerminationTerms, &item.DisputeTerms}
 	validTerms := true
 	for _, field := range fields {
-		if len(strings.TrimSpace(field)) < 5 || len(field) > 10000 {
+		*field = strings.TrimSpace(*field)
+		if len(*field) < 5 || len(*field) > 10000 {
 			validTerms = false
 		}
 	}
-	if item.UserID == "" || len(item.ContractNumber) < 3 || len(item.ContractNumber) > 60 || len(item.Title) < 3 || len(item.Title) > 200 || len(item.ClientName) < 2 || !validEmail(item.ClientEmail) || len(item.ClientCompany) > 160 || len(item.ProviderName) < 2 || len(item.ProviderName) > 160 || len(item.Currency) != 3 || item.AmountCents < 0 || startErr != nil || endErr != nil || end.Before(start) || !validTerms || len(item.SpecialTerms) > 10000 {
+	item.SpecialTerms = strings.TrimSpace(item.SpecialTerms)
+	if !uuidPattern.MatchString(item.UserID) || len(item.ContractNumber) < 3 || len(item.ContractNumber) > 60 || len(item.Title) < 3 || len(item.Title) > 200 || len(item.ClientName) < 2 || !validEmail(item.ClientEmail) || len(item.ClientCompany) > 160 || len(item.ProviderName) < 2 || len(item.ProviderName) > 160 || len(item.Currency) != 3 || item.AmountCents < 0 || startErr != nil || endErr != nil || end.Before(start) || !validTerms || len(item.SpecialTerms) > 10000 {
 		writeError(w, http.StatusUnprocessableEntity, "contract fields are incomplete or invalid")
 		return model.Contract{}, false
 	}
 	return item, true
+}
+
+func (a *API) validateContractClient(w http.ResponseWriter, r *http.Request, item model.Contract) bool {
+	client, err := a.store.FindUserByID(r.Context(), item.UserID)
+	if err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			writeError(w, http.StatusUnprocessableEntity, "select an active registered client")
+			return false
+		}
+		a.internalError(w, r, err)
+		return false
+	}
+	if client.Role != "user" || !client.AccountActive || !strings.EqualFold(client.Email, item.ClientEmail) {
+		writeError(w, http.StatusUnprocessableEntity, "contract email must match the selected active client account")
+		return false
+	}
+	return true
+}
+
+func (a *API) withCompanyContractIdentity(ctx context.Context, item model.Contract) (model.Contract, error) {
+	company, err := a.store.CompanyAccount(ctx)
+	if err != nil {
+		return model.Contract{}, err
+	}
+	item.ProviderName = company.DisplayName
+	item.ProviderLegalName = company.LegalName
+	item.ProviderEmail = company.PrimaryEmail
+	item.ProviderPhone = company.Phone
+	item.ProviderWebsite = company.WebsiteURL
+	item.ProviderRegistration = company.RegistrationNumber
+	item.ProviderTaxID = company.TaxID
+	addressParts := make([]string, 0, 5)
+	for _, part := range []string{company.AddressLine, company.City, company.Region, company.PostalCode, company.Country} {
+		if strings.TrimSpace(part) != "" {
+			addressParts = append(addressParts, strings.TrimSpace(part))
+		}
+	}
+	item.ProviderAddress = strings.Join(addressParts, ", ")
+	return item, nil
 }
 
 func (a *API) adminDownloads(w http.ResponseWriter, r *http.Request) {

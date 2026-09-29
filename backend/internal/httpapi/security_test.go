@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/akeluwa/software-hub/backend/internal/config"
@@ -94,5 +95,24 @@ func TestLivenessDoesNotRequireDatabase(t *testing.T) {
 	api.live(response, httptest.NewRequest(http.MethodGet, "/livez", nil))
 	if response.Code != http.StatusOK {
 		t.Fatalf("live status = %d", response.Code)
+	}
+}
+
+func TestPrometheusMetricsTrackRequestsAndServerErrors(t *testing.T) {
+	api := testAPI()
+	handler := api.measureRequests(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusServiceUnavailable)
+	}))
+	handler.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/test", nil))
+
+	response := httptest.NewRecorder()
+	api.prometheusMetrics(response, httptest.NewRequest(http.MethodGet, "/metrics", nil))
+	if response.Code != http.StatusOK {
+		t.Fatalf("metrics status = %d", response.Code)
+	}
+	for _, metric := range []string{"akeluwa_http_requests_total 1", "akeluwa_http_errors_total 1", "akeluwa_http_requests_in_flight 0"} {
+		if !strings.Contains(response.Body.String(), metric) {
+			t.Errorf("metrics response does not contain %q", metric)
+		}
 	}
 }

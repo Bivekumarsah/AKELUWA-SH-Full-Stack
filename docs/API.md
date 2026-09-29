@@ -17,6 +17,7 @@ The Go router in `backend/internal/httpapi/api.go` is the executable source of t
 | GET | `/livez` | Process liveness; does not require PostgreSQL |
 | GET | `/readyz` | Database readiness |
 | GET | `/healthz` | Alias for database readiness |
+| GET | `/metrics` | Internal Prometheus metrics; blocked at the public Caddy edge |
 
 ## Authentication And Profile
 
@@ -24,7 +25,8 @@ The Go router in `backend/internal/httpapi/api.go` is the executable source of t
 |---|---|---|---|
 | POST | `/auth/register` | No | Create a customer account |
 | POST | `/auth/login` | No | Verify email and password; administrators receive an MFA challenge |
-| POST | `/auth/mfa/verify` | MFA challenge | Verify six-digit TOTP and create administrator session |
+| POST | `/auth/mfa/verify` | MFA challenge | Verify TOTP or a single-use recovery code and create administrator session |
+| POST | `/auth/mfa/recovery-codes` | Admin MFA session | Replace the current administrator's recovery codes after fresh TOTP verification |
 | POST | `/auth/logout` | Optional | Clear session cookie |
 | GET | `/auth/me` | Required | Current user, role, permissions, and MFA state |
 | PATCH | `/account/profile` | Required | Update current user's display name |
@@ -45,7 +47,7 @@ The Go router in `backend/internal/httpapi/api.go` is the executable source of t
 | POST | `/careers/{id}/applications` | Submit candidate details and resume |
 | POST | `/inquiries` | Submit project inquiry |
 
-Registration, login, MFA verification, inquiries, and career applications are rate limited.
+Registration, login, MFA verification, recovery-code replacement, inquiries, and career applications use PostgreSQL-coordinated rate limits that remain consistent across API replicas.
 
 ## Customer Account
 
@@ -54,9 +56,11 @@ Every route requires a signed session. Store queries enforce that customers only
 | Method | Path | Purpose |
 |---|---|---|
 | GET | `/account/inquiries` | Current user's project inquiries |
-| GET | `/account/contracts` | Current user's contracts |
+| GET | `/account/contracts` | Current user's sent contracts |
 | GET | `/account/invoices` | Current user's invoices and balances |
 | POST | `/account/contracts/{id}/sign` | Customer electronic contract signature |
+
+Contract creation requires an active registered client, and the submitted email must match that account. Drafts remain admin-only; sent-contract visibility and signing are enforced by the permanent user ID. Signature uploads must decode as bounded PNG images, and the send action snapshots company identity before calculating the locked content fingerprint.
 
 ## Administration
 

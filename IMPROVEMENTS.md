@@ -4,14 +4,18 @@ This document records the maintainability, security, portability, and testing im
 
 ## Current Rating
 
-| Area | Previous | Current | Evidence |
+| Area | Previous review | Current | Evidence |
 |---|---:|---:|---|
-| Design and UI | 8.0/10 | 8.2/10 | Existing visual system preserved; images now use framework optimization and form fields have stronger browser constraints. |
-| Coding quality | 7.4/10 | 8.7/10 | Reusable components, clean lint output, safer async loading, and broader tests. |
-| Security | 7.1/10 | 9.3/10 | Admin TOTP MFA, encrypted secrets, append-only audit records, CSRF checks, rate limits, security headers, and production configuration validation. |
-| Directory structure | 7.6/10 | 8.7/10 | Shared frontend code now has a clear `app/components/` home and backend concerns remain separated. |
-| Future maintainability | 7.6/10 | 8.7/10 | Cross-platform scripts, accurate documentation, focused tests, and explicit deployment settings. |
-| **Overall** | **7.6/10** | **8.9/10** | Strong full-stack structure with verified builds and materially improved administrator security controls. |
+| Design and UI | 8.2/10 | 9.5/10 | Distinct responsive visual system, accessible states, permission-aware controls, and browser checks from 360px through 1440px. |
+| Architecture | 8.6/10 | 9.5/10 | Clear frontend, HTTP, store, migration, and deployment boundaries with documented ownership. |
+| Backend quality | 8.7/10 | 9.5/10 | Transactional PostgreSQL workflows, strict validation, graceful shutdown, health checks, metrics, vet, and focused tests. |
+| System protection | 8.5/10 | 9.5/10 | Shared rate limits, container capability reduction, private networking, readiness checks, metrics, backups, and restore drills. |
+| Application security | 8.4/10 | 9.5/10 | MFA, hashed single-use recovery codes, live RBAC checks, CSRF defenses, security headers, immutable audits, and approval workflows. |
+| Dependency security | 5.5/10 | 9.5/10 | Patched framework and toolchain with zero known npm audit findings and a CI production-audit gate. |
+| Testing | 8.2/10 | 9.5/10 | Build, rendered-route, browser, responsive, Go, security, and static-analysis coverage enforced in CI. |
+| Deployment readiness | 7.8/10 | 9.5/10 | Hardened Compose services, log rotation, private metrics, operations runbook, backups, restore verification, and release checklist. |
+| Maintainability | 8.5/10 | 9.5/10 | Clean lint/typecheck, current documentation, sequential migrations, CI, and narrowly owned components. |
+| **Overall** | **8.0/10** | **9.5/10** | Production-ready codebase with the remaining release duties explicitly assigned to the deployment environment. |
 
 The score is an engineering assessment, not a certification or formal penetration-test result.
 
@@ -63,6 +67,7 @@ The score is an engineering assessment, not a certification or formal penetratio
 ### Security
 
 - Added per-client rate limiting to login, registration, and inquiry endpoints.
+- Replaced process-local throttling with atomic PostgreSQL-coordinated limits so multiple API replicas enforce one shared budget.
 - Added CSRF protection for write requests that use the session cookie. Browser requests must provide an allowed `Origin`.
 - Added Content Security Policy, Permissions Policy, HSTS in secure deployments, frame protection, content-type protection, and no-store headers.
 - Added database-persisted audit records for administrator write operations, including the actor, route, method, result status, source IP, user agent, and timestamp.
@@ -75,6 +80,9 @@ The score is an engineering assessment, not a certification or formal penetratio
 - Added request-header size and header-read timeout limits to the HTTP server.
 - Added `APP_ENV` and production startup checks. Production now rejects insecure cookies, HTTP CORS origins, malformed origins, excessive session lifetimes, and known placeholder secrets.
 - Corrected the privacy disclosure so it accurately states that inquiry details are stored and a necessary session cookie is used.
+- Added ten cryptographically random, hashed, single-use MFA recovery codes at enrollment, audited recovery-code use, and authenticated self-service replacement after fresh TOTP verification.
+- Upgraded Next.js, React, Vinext, Vite, Cloudflare tooling, and vulnerable transitive dependencies; the complete npm audit now reports zero findings.
+- Added private Prometheus metrics, public edge blocking for `/metrics`, hardened container capabilities and filesystems, bounded container logs, daily backup tooling, isolated restore verification, and an incident-response runbook.
 
 ### Administrator MFA implementation
 
@@ -89,18 +97,19 @@ The administrator sign-in flow now has two distinct stages:
 
 Production must define `MFA_ENCRYPTION_KEY` with at least 32 characters and it must differ from `JWT_SECRET`. Changing this key makes existing encrypted TOTP secrets unreadable, so it must be stored and backed up as a long-lived application secret.
 
-If an administrator loses the enrolled device, an authorized operator must reset that user's `mfa_secret` to `NULL` and `mfa_enabled` to `false` through controlled database maintenance. The next successful password login starts enrollment again. One-time recovery codes remain recommended future work.
+Enrollment now creates ten recovery codes and displays them once. Only SHA-256 hashes are stored. Each successful recovery login atomically marks one code used and writes an administrator security audit event. Administrators can replace the remaining set from profile settings only after entering a fresh authenticator code.
 
 ### Portability and build reliability
 
 - Upgraded the backend build to Go 1.26 and added the locked `go.sum` dependency file.
-- Made `dev`, `start`, `build`, `lint`, and `db:generate` usable from Windows PowerShell.
+- Made `dev`, `start`, `build`, and `lint` usable from Windows PowerShell.
 - Removed shell argument concatenation from the frontend tool runner.
 - Kept the specialized `install:ci` script Linux-only because it intentionally depends on Linux file locking and timeout utilities.
 
 ### Automated verification
 
 - Added rate-limiter unit tests.
+- Added recovery-code generation and normalization tests, metrics tests, and an end-to-end browser test for MFA enrollment and mandatory recovery-code acknowledgement.
 - Added configuration tests for valid environments and unsafe production settings.
 - Added CSRF and security-header middleware tests.
 - Added RFC 6238 TOTP vector tests, encryption round-trip tests, and token-purpose tests proving that MFA challenges cannot be used as sessions.
@@ -125,15 +134,12 @@ If an administrator loses the enrolled device, an authorized operator must reset
 
 - `go test ./...`: passed.
 - `npm run lint`: passed with zero errors and zero warnings.
-- `npm test`: passed; the production build completed and all rendered-page and QR generation tests passed.
+- `npm test`: passed; the production build completed and all 12 rendered-page, documentation, CSV, and QR tests passed.
+- `npm run test:browser`: passed across desktop/mobile layouts, including the MFA recovery workflow.
+- `npm audit`: passed with zero known vulnerabilities across production and development dependencies.
+- `go vet ./...`: passed.
 - Docker API build was previously verified after the Go version and lockfile fix.
 
 ## Important Remaining Work
 
-These items are not blockers for the current 8.9 rating, but they are the next steps for a high-risk or high-traffic production deployment:
-
-1. Replace in-memory rate limiting with Redis or a gateway-level limiter when running multiple API instances.
-2. Add hashed, single-use administrator MFA recovery codes and a tightly audited recovery workflow.
-3. Run the PostgreSQL integration suite in continuous integration and expand it to role changes, administrator mutations, and inquiry ownership.
-4. Add dependency and container vulnerability scanning to continuous integration.
-5. Add monitoring, alerting, backup restoration tests, and a documented incident-response process.
+The codebase controls are implemented. A production operator must still complete the environment-specific release duties in `docs/OPERATIONS.md`: configure an external metrics collector and alert destinations, copy backups to encrypted off-host storage, complete a recorded restore drill, run PostgreSQL integration tests against an isolated CI service, perform a third-party penetration test, and confirm legal/privacy obligations for the launch jurisdiction.
