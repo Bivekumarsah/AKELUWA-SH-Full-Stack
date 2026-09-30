@@ -151,6 +151,8 @@ Migrations execute once, in number order. Never edit a migration that may have r
 | `013_security_operations.sql` | Hashed MFA recovery codes and shared rate limits |
 | `014_contract_identity.sql` | Locked company identity snapshots for issued contracts |
 | `015_verification_registry.sql` | Public authenticity registry for company-issued records |
+| `016_account_security_document_integrity.sql` | Email verification, password reset, revocable sessions, and exact file fingerprints |
+| `017_single_active_account_token.sql` | Atomic replacement of active account-security links |
 
 ## API Guide
 
@@ -200,11 +202,11 @@ Open the URL printed by the frontend dev server, normally `http://localhost:5173
 |---|---|---|
 | `.env.example` | Frontend build | Public API URL and public site URL |
 | `.env.local` | Local frontend only | Your local copy of frontend values; do not commit it |
-| `backend/.env.example` | Go API outside Docker | Database, session, MFA, cookie, and CORS configuration |
-| `deploy/.env.example` | Production Docker Compose | Production domains, database credentials, cookies, API secrets |
+| `backend/.env.example` | Go API outside Docker | Database, session, MFA, cookie, CORS, frontend, and SMTP configuration |
+| `deploy/.env.example` | Production Docker Compose | Production domains, database credentials, cookies, API secrets, and SMTP delivery |
 | `compose.yaml` | Local Docker API | Local-only development values and initial admin account |
 
-Production requires independent strong secrets for `JWT_SECRET`, `MFA_ENCRYPTION_KEY`, PostgreSQL, and the initial administrator. `MFA_ENCRYPTION_KEY` must be retained because replacing it makes existing encrypted MFA secrets unreadable.
+Production requires independent strong secrets for `JWT_SECRET`, `MFA_ENCRYPTION_KEY`, PostgreSQL, SMTP, and the initial administrator. `FRONTEND_URL` must be the public HTTPS frontend origin because it is used in ownership and recovery links. `MFA_ENCRYPTION_KEY` must be retained because replacing it makes existing encrypted MFA secrets unreadable.
 
 ## Testing And Verification
 
@@ -213,14 +215,15 @@ Production requires independent strong secrets for `JWT_SECRET`, `MFA_ENCRYPTION
 | `npm run typecheck` | TypeScript validation |
 | `npm run lint` | ESLint checks |
 | `npm test` | TypeScript, production build, rendered-page tests, CSV tests |
-| `npm run test:browser` | Playwright public navigation, recovery, auth layout, and responsive checks |
+| `npm run test:browser` | Playwright workflows, WCAG A/AA scans, auth, document verification, and responsive checks |
+| `npm run deploy:frontend:dry-run` | Validate the generated Cloudflare Worker deployment artifact |
 | `npm run test:docs` | Documentation structure and source-reference validation |
 | `npm run audit:production` | Fails on high-severity production dependency advisories |
 | `go test ./...` from `backend/` | Go unit tests and integration tests when configured |
 
 PostgreSQL-backed Go tests require an isolated `TEST_DATABASE_URL`. They create temporary records and must never target a production database.
 
-For browser tests, start the frontend and API first. The suite uses `http://localhost:5173` by default. Set `PLAYWRIGHT_BASE_URL` for another frontend URL. The default browser channel is Microsoft Edge; set `PLAYWRIGHT_CHANNEL=chromium` after installing Playwright Chromium to use Chromium.
+Playwright starts the frontend automatically and reuses an existing local server. The suite uses `http://localhost:5173` by default. Set `PLAYWRIGHT_BASE_URL` for another frontend URL. Local runs default to Microsoft Edge; CI installs and uses Chromium.
 
 ## Common Change Workflows
 
@@ -265,7 +268,7 @@ For browser tests, start the frontend and API first. The suite uses `http://loca
 docker compose -f compose.prod.yaml up -d --build
 ```
 
-Caddy in `deploy/Caddyfile` terminates HTTPS and proxies to the private Go API. PostgreSQL is not exposed publicly. Configure the frontend with `NEXT_PUBLIC_API_URL=https://api.example.com/api/v1` and the correct `NEXT_PUBLIC_SITE_URL` before its production build.
+Caddy in `deploy/Caddyfile` terminates HTTPS and proxies to the private Go API. PostgreSQL is not exposed publicly. Configure the frontend with `NEXT_PUBLIC_API_URL=https://api.example.com/api/v1` and the correct `NEXT_PUBLIC_SITE_URL`, then run `npm run deploy:frontend`. CI runs `npm run deploy:frontend:dry-run` to catch invalid generated deployment artifacts.
 
 When frontend and API use different top-level domains, set `COOKIE_SAME_SITE=none`, keep `COOKIE_SECURE=true`, and allow the exact frontend origin through `CORS_ORIGINS`.
 

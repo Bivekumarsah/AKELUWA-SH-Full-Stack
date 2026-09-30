@@ -14,6 +14,8 @@
     "test:docs": "node --import ./tests/register-worker-loader.mjs --test tests/documentation.test.mjs",
     "typecheck": "tsc --noEmit",
     "test:browser": "playwright test",
+    "deploy:frontend": "npm run build && wrangler deploy --config dist/server/wrangler.json",
+    "deploy:frontend:dry-run": "wrangler deploy --dry-run --config dist/server/wrangler.json",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "audit:production": "npm audit --omit=dev --audit-level=high",
     "check": "npm run lint && npm test && npm run audit:production"
@@ -27,6 +29,7 @@
     "react-dom": "19.3.0"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@cloudflare/vite-plugin": "1.62.0",
     "@cloudflare/workers-types": "5.20260929.1",
     "@playwright/test": "^1.63.0",

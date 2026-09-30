@@ -167,6 +167,7 @@ export default function LoginPage() {
             {error && <p className="form-alert is-error" role="alert">{error}</p>}
             <button className="portal-primary" type="submit" disabled={loading}>{loading ? "Signing in..." : "Sign in securely"}</button>
           </form>
+          <p className="auth-switch"><Link href="/forgot-password">Forgot password?</Link></p>
           <p className="auth-switch">New to AKELUWA? <Link href="/register">Create an account</Link></p>
         </> : <>
           <p className="portal-intro">{enrollmentRequired ? "Add the setup key to your authenticator app, then enter its six-digit code." : recoveryMode ? "Enter one unused recovery code." : "Enter the six-digit code from your authenticator app."}</p>

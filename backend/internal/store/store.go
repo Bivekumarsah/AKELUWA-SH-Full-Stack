@@ -55,12 +55,12 @@ func (s *Store) WithTransaction(ctx context.Context, fn func(*Store) error) erro
 func (s *Store) CreateUser(ctx context.Context, name, email, passwordHash, role string) (model.User, error) {
 	var user model.User
 	err := s.pool.QueryRow(ctx, `
-		INSERT INTO users (name, email, password_hash, role)
-		VALUES ($1, lower($2), $3, $4)
+		INSERT INTO users (name, email, password_hash, role, email_verified_at)
+		VALUES ($1, lower($2), $3, $4, CASE WHEN $4='user' THEN NULL ELSE now() END)
 		RETURNING id::text, name, email, role, admin_permissions, account_active,
-			mfa_enabled, created_at, avatar_updated_at
+			mfa_enabled, email_verified_at, session_version, created_at, avatar_updated_at
 	`, name, email, passwordHash, role).Scan(&user.ID, &user.Name, &user.Email, &user.Role,
-		&user.AdminPermissions, &user.AccountActive, &user.MFAEnabled, &user.CreatedAt, &user.AvatarUpdatedAt)
+		&user.AdminPermissions, &user.AccountActive, &user.MFAEnabled, &user.EmailVerifiedAt, &user.SessionVersion, &user.CreatedAt, &user.AvatarUpdatedAt)
 	return user, err
 }
 
@@ -68,10 +68,10 @@ func (s *Store) FindUserByEmail(ctx context.Context, email string) (model.User, 
 	var user model.User
 	err := s.pool.QueryRow(ctx, `
 		SELECT id::text, name, email, role, admin_permissions, account_active, password_hash,
-			mfa_secret, mfa_enabled, created_at, avatar_updated_at
+			mfa_secret, mfa_enabled, email_verified_at, session_version, created_at, avatar_updated_at
 		FROM users WHERE lower(email) = lower($1)
 	`, email).Scan(&user.ID, &user.Name, &user.Email, &user.Role, &user.AdminPermissions,
-		&user.AccountActive, &user.PasswordHash, &user.MFASecret, &user.MFAEnabled, &user.CreatedAt, &user.AvatarUpdatedAt)
+		&user.AccountActive, &user.PasswordHash, &user.MFASecret, &user.MFAEnabled, &user.EmailVerifiedAt, &user.SessionVersion, &user.CreatedAt, &user.AvatarUpdatedAt)
 	return user, mapNotFound(err)
 }
 
@@ -79,17 +79,17 @@ func (s *Store) FindUserByID(ctx context.Context, id string) (model.User, error)
 	var user model.User
 	err := s.pool.QueryRow(ctx, `
 		SELECT id::text, name, email, role, admin_permissions, account_active, mfa_secret,
-			mfa_enabled, created_at, avatar_updated_at
+			mfa_enabled, email_verified_at, session_version, created_at, avatar_updated_at
 		FROM users WHERE id = $1
 	`, id).Scan(&user.ID, &user.Name, &user.Email, &user.Role, &user.AdminPermissions,
-		&user.AccountActive, &user.MFASecret, &user.MFAEnabled, &user.CreatedAt, &user.AvatarUpdatedAt)
+		&user.AccountActive, &user.MFASecret, &user.MFAEnabled, &user.EmailVerifiedAt, &user.SessionVersion, &user.CreatedAt, &user.AvatarUpdatedAt)
 	return user, mapNotFound(err)
 }
 
 func (s *Store) ListUsers(ctx context.Context) ([]model.User, error) {
 	rows, err := s.pool.Query(ctx, `
 		SELECT id::text, name, email, role, admin_permissions, account_active,
-			mfa_enabled, created_at, avatar_updated_at
+			mfa_enabled, email_verified_at, session_version, created_at, avatar_updated_at
 		FROM users WHERE role <> 'sub_admin' ORDER BY created_at DESC LIMIT 500
 	`)
 	if err != nil {
@@ -101,7 +101,7 @@ func (s *Store) ListUsers(ctx context.Context) ([]model.User, error) {
 	for rows.Next() {
 		var user model.User
 		if err := rows.Scan(&user.ID, &user.Name, &user.Email, &user.Role, &user.AdminPermissions,
-			&user.AccountActive, &user.MFAEnabled, &user.CreatedAt, &user.AvatarUpdatedAt); err != nil {
+			&user.AccountActive, &user.MFAEnabled, &user.EmailVerifiedAt, &user.SessionVersion, &user.CreatedAt, &user.AvatarUpdatedAt); err != nil {
 			return nil, err
 		}
 		users = append(users, user)
@@ -112,30 +112,30 @@ func (s *Store) ListUsers(ctx context.Context) ([]model.User, error) {
 func (s *Store) UpdateUserRole(ctx context.Context, id, role string) (model.User, error) {
 	var user model.User
 	err := s.pool.QueryRow(ctx, `
-		UPDATE users SET role = $2 WHERE id = $1 AND role <> 'sub_admin'
+		UPDATE users SET role = $2, session_version = session_version + 1 WHERE id = $1 AND role <> 'sub_admin'
 		RETURNING id::text, name, email, role, admin_permissions, account_active,
-			mfa_enabled, created_at, avatar_updated_at
+			mfa_enabled, email_verified_at, session_version, created_at, avatar_updated_at
 	`, id, role).Scan(&user.ID, &user.Name, &user.Email, &user.Role, &user.AdminPermissions,
-		&user.AccountActive, &user.MFAEnabled, &user.CreatedAt, &user.AvatarUpdatedAt)
+		&user.AccountActive, &user.MFAEnabled, &user.EmailVerifiedAt, &user.SessionVersion, &user.CreatedAt, &user.AvatarUpdatedAt)
 	return user, mapNotFound(err)
 }
 
 func (s *Store) CreateSubAdmin(ctx context.Context, name, email, passwordHash string, permissions []string) (model.User, error) {
 	var user model.User
 	err := s.pool.QueryRow(ctx, `
-		INSERT INTO users (name, email, password_hash, role, admin_permissions)
-		VALUES ($1, lower($2), $3, 'sub_admin', $4)
+		INSERT INTO users (name, email, password_hash, role, admin_permissions, email_verified_at)
+		VALUES ($1, lower($2), $3, 'sub_admin', $4, now())
 		RETURNING id::text, name, email, role, admin_permissions, account_active,
-			mfa_enabled, created_at, avatar_updated_at
+			mfa_enabled, email_verified_at, session_version, created_at, avatar_updated_at
 	`, name, email, passwordHash, permissions).Scan(&user.ID, &user.Name, &user.Email, &user.Role,
-		&user.AdminPermissions, &user.AccountActive, &user.MFAEnabled, &user.CreatedAt, &user.AvatarUpdatedAt)
+		&user.AdminPermissions, &user.AccountActive, &user.MFAEnabled, &user.EmailVerifiedAt, &user.SessionVersion, &user.CreatedAt, &user.AvatarUpdatedAt)
 	return user, err
 }
 
 func (s *Store) ListSubAdmins(ctx context.Context) ([]model.User, error) {
 	rows, err := s.pool.Query(ctx, `
 		SELECT id::text, name, email, role, admin_permissions, account_active,
-			mfa_enabled, created_at, avatar_updated_at
+			mfa_enabled, email_verified_at, session_version, created_at, avatar_updated_at
 		FROM users WHERE role='sub_admin' ORDER BY created_at DESC
 	`)
 	if err != nil {
@@ -146,7 +146,7 @@ func (s *Store) ListSubAdmins(ctx context.Context) ([]model.User, error) {
 	for rows.Next() {
 		var user model.User
 		if err := rows.Scan(&user.ID, &user.Name, &user.Email, &user.Role, &user.AdminPermissions,
-			&user.AccountActive, &user.MFAEnabled, &user.CreatedAt, &user.AvatarUpdatedAt); err != nil {
+			&user.AccountActive, &user.MFAEnabled, &user.EmailVerifiedAt, &user.SessionVersion, &user.CreatedAt, &user.AvatarUpdatedAt); err != nil {
 			return nil, err
 		}
 		users = append(users, user)
@@ -157,20 +157,20 @@ func (s *Store) ListSubAdmins(ctx context.Context) ([]model.User, error) {
 func (s *Store) UpdateSubAdminAccess(ctx context.Context, id string, permissions []string, active bool) (model.User, error) {
 	var user model.User
 	err := s.pool.QueryRow(ctx, `
-		UPDATE users SET admin_permissions=$2, account_active=$3
+		UPDATE users SET admin_permissions=$2, account_active=$3, session_version=session_version+1
 		WHERE id=$1 AND role='sub_admin'
 		RETURNING id::text, name, email, role, admin_permissions, account_active,
-			mfa_enabled, created_at, avatar_updated_at
+			mfa_enabled, email_verified_at, session_version, created_at, avatar_updated_at
 	`, id, permissions, active).Scan(&user.ID, &user.Name, &user.Email, &user.Role,
-		&user.AdminPermissions, &user.AccountActive, &user.MFAEnabled, &user.CreatedAt, &user.AvatarUpdatedAt)
+		&user.AdminPermissions, &user.AccountActive, &user.MFAEnabled, &user.EmailVerifiedAt, &user.SessionVersion, &user.CreatedAt, &user.AvatarUpdatedAt)
 	return user, mapNotFound(err)
 }
 
 func (s *Store) ListClientUsers(ctx context.Context) ([]model.User, error) {
 	rows, err := s.pool.Query(ctx, `
 		SELECT id::text, name, email, role, admin_permissions, account_active,
-			mfa_enabled, created_at, avatar_updated_at
-		FROM users WHERE role='user' AND account_active=true ORDER BY name, email LIMIT 500
+			mfa_enabled, email_verified_at, session_version, created_at, avatar_updated_at
+		FROM users WHERE role='user' AND account_active=true AND email_verified_at IS NOT NULL ORDER BY name, email LIMIT 500
 	`)
 	if err != nil {
 		return nil, err
@@ -180,7 +180,7 @@ func (s *Store) ListClientUsers(ctx context.Context) ([]model.User, error) {
 	for rows.Next() {
 		var user model.User
 		if err := rows.Scan(&user.ID, &user.Name, &user.Email, &user.Role, &user.AdminPermissions,
-			&user.AccountActive, &user.MFAEnabled, &user.CreatedAt, &user.AvatarUpdatedAt); err != nil {
+			&user.AccountActive, &user.MFAEnabled, &user.EmailVerifiedAt, &user.SessionVersion, &user.CreatedAt, &user.AvatarUpdatedAt); err != nil {
 			return nil, err
 		}
 		users = append(users, user)
@@ -190,17 +190,17 @@ func (s *Store) ListClientUsers(ctx context.Context) ([]model.User, error) {
 
 func (s *Store) UpdateProfile(ctx context.Context, id, name string) (model.User, error) {
 	var user model.User
-	err := s.pool.QueryRow(ctx, `UPDATE users SET name=$2 WHERE id=$1 RETURNING id::text,name,email,role,admin_permissions,account_active,mfa_enabled,created_at,avatar_updated_at`, id, name).Scan(&user.ID, &user.Name, &user.Email, &user.Role, &user.AdminPermissions, &user.AccountActive, &user.MFAEnabled, &user.CreatedAt, &user.AvatarUpdatedAt)
+	err := s.pool.QueryRow(ctx, `UPDATE users SET name=$2 WHERE id=$1 RETURNING id::text,name,email,role,admin_permissions,account_active,mfa_enabled,email_verified_at,session_version,created_at,avatar_updated_at`, id, name).Scan(&user.ID, &user.Name, &user.Email, &user.Role, &user.AdminPermissions, &user.AccountActive, &user.MFAEnabled, &user.EmailVerifiedAt, &user.SessionVersion, &user.CreatedAt, &user.AvatarUpdatedAt)
 	return user, mapNotFound(err)
 }
 func (s *Store) UpdateAvatar(ctx context.Context, id, contentType string, data []byte) (model.User, error) {
 	var user model.User
-	err := s.pool.QueryRow(ctx, `UPDATE users SET avatar_data=$2,avatar_type=$3,avatar_updated_at=now() WHERE id=$1 RETURNING id::text,name,email,role,admin_permissions,account_active,mfa_enabled,created_at,avatar_updated_at`, id, data, contentType).Scan(&user.ID, &user.Name, &user.Email, &user.Role, &user.AdminPermissions, &user.AccountActive, &user.MFAEnabled, &user.CreatedAt, &user.AvatarUpdatedAt)
+	err := s.pool.QueryRow(ctx, `UPDATE users SET avatar_data=$2,avatar_type=$3,avatar_updated_at=now() WHERE id=$1 RETURNING id::text,name,email,role,admin_permissions,account_active,mfa_enabled,email_verified_at,session_version,created_at,avatar_updated_at`, id, data, contentType).Scan(&user.ID, &user.Name, &user.Email, &user.Role, &user.AdminPermissions, &user.AccountActive, &user.MFAEnabled, &user.EmailVerifiedAt, &user.SessionVersion, &user.CreatedAt, &user.AvatarUpdatedAt)
 	return user, mapNotFound(err)
 }
 func (s *Store) RemoveAvatar(ctx context.Context, id string) (model.User, error) {
 	var user model.User
-	err := s.pool.QueryRow(ctx, `UPDATE users SET avatar_data=NULL,avatar_type=NULL,avatar_updated_at=NULL WHERE id=$1 RETURNING id::text,name,email,role,admin_permissions,account_active,mfa_enabled,created_at,avatar_updated_at`, id).Scan(&user.ID, &user.Name, &user.Email, &user.Role, &user.AdminPermissions, &user.AccountActive, &user.MFAEnabled, &user.CreatedAt, &user.AvatarUpdatedAt)
+	err := s.pool.QueryRow(ctx, `UPDATE users SET avatar_data=NULL,avatar_type=NULL,avatar_updated_at=NULL WHERE id=$1 RETURNING id::text,name,email,role,admin_permissions,account_active,mfa_enabled,email_verified_at,session_version,created_at,avatar_updated_at`, id).Scan(&user.ID, &user.Name, &user.Email, &user.Role, &user.AdminPermissions, &user.AccountActive, &user.MFAEnabled, &user.EmailVerifiedAt, &user.SessionVersion, &user.CreatedAt, &user.AvatarUpdatedAt)
 	return user, mapNotFound(err)
 }
 func (s *Store) UserAvatar(ctx context.Context, id string) (string, []byte, error) {
@@ -208,6 +208,52 @@ func (s *Store) UserAvatar(ctx context.Context, id string) (string, []byte, erro
 	var data []byte
 	err := s.pool.QueryRow(ctx, `SELECT avatar_type,avatar_data FROM users WHERE id=$1 AND avatar_data IS NOT NULL`, id).Scan(&contentType, &data)
 	return contentType, data, mapNotFound(err)
+}
+
+func (s *Store) ReplaceAccountToken(ctx context.Context, userID, purpose string, tokenHash []byte, expiresAt time.Time) error {
+	_, err := s.pool.Exec(ctx, `INSERT INTO account_tokens (user_id, purpose, token_hash, expires_at)
+		VALUES ($1,$2,$3,$4)
+		ON CONFLICT (user_id, purpose) WHERE used_at IS NULL
+		DO UPDATE SET token_hash=EXCLUDED.token_hash, expires_at=EXCLUDED.expires_at, created_at=now()`,
+		userID, purpose, tokenHash, expiresAt)
+	return err
+}
+
+func (s *Store) VerifyEmailToken(ctx context.Context, tokenHash []byte) (model.User, error) {
+	var user model.User
+	err := s.pool.QueryRow(ctx, `WITH consumed AS (
+		UPDATE account_tokens SET used_at=now()
+		WHERE token_hash=$1 AND purpose='email_verification' AND used_at IS NULL AND expires_at>now()
+		RETURNING user_id
+	)
+	UPDATE users SET email_verified_at=COALESCE(email_verified_at, now())
+	FROM consumed WHERE users.id=consumed.user_id AND users.account_active=true AND users.role='user'
+	RETURNING users.id::text,users.name,users.email,users.role,users.admin_permissions,users.account_active,
+		users.mfa_enabled,users.email_verified_at,users.session_version,users.created_at,users.avatar_updated_at`, tokenHash).Scan(
+		&user.ID, &user.Name, &user.Email, &user.Role, &user.AdminPermissions, &user.AccountActive,
+		&user.MFAEnabled, &user.EmailVerifiedAt, &user.SessionVersion, &user.CreatedAt, &user.AvatarUpdatedAt)
+	return user, mapNotFound(err)
+}
+
+func (s *Store) ResetPasswordWithToken(ctx context.Context, tokenHash []byte, passwordHash string) (model.User, error) {
+	var user model.User
+	err := s.pool.QueryRow(ctx, `WITH consumed AS (
+		UPDATE account_tokens SET used_at=now()
+		WHERE token_hash=$1 AND purpose='password_reset' AND used_at IS NULL AND expires_at>now()
+		RETURNING user_id
+	)
+	UPDATE users SET password_hash=$2, email_verified_at=COALESCE(email_verified_at, now()), session_version=session_version+1
+	FROM consumed WHERE users.id=consumed.user_id AND users.account_active=true
+	RETURNING users.id::text,users.name,users.email,users.role,users.admin_permissions,users.account_active,
+		users.mfa_enabled,users.email_verified_at,users.session_version,users.created_at,users.avatar_updated_at`, tokenHash, passwordHash).Scan(
+		&user.ID, &user.Name, &user.Email, &user.Role, &user.AdminPermissions, &user.AccountActive,
+		&user.MFAEnabled, &user.EmailVerifiedAt, &user.SessionVersion, &user.CreatedAt, &user.AvatarUpdatedAt)
+	return user, mapNotFound(err)
+}
+
+func (s *Store) PurgeExpiredAccountTokens(ctx context.Context) error {
+	_, err := s.pool.Exec(ctx, `DELETE FROM account_tokens WHERE expires_at < now() - interval '24 hours' OR used_at < now() - interval '24 hours'`)
+	return err
 }
 
 func (s *Store) ListServices(ctx context.Context, includeInactive bool) ([]model.Service, error) {
@@ -443,35 +489,40 @@ func (s *Store) VerifyContract(ctx context.Context, contractNumber, contentHash 
 }
 
 const verificationRecordColumns = `id::text, verification_code, record_type, title, holder_name,
-	issued_on::text, COALESCE(expires_on::text, ''), status, public_note, created_at, updated_at`
+	issued_on::text, COALESCE(expires_on::text, ''), status, public_note, content_hash,
+	COALESCE(updated_by::text, ''), revoked_at, created_at, updated_at`
 
 func scanVerificationRecord(row scanner) (model.VerificationRecord, error) {
 	var item model.VerificationRecord
 	err := row.Scan(&item.ID, &item.VerificationCode, &item.RecordType, &item.Title, &item.HolderName,
-		&item.IssuedOn, &item.ExpiresOn, &item.Status, &item.PublicNote, &item.CreatedAt, &item.UpdatedAt)
+		&item.IssuedOn, &item.ExpiresOn, &item.Status, &item.PublicNote, &item.ContentHash,
+		&item.UpdatedBy, &item.RevokedAt, &item.CreatedAt, &item.UpdatedAt)
 	return item, err
 }
 
-func (s *Store) VerifyCompanyRecord(ctx context.Context, code string) (model.RecordVerification, error) {
+func (s *Store) VerifyCompanyRecord(ctx context.Context, code, contentHash string) (model.RecordVerification, error) {
 	var item model.RecordVerification
 	err := s.pool.QueryRow(ctx, `WITH matched AS (
 		SELECT vr.verification_code, vr.record_type, vr.title, vr.holder_name, vr.issued_on::text AS issued_on,
 			COALESCE(vr.expires_on::text, '') AS expires_on,
 			CASE WHEN vr.status='revoked' THEN 'revoked' WHEN vr.expires_on IS NOT NULL AND vr.expires_on < CURRENT_DATE THEN 'expired' ELSE 'valid' END AS status,
-			vr.public_note, COALESCE(NULLIF(ca.legal_name, ''), ca.display_name) AS provider_name, 1 AS priority
+			vr.public_note, COALESCE(NULLIF(ca.legal_name, ''), ca.display_name) AS provider_name,
+			vr.content_hash, ($2 <> '' AND vr.content_hash=$2) AS exact_match, 1 AS priority
 		FROM verification_records vr CROSS JOIN company_account ca
-		WHERE vr.verification_code=$1 AND ca.singleton=true
+		WHERE vr.verification_code=$1 AND ($2='' OR vr.content_hash=$2) AND ca.singleton=true
 		UNION ALL
 		SELECT c.contract_number, 'contract', c.title, '', COALESCE(c.sent_at::date::text, c.created_at::date::text), '',
 			CASE WHEN c.status='cancelled' THEN 'revoked' ELSE 'valid' END,
 			'Issued project agreement; use the printed SHA-256 fingerprint for full document matching.',
-			COALESCE(NULLIF(c.provider_legal_name, ''), c.provider_name), 0
-		FROM contracts c WHERE c.contract_number=$1 AND c.status <> 'draft'
+			COALESCE(NULLIF(c.provider_legal_name, ''), c.provider_name), c.content_hash,
+			($2 <> '' AND c.content_hash=$2), 0
+		FROM contracts c WHERE c.contract_number=$1 AND c.status <> 'draft' AND ($2='' OR c.content_hash=$2)
 	)
-	SELECT verification_code, record_type, title, holder_name, issued_on, expires_on, status, public_note, provider_name
-	FROM matched ORDER BY priority LIMIT 1`, code).Scan(
+	SELECT verification_code, record_type, title, holder_name, issued_on, expires_on, status, public_note,
+		provider_name, content_hash, exact_match
+	FROM matched ORDER BY priority LIMIT 1`, code, contentHash).Scan(
 		&item.VerificationCode, &item.RecordType, &item.Title, &item.HolderName, &item.IssuedOn,
-		&item.ExpiresOn, &item.Status, &item.PublicNote, &item.ProviderName,
+		&item.ExpiresOn, &item.Status, &item.PublicNote, &item.ProviderName, &item.ContentHash, &item.ExactMatch,
 	)
 	return item, mapNotFound(err)
 }
@@ -495,18 +546,20 @@ func (s *Store) ListVerificationRecords(ctx context.Context) ([]model.Verificati
 
 func (s *Store) CreateVerificationRecord(ctx context.Context, item model.VerificationRecord, createdBy string) (model.VerificationRecord, error) {
 	row := s.pool.QueryRow(ctx, `INSERT INTO verification_records
-		(verification_code, record_type, title, holder_name, issued_on, expires_on, status, public_note, created_by)
-		VALUES ($1,$2,$3,$4,$5::date,NULLIF($6,'')::date,$7,$8,$9::uuid) RETURNING `+verificationRecordColumns,
+		(verification_code, record_type, title, holder_name, issued_on, expires_on, status, public_note, content_hash, created_by, updated_by, revoked_at)
+		VALUES ($1,$2,$3,$4,$5::date,NULLIF($6,'')::date,$7::varchar,$8,$9,$10::uuid,$10::uuid,CASE WHEN $7::text='revoked' THEN now() END) RETURNING `+verificationRecordColumns,
 		item.VerificationCode, item.RecordType, item.Title, item.HolderName, item.IssuedOn, item.ExpiresOn,
-		item.Status, item.PublicNote, createdBy)
+		item.Status, item.PublicNote, item.ContentHash, createdBy)
 	return scanVerificationRecord(row)
 }
 
-func (s *Store) UpdateVerificationRecord(ctx context.Context, id string, item model.VerificationRecord) (model.VerificationRecord, error) {
+func (s *Store) UpdateVerificationRecord(ctx context.Context, id string, item model.VerificationRecord, updatedBy string) (model.VerificationRecord, error) {
 	row := s.pool.QueryRow(ctx, `UPDATE verification_records SET verification_code=$2, record_type=$3, title=$4,
-		holder_name=$5, issued_on=$6::date, expires_on=NULLIF($7,'')::date, status=$8, public_note=$9
+		holder_name=$5, issued_on=$6::date, expires_on=NULLIF($7,'')::date, status=$8, public_note=$9,
+		content_hash=$10, updated_by=$11::uuid,
+		revoked_at=CASE WHEN $8='revoked' THEN COALESCE(revoked_at, now()) ELSE NULL END
 		WHERE id=$1 RETURNING `+verificationRecordColumns, id, item.VerificationCode, item.RecordType,
-		item.Title, item.HolderName, item.IssuedOn, item.ExpiresOn, item.Status, item.PublicNote)
+		item.Title, item.HolderName, item.IssuedOn, item.ExpiresOn, item.Status, item.PublicNote, item.ContentHash, updatedBy)
 	result, err := scanVerificationRecord(row)
 	return result, mapNotFound(err)
 }
@@ -1326,14 +1379,14 @@ func (s *Store) EnsureAdmin(ctx context.Context, name, email, passwordHash strin
 		return nil
 	}
 	_, err := s.pool.Exec(ctx, `
-		INSERT INTO users (name, email, password_hash, role)
-		VALUES ($1, lower($2), $3, 'admin')
+		INSERT INTO users (name, email, password_hash, role, email_verified_at)
+		VALUES ($1, lower($2), $3, 'admin', now())
 		ON CONFLICT DO NOTHING
 	`, name, email, passwordHash)
 	if err != nil {
 		return fmt.Errorf("ensure admin user: %w", err)
 	}
-	if _, err := s.pool.Exec(ctx, "UPDATE users SET role='admin', account_active=true WHERE lower(email)=lower($1)", email); err != nil {
+	if _, err := s.pool.Exec(ctx, "UPDATE users SET role='admin', account_active=true, email_verified_at=COALESCE(email_verified_at, now()) WHERE lower(email)=lower($1)", email); err != nil {
 		return fmt.Errorf("promote admin user: %w", err)
 	}
 	return nil

@@ -54,6 +54,48 @@ test("desktop authentication forms keep their primary actions in view", async ({
   }
 });
 
+test("customer registration requires email ownership before account access", async ({ page }) => {
+  await page.route("**/api/v1/auth/**", async route => {
+    const path = new URL(route.request().url()).pathname;
+    if (path.endsWith("/auth/me")) return route.fulfill({ status: 401, json: { error: "authentication required" } });
+    if (path.endsWith("/auth/register")) {
+      expect(route.request().postDataJSON()).toMatchObject({ email: "client@example.com", password: "a-secure-password" });
+      return route.fulfill({ status: 202, json: { message: "Check your email to verify your account." } });
+    }
+    return route.fulfill({ status: 404, json: { error: "not mocked" } });
+  });
+
+  await page.goto("/register");
+  await page.getByLabel("Full name").fill("Example Client");
+  await page.getByLabel("Email address").fill("client@example.com");
+  await page.getByLabel("Password").fill("a-secure-password");
+  await page.getByRole("button", { name: "Create account" }).click();
+  await expect(page.getByRole("heading", { name: "Check your inbox." })).toBeVisible();
+  await expect(page.getByText("client@example.com")).toBeVisible();
+});
+
+test("password recovery uses a generic request response and resets once", async ({ page }) => {
+  await page.route("**/api/v1/auth/password-reset/**", async route => {
+    const path = new URL(route.request().url()).pathname;
+    if (path.endsWith("/request")) return route.fulfill({ status: 202, json: { message: "If the account exists, password reset instructions have been sent." } });
+    expect(route.request().postDataJSON()).toMatchObject({ token: "test-reset-token", password: "replacement-password" });
+    return route.fulfill({ json: { message: "Password updated. Sign in with your new password." } });
+  });
+  await page.goto("/forgot-password");
+  await page.waitForLoadState("networkidle");
+  await page.getByLabel("Email address").fill("unknown@example.com");
+  await page.getByRole("button", { name: "Send reset link" }).click();
+  await expect(page.getByText("If the account exists, password reset instructions have been sent.")).toBeVisible();
+
+  await page.goto("/reset-password?token=test-reset-token");
+  await page.waitForLoadState("networkidle");
+  await page.getByLabel("New password").fill("replacement-password");
+  await page.getByLabel("Confirm password").fill("replacement-password");
+  await page.getByRole("button", { name: "Update password" }).click();
+  await expect(page.getByRole("heading", { name: "Password updated." })).toBeVisible();
+  await expect(page.getByText("previous sessions have been revoked")).toBeVisible();
+});
+
 test("administrator enrollment requires recovery codes to be saved", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.route("**/api/v1/auth/**", async route => {

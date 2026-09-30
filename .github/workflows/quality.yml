@@ -23,6 +23,9 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm test
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:browser
+      - run: npm run deploy:frontend:dry-run
       - run: npm run audit:production
       - run: sh -n deploy/backup-db.sh deploy/verify-backup.sh
       - run: docker compose --env-file deploy/.env.example -f deploy/compose.prod.yaml config --quiet
@@ -30,6 +33,22 @@ jobs:
   backend:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: akeluwa_test
+          POSTGRES_USER: akeluwa_test
+          POSTGRES_PASSWORD: integration-test-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U akeluwa_test -d akeluwa_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgres://akeluwa_test:integration-test-password@localhost:5432/akeluwa_test?sslmode=disable
     defaults:
       run:
         working-directory: backend

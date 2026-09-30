@@ -8,6 +8,7 @@ import (
 	"crypto/sha1"
 	"crypto/sha256"
 	"encoding/base32"
+	"encoding/base64"
 	"encoding/binary"
 	"fmt"
 	"net/url"
@@ -22,11 +23,12 @@ import (
 const recoveryCodeAlphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 
 type Claims struct {
-	UserID      string `json:"uid"`
-	Role        string `json:"role"`
-	Name        string `json:"name"`
-	Purpose     string `json:"purpose"`
-	MFAVerified bool   `json:"mfa_verified,omitempty"`
+	UserID         string `json:"uid"`
+	Role           string `json:"role"`
+	Name           string `json:"name"`
+	Purpose        string `json:"purpose"`
+	MFAVerified    bool   `json:"mfa_verified,omitempty"`
+	SessionVersion int    `json:"session_version"`
 	jwt.RegisteredClaims
 }
 
@@ -40,15 +42,20 @@ func NewManager(secret, issuer string, ttl time.Duration) *Manager {
 	return &Manager{secret: []byte(secret), issuer: issuer, ttl: ttl}
 }
 
-func (m *Manager) Issue(userID, role, name string, mfaVerified bool) (string, time.Time, error) {
+func (m *Manager) Issue(userID, role, name string, mfaVerified bool, versions ...int) (string, time.Time, error) {
 	now := time.Now().UTC()
 	expiresAt := now.Add(m.ttl)
+	sessionVersion := 1
+	if len(versions) > 0 && versions[0] > 0 {
+		sessionVersion = versions[0]
+	}
 	claims := Claims{
-		UserID:      userID,
-		Role:        role,
-		Name:        name,
-		Purpose:     "session",
-		MFAVerified: mfaVerified,
+		UserID:         userID,
+		Role:           role,
+		Name:           name,
+		Purpose:        "session",
+		MFAVerified:    mfaVerified,
+		SessionVersion: sessionVersion,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    m.issuer,
 			Subject:   userID,
@@ -61,11 +68,32 @@ func (m *Manager) Issue(userID, role, name string, mfaVerified bool) (string, ti
 	return signed, expiresAt, err
 }
 
-func (m *Manager) IssueMFAChallenge(userID string) (string, error) {
+func GenerateAccountToken() (string, []byte, error) {
+	random := make([]byte, 32)
+	if _, err := rand.Read(random); err != nil {
+		return "", nil, fmt.Errorf("generate account token: %w", err)
+	}
+	raw := base64.RawURLEncoding.EncodeToString(random)
+	hash := sha256.Sum256([]byte(raw))
+	return raw, hash[:], nil
+}
+
+func AccountTokenHash(raw string) ([]byte, bool) {
+	normalized := strings.TrimSpace(raw)
+	decoded, err := base64.RawURLEncoding.DecodeString(normalized)
+	if err != nil || len(decoded) != 32 {
+		return nil, false
+	}
+	hash := sha256.Sum256([]byte(normalized))
+	return hash[:], true
+}
+
+func (m *Manager) IssueMFAChallenge(userID string, sessionVersion int) (string, error) {
 	now := time.Now().UTC()
 	claims := Claims{
-		UserID:  userID,
-		Purpose: "mfa_challenge",
+		UserID:         userID,
+		Purpose:        "mfa_challenge",
+		SessionVersion: sessionVersion,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    m.issuer,
 			Subject:   userID,

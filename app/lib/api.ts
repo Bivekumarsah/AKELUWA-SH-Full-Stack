@@ -20,6 +20,7 @@ export type User = {
   admin_permissions: AdminPermission[];
   account_active: boolean;
   mfa_enabled: boolean;
+  email_verified_at?: string;
   created_at: string;
   avatar_updated_at?: string;
 };
@@ -261,6 +262,9 @@ export type VerificationRecord = {
   expires_on?: string;
   status: "active" | "revoked";
   public_note?: string;
+  content_hash?: string;
+  updated_by?: string;
+  revoked_at?: string;
   created_at: string;
   updated_at: string;
 };
@@ -268,6 +272,7 @@ export type VerificationRecord = {
 export type RecordVerification = Omit<VerificationRecord, "id" | "created_at" | "updated_at" | "status"> & {
   status: "valid" | "expired" | "revoked";
   provider_name: string;
+  exact_match: boolean;
 };
 
 export type DownloadResource = {

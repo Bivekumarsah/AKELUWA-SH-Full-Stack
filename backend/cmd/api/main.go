@@ -13,6 +13,7 @@ import (
 	"github.com/akeluwa/software-hub/backend/internal/config"
 	"github.com/akeluwa/software-hub/backend/internal/database"
 	"github.com/akeluwa/software-hub/backend/internal/httpapi"
+	"github.com/akeluwa/software-hub/backend/internal/mailer"
 	"github.com/akeluwa/software-hub/backend/internal/store"
 )
 
@@ -40,6 +41,9 @@ func main() {
 	}
 
 	data := store.New(pool)
+	if err := data.PurgeExpiredAccountTokens(ctx); err != nil {
+		logger.Warn("expired account token cleanup failed", "error", err)
+	}
 	if cfg.AdminEmail != "" {
 		hash, err := auth.HashPassword(cfg.AdminPassword)
 		if err != nil {
@@ -58,7 +62,11 @@ func main() {
 		logger.Error("MFA encryption initialization failed", "error", err)
 		os.Exit(1)
 	}
-	api := httpapi.New(cfg, data, tokens, secretCipher, logger)
+	var emailSender mailer.Sender = mailer.Development{Logger: logger}
+	if cfg.SMTPHost != "" {
+		emailSender = mailer.NewSMTP(cfg.SMTPHost, cfg.SMTPPort, cfg.SMTPUsername, cfg.SMTPPassword, cfg.SMTPFrom)
+	}
+	api := httpapi.New(cfg, data, tokens, secretCipher, emailSender, logger)
 	server := &http.Server{
 		Addr:              cfg.Address,
 		Handler:           api.Router(),

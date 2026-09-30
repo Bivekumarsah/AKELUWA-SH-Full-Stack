@@ -12,6 +12,8 @@ type User struct {
 	PasswordHash     string     `json:"-"`
 	MFASecret        []byte     `json:"-"`
 	MFAEnabled       bool       `json:"mfa_enabled"`
+	EmailVerifiedAt  *time.Time `json:"email_verified_at,omitempty"`
+	SessionVersion   int        `json:"-"`
 	CreatedAt        time.Time  `json:"created_at"`
 	AvatarUpdatedAt  *time.Time `json:"avatar_updated_at,omitempty"`
 }
@@ -240,17 +242,20 @@ type ContractVerification struct {
 }
 
 type VerificationRecord struct {
-	ID               string    `json:"id"`
-	VerificationCode string    `json:"verification_code"`
-	RecordType       string    `json:"record_type"`
-	Title            string    `json:"title"`
-	HolderName       string    `json:"holder_name,omitempty"`
-	IssuedOn         string    `json:"issued_on"`
-	ExpiresOn        string    `json:"expires_on,omitempty"`
-	Status           string    `json:"status"`
-	PublicNote       string    `json:"public_note,omitempty"`
-	CreatedAt        time.Time `json:"created_at"`
-	UpdatedAt        time.Time `json:"updated_at"`
+	ID               string     `json:"id"`
+	VerificationCode string     `json:"verification_code"`
+	RecordType       string     `json:"record_type"`
+	Title            string     `json:"title"`
+	HolderName       string     `json:"holder_name,omitempty"`
+	IssuedOn         string     `json:"issued_on"`
+	ExpiresOn        string     `json:"expires_on,omitempty"`
+	Status           string     `json:"status"`
+	PublicNote       string     `json:"public_note,omitempty"`
+	ContentHash      string     `json:"content_hash,omitempty"`
+	UpdatedBy        string     `json:"updated_by,omitempty"`
+	RevokedAt        *time.Time `json:"revoked_at,omitempty"`
+	CreatedAt        time.Time  `json:"created_at"`
+	UpdatedAt        time.Time  `json:"updated_at"`
 }
 
 type RecordVerification struct {
@@ -263,6 +268,8 @@ type RecordVerification struct {
 	Status           string `json:"status"`
 	PublicNote       string `json:"public_note,omitempty"`
 	ProviderName     string `json:"provider_name"`
+	ContentHash      string `json:"content_hash,omitempty"`
+	ExactMatch       bool   `json:"exact_match"`
 }
 
 type Download struct {

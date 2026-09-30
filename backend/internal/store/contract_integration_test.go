@@ -91,17 +91,25 @@ func TestContractIdentityAndOwnershipRoundTrip(t *testing.T) {
 		VerificationCode: fmt.Sprintf("TEST-CERT-%d", suffix), RecordType: "certificate",
 		Title: "Verified integration certificate", HolderName: "Example Holder", IssuedOn: "2026-09-01",
 		ExpiresOn: "2027-09-01", Status: "active", PublicNote: "Issued after successful assessment.",
+		ContentHash: strings.Repeat("a", 64),
 	}, client.ID)
 	if err != nil {
 		t.Fatalf("create verification record: %v", err)
 	}
 	defer pool.Exec(context.Background(), `DELETE FROM verification_records WHERE id=$1`, record.ID)
-	publicRecord, err := data.VerifyCompanyRecord(ctx, record.VerificationCode)
+	publicRecord, err := data.VerifyCompanyRecord(ctx, record.VerificationCode, "")
 	if err != nil {
 		t.Fatalf("verify company record: %v", err)
 	}
 	if publicRecord.Status != "valid" || publicRecord.HolderName != "Example Holder" || publicRecord.ProviderName == "" {
 		t.Fatalf("company record did not return safe verification details: %#v", publicRecord)
+	}
+	exactRecord, err := data.VerifyCompanyRecord(ctx, record.VerificationCode, record.ContentHash)
+	if err != nil || !exactRecord.ExactMatch || exactRecord.ContentHash != record.ContentHash {
+		t.Fatalf("company record exact fingerprint match failed: item=%#v err=%v", exactRecord, err)
+	}
+	if _, err := data.VerifyCompanyRecord(ctx, record.VerificationCode, strings.Repeat("0", 64)); !errors.Is(err, store.ErrNotFound) {
+		t.Fatalf("mismatched company record fingerprint: expected not found, got %v", err)
 	}
 
 	signed, err := data.SignContract(ctx, issued.ID, client.ID, "client", client.Name, "data:image/png;base64,test", "127.0.0.1", "integration-test")

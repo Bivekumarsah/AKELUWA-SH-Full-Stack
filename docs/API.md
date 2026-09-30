@@ -23,7 +23,11 @@ The Go router in `backend/internal/httpapi/api.go` is the executable source of t
 
 | Method | Path | Session | Purpose |
 |---|---|---|---|
-| POST | `/auth/register` | No | Create a customer account |
+| POST | `/auth/register` | No | Create an inactive customer account and send an email ownership link |
+| POST | `/auth/verify-email` | No | Consume a one-time verification token and create the customer session |
+| POST | `/auth/resend-verification` | No | Send a replacement ownership link using a non-enumerating response |
+| POST | `/auth/password-reset/request` | No | Send a time-limited reset link using a non-enumerating response |
+| POST | `/auth/password-reset/confirm` | No | Consume a reset token, replace the password, and revoke older sessions |
 | POST | `/auth/login` | No | Verify email and password; administrators receive an MFA challenge |
 | POST | `/auth/mfa/verify` | MFA challenge | Verify TOTP or a single-use recovery code and create administrator session |
 | POST | `/auth/mfa/recovery-codes` | Admin MFA session | Replace the current administrator's recovery codes after fresh TOTP verification |
@@ -40,7 +44,7 @@ The Go router in `backend/internal/httpapi/api.go` is the executable source of t
 |---|---|---|
 | GET | `/company-brand` | Public display name, tagline, and tagline meaning |
 | GET | `/contracts/verify?number={reference}&fingerprint={sha256}` | Verify a locked contract using non-sensitive authenticity data |
-| GET | `/records/verify?code={id}` | Verify a company-issued certificate, document, letter, report, approval, or contract number |
+| GET | `/records/verify?code={id}&fingerprint={sha256}` | Verify a company-issued record by ID and optionally match the exact file fingerprint |
 | GET | `/services` | Published services |
 | GET | `/portfolio` | Published portfolio items |
 | GET | `/downloads` | Published downloadable resources |
@@ -49,7 +53,7 @@ The Go router in `backend/internal/httpapi/api.go` is the executable source of t
 | POST | `/careers/{id}/applications` | Submit candidate details and resume |
 | POST | `/inquiries` | Submit project inquiry |
 
-Registration, login, MFA verification, recovery-code replacement, record verification, inquiries, and career applications use PostgreSQL-coordinated rate limits that remain consistent across API replicas. Exact contract verification requires both the reference and full fingerprint and does not return client identity, commercial terms, signature images, or request metadata. General record lookup returns only the administrator-approved public title, optional holder, dates, status, and note; an unknown code receives a generic not-registered response.
+Registration, ownership verification, password recovery, login, MFA verification, recovery-code replacement, record verification, inquiries, and career applications are rate limited. Account tokens contain 256 random bits, are stored only as SHA-256 hashes, expire, and are consumed once. Protected requests compare the signed session version with PostgreSQL, so password resets, role changes, suspensions, and delegated-access changes revoke older sessions. Exact verification requires the ID and full fingerprint and excludes confidential client, commercial, signature-image, and request metadata.
 
 ## Customer Account
 
@@ -62,7 +66,7 @@ Every route requires a signed session. Store queries enforce that customers only
 | GET | `/account/invoices` | Current user's invoices and balances |
 | POST | `/account/contracts/{id}/sign` | Customer electronic contract signature |
 
-Contract creation requires an active registered client, and the submitted email must match that account. Drafts remain admin-only; sent-contract visibility and signing are enforced by the permanent user ID. Signature uploads must decode as bounded PNG images, and the send action snapshots company identity before calculating the locked content fingerprint.
+Contract creation requires an active, email-verified client, and the submitted email must match that account. Drafts remain admin-only; sent-contract visibility and signing are enforced by the permanent user ID. Signature uploads must decode as bounded PNG images, and the send action snapshots company identity before calculating the locked content fingerprint.
 
 ## Administration
 

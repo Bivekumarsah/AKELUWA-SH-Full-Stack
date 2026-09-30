@@ -6,6 +6,7 @@ PostgreSQL is the production data store. The schema source of truth is `backend/
 
 ```text
 users
+  -> account_tokens.user_id
   -> inquiries.user_id
   -> contracts.user_id
   -> accounting_invoices.user_id
@@ -39,12 +40,14 @@ careers
 | `admin_audit_logs` | Immutable admin write audit trail |
 | `admin_action_requests` | Delayed destructive-action approval workflow |
 | `mfa_recovery_codes` | Hashed, single-use administrator recovery codes |
+| `account_tokens` | Hashed, expiring, single-use email verification and password-reset tokens |
 | `api_rate_limits` | Shared request limits across API instances |
 | `verification_records` | Public certificate, document, letter, report, and approval authenticity registry |
 
 ## Data Integrity Rules
 
 - User emails are unique case-insensitively.
+- New customer accounts require verified email ownership. Session versions provide immediate server-side revocation after security or access changes.
 - Inquiry, contract, and invoice records link to the owning customer where applicable.
 - Contract creation validates that the selected active client account owns the contract email. Visibility and client signing use the immutable user ID, avoiding trust in an unverified email-only claim.
 - Sent contracts snapshot company legal/contact identifiers and include them in the SHA-256 content fingerprint so later company-account edits do not rewrite an issued document.
@@ -53,6 +56,7 @@ careers
 - A posted accounting transaction is voided through a replacement status, preserving financial history.
 - Customer invoice access requires the invoice ownership relationship introduced in `012_client_invoice_access.sql`.
 - Administrator audit records are protected from updates and deletion by database logic.
+- Verification registry entries can store a SHA-256 file fingerprint, last editor, and revocation timestamp.
 
 ## Migrations
 
@@ -73,6 +77,8 @@ careers
 | `013_security_operations.sql` | MFA recovery codes and distributed API rate limits |
 | `014_contract_identity.sql` | Locked company legal/contact identity snapshots for issued contracts |
 | `015_verification_registry.sql` | Public company-record verification IDs, status, dates, and safe display fields |
+| `016_account_security_document_integrity.sql` | Email ownership, password recovery tokens, session revocation, and registry fingerprints/audit fields |
+| `017_single_active_account_token.sql` | One active ownership or recovery token per account and purpose, enforced across replicas |
 
 ## Migration Rules
 

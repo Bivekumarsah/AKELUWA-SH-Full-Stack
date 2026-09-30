@@ -49,7 +49,7 @@ func TestPasswordHashRoundTrip(t *testing.T) {
 
 func TestMFAChallengeCannotBeUsedAsSession(t *testing.T) {
 	manager := NewManager("a-secret-that-is-long-enough-for-testing", "test-issuer", time.Minute)
-	value, err := manager.IssueMFAChallenge("admin-id")
+	value, err := manager.IssueMFAChallenge("admin-id", 3)
 	if err != nil {
 		t.Fatalf("IssueMFAChallenge returned an error: %v", err)
 	}
@@ -57,7 +57,7 @@ func TestMFAChallengeCannotBeUsedAsSession(t *testing.T) {
 		t.Fatal("expected an MFA challenge to be rejected as a session")
 	}
 	claims, err := manager.ParseMFAChallenge(value)
-	if err != nil || claims.UserID != "admin-id" {
+	if err != nil || claims.UserID != "admin-id" || claims.SessionVersion != 3 {
 		t.Fatalf("unexpected MFA challenge result: claims=%#v err=%v", claims, err)
 	}
 }
@@ -99,5 +99,38 @@ func TestTokenRoundTrip(t *testing.T) {
 	}
 	if claims.UserID != "user-id" || claims.Role != "admin" {
 		t.Fatalf("unexpected claims: %#v", claims)
+	}
+}
+
+func TestAccountTokensAreRandomAndHashable(t *testing.T) {
+	first, firstHash, err := GenerateAccountToken()
+	if err != nil {
+		t.Fatalf("GenerateAccountToken returned an error: %v", err)
+	}
+	second, secondHash, err := GenerateAccountToken()
+	if err != nil {
+		t.Fatalf("GenerateAccountToken returned an error: %v", err)
+	}
+	if first == second || bytes.Equal(firstHash, secondHash) {
+		t.Fatal("account tokens must be unique")
+	}
+	parsed, ok := AccountTokenHash(first)
+	if !ok || !bytes.Equal(parsed, firstHash) {
+		t.Fatal("generated account token should reproduce its stored hash")
+	}
+	if _, ok := AccountTokenHash("not-a-token"); ok {
+		t.Fatal("malformed account token was accepted")
+	}
+}
+
+func TestSessionVersionRoundTrip(t *testing.T) {
+	manager := NewManager("a-secret-that-is-long-enough-for-testing", "test-issuer", time.Minute)
+	value, _, err := manager.Issue("user-id", "user", "Akeluwa Client", false, 7)
+	if err != nil {
+		t.Fatalf("Issue returned an error: %v", err)
+	}
+	claims, err := manager.Parse(value)
+	if err != nil || claims.SessionVersion != 7 {
+		t.Fatalf("unexpected session version: claims=%#v err=%v", claims, err)
 	}
 }

@@ -16,6 +16,12 @@ func setValidEnvironment(t *testing.T) {
 	t.Setenv("COOKIE_SAME_SITE", "lax")
 	t.Setenv("SESSION_TTL", "24h")
 	t.Setenv("TRUST_PROXY_HEADERS", "false")
+	t.Setenv("FRONTEND_URL", "http://localhost:5173")
+	t.Setenv("SMTP_HOST", "")
+	t.Setenv("SMTP_PORT", "587")
+	t.Setenv("SMTP_USERNAME", "")
+	t.Setenv("SMTP_PASSWORD", "")
+	t.Setenv("SMTP_FROM", "")
 	t.Setenv("ADMIN_EMAIL", "")
 	t.Setenv("ADMIN_PASSWORD", "")
 }
@@ -50,6 +56,11 @@ func TestLoadRejectsUnsafeProductionConfiguration(t *testing.T) {
 			t.Setenv("APP_ENV", "production")
 			t.Setenv("COOKIE_SECURE", "true")
 			t.Setenv("CORS_ORIGINS", "https://example.com")
+			t.Setenv("FRONTEND_URL", "https://www.example.com")
+			t.Setenv("SMTP_HOST", "smtp.example.com")
+			t.Setenv("SMTP_USERNAME", "mailer@example.com")
+			t.Setenv("SMTP_PASSWORD", "production-mail-password")
+			t.Setenv("SMTP_FROM", "mailer@example.com")
 			t.Setenv(test.key, test.value)
 
 			_, err := Load()
@@ -67,5 +78,32 @@ func TestLoadRejectsOriginWithPath(t *testing.T) {
 	_, err := Load()
 	if err == nil || !strings.Contains(err.Error(), "path") {
 		t.Fatalf("expected an invalid origin error, got %v", err)
+	}
+}
+
+func TestLoadRejectsInvalidSMTPPort(t *testing.T) {
+	setValidEnvironment(t)
+	t.Setenv("SMTP_PORT", "70000")
+
+	_, err := Load()
+	if err == nil || !strings.Contains(err.Error(), "SMTP_PORT") {
+		t.Fatalf("expected an invalid SMTP port error, got %v", err)
+	}
+}
+
+func TestLoadRejectsUnsafeProductionSMTPSender(t *testing.T) {
+	setValidEnvironment(t)
+	t.Setenv("APP_ENV", "production")
+	t.Setenv("COOKIE_SECURE", "true")
+	t.Setenv("CORS_ORIGINS", "https://example.com")
+	t.Setenv("FRONTEND_URL", "https://www.example.com")
+	t.Setenv("SMTP_HOST", "smtp.example.com")
+	t.Setenv("SMTP_USERNAME", "mailer@example.com")
+	t.Setenv("SMTP_PASSWORD", "production-mail-password")
+	t.Setenv("SMTP_FROM", "AKELUWA SH <mailer@example.com>")
+
+	_, err := Load()
+	if err == nil || !strings.Contains(err.Error(), "SMTP_FROM") {
+		t.Fatalf("expected an invalid SMTP sender error, got %v", err)
 	}
 }

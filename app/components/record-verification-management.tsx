@@ -1,13 +1,20 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { BadgeCheck, Ban, Pencil, Plus } from "lucide-react";
+import { BadgeCheck, Ban, FileCheck2, Pencil, Plus, RefreshCw } from "lucide-react";
 import { apiFetch, readableError, User, VerificationRecord } from "@/app/lib/api";
 
 const today = () => new Date().toISOString().slice(0, 10);
+function secureVerificationCode(recordType = "certificate") {
+  const random = new Uint8Array(6);
+  crypto.getRandomValues(random);
+  const suffix = Array.from(random, (value) => value.toString(16).padStart(2, "0")).join("").toUpperCase();
+  return `AK-${recordType.slice(0, 4).toUpperCase()}-${new Date().getFullYear()}-${suffix}`;
+}
+
 const blankRecord = (): VerificationRecord => ({
-  id: "", verification_code: "", record_type: "certificate", title: "", holder_name: "",
-  issued_on: today(), expires_on: "", status: "active", public_note: "", created_at: "", updated_at: "",
+  id: "", verification_code: secureVerificationCode(), record_type: "certificate", title: "", holder_name: "",
+  issued_on: today(), expires_on: "", status: "active", public_note: "", content_hash: "", created_at: "", updated_at: "",
 });
 
 function payload(item: VerificationRecord) {
@@ -20,6 +27,7 @@ function payload(item: VerificationRecord) {
     expires_on: item.expires_on || "",
     status: item.status,
     public_note: item.public_note || "",
+    content_hash: item.content_hash || "",
   };
 }
 
@@ -91,6 +99,18 @@ export default function RecordVerificationManagement({ administrator }: { admini
     }
   }
 
+  async function fingerprintFile(file?: File) {
+    if (!file || !draft) return;
+    setError("");
+    try {
+      const digest = await crypto.subtle.digest("SHA-256", await file.arrayBuffer());
+      const contentHash = Array.from(new Uint8Array(digest), (value) => value.toString(16).padStart(2, "0")).join("");
+      setDraft((current) => current ? { ...current, content_hash: contentHash } : current);
+    } catch {
+      setError("This browser could not calculate the file fingerprint.");
+    }
+  }
+
   return <section className="admin-panel verification-admin-panel">
     <div className="admin-panel-heading"><p className="portal-kicker">TRUST / PUBLIC REGISTRY</p><h1>Record verification</h1><p>Issue public verification IDs for certificates, documents, letters, reports, and approvals. Contracts are recognized automatically by contract number.</p></div>
     {error && <p className="form-alert is-error" role="alert">{error}</p>}
@@ -100,7 +120,7 @@ export default function RecordVerificationManagement({ administrator }: { admini
 
     {draft && <form className="publish-editor verification-editor" onSubmit={save}>
       <div className="editor-grid">
-        <label>Verification ID<input value={draft.verification_code} onChange={(event) => setDraft({ ...draft, verification_code: event.target.value.toUpperCase() })} placeholder="AK-CERT-2026-0001" required minLength={3} maxLength={80} pattern="[A-Za-z0-9][A-Za-z0-9_/-]*" /></label>
+        <div className="verification-id-field"><label htmlFor="verification-record-id">Verification ID</label><div className="verification-code-control"><input id="verification-record-id" value={draft.verification_code} onChange={(event) => setDraft({ ...draft, verification_code: event.target.value.toUpperCase() })} placeholder="AK-CERT-2026-0001" required minLength={3} maxLength={80} pattern="[A-Za-z0-9][A-Za-z0-9_/-]*" /><button type="button" aria-label="Create random record code" title="Create random record code" onClick={() => setDraft({ ...draft, verification_code: secureVerificationCode(draft.record_type) })}><RefreshCw size={16} aria-hidden="true" /></button></div></div>
         <label>Record type<select value={draft.record_type} onChange={(event) => setDraft({ ...draft, record_type: event.target.value as VerificationRecord["record_type"] })}><option value="certificate">Certificate</option><option value="document">Document</option><option value="letter">Letter</option><option value="report">Report</option><option value="approval">Approval</option><option value="other">Other</option></select></label>
         <label className="wide-field">Public title<input value={draft.title} onChange={(event) => setDraft({ ...draft, title: event.target.value })} placeholder="Certificate of completion" required minLength={3} maxLength={200} /></label>
         <label>Issued to <small>Optional; shown publicly only when entered</small><input value={draft.holder_name || ""} onChange={(event) => setDraft({ ...draft, holder_name: event.target.value })} placeholder="Person or organization" maxLength={160} /></label>
@@ -108,6 +128,8 @@ export default function RecordVerificationManagement({ administrator }: { admini
         <label>Issue date<input type="date" value={draft.issued_on} onChange={(event) => setDraft({ ...draft, issued_on: event.target.value })} required /></label>
         <label>Expiry date <small>Optional</small><input type="date" value={draft.expires_on || ""} min={draft.issued_on} onChange={(event) => setDraft({ ...draft, expires_on: event.target.value })} /></label>
         <label className="wide-field">Public note<textarea value={draft.public_note || ""} onChange={(event) => setDraft({ ...draft, public_note: event.target.value })} placeholder="Public confirmation details only; do not include confidential information." maxLength={500} /></label>
+        <label className="wide-field">SHA-256 fingerprint <small>Optional exact-file proof</small><input value={draft.content_hash || ""} onChange={(event) => setDraft({ ...draft, content_hash: event.target.value.toLowerCase() })} placeholder="64-character fingerprint" minLength={64} maxLength={64} pattern="[a-fA-F0-9]{64}" /></label>
+        <label className="wide-field verification-file-field"><FileCheck2 size={16} aria-hidden="true" /> Calculate from file<input type="file" onChange={(event) => void fingerprintFile(event.target.files?.[0])} /></label>
       </div>
       <div className="verification-editor-actions"><button className="portal-primary" type="submit" disabled={saving}>{saving ? "Saving..." : draft.id ? "Update record" : "Issue record"}</button><button type="button" onClick={() => setDraft(null)}>Cancel</button></div>
     </form>}

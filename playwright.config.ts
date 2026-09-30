@@ -6,8 +6,14 @@ export default defineConfig({
   workers: 1,
   use: {
     baseURL: process.env.PLAYWRIGHT_BASE_URL || "http://localhost:5173",
-    channel: process.env.PLAYWRIGHT_CHANNEL || "msedge",
+    channel: process.env.PLAYWRIGHT_CHANNEL || (process.env.CI ? undefined : "msedge"),
     screenshot: "only-on-failure",
     trace: "retain-on-failure",
+  },
+  webServer: {
+    command: "npm run dev",
+    url: "http://localhost:5173",
+    reuseExistingServer: !process.env.CI,
+    timeout: 120_000,
   },
 });

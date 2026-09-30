@@ -24,6 +24,7 @@ import (
 
 	"github.com/akeluwa/software-hub/backend/internal/auth"
 	"github.com/akeluwa/software-hub/backend/internal/config"
+	"github.com/akeluwa/software-hub/backend/internal/mailer"
 	"github.com/akeluwa/software-hub/backend/internal/model"
 	"github.com/akeluwa/software-hub/backend/internal/store"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -34,6 +35,7 @@ type contextKey string
 const (
 	claimsKey    contextKey = "session_claims"
 	adminUserKey contextKey = "admin_user"
+	authUserKey  contextKey = "authenticated_user"
 )
 
 var (
@@ -89,18 +91,25 @@ type API struct {
 	store      *store.Store
 	tokens     *auth.Manager
 	mfaSecrets *auth.SecretCipher
+	email      mailer.Sender
 	logger     *slog.Logger
 	origins    map[string]struct{}
 	rateLimits *rateLimiter
 	metrics    apiMetrics
 }
 
-func New(cfg config.Config, data *store.Store, tokens *auth.Manager, mfaSecrets *auth.SecretCipher, logger *slog.Logger) *API {
+func New(cfg config.Config, data *store.Store, tokens *auth.Manager, mfaSecrets *auth.SecretCipher, email mailer.Sender, logger *slog.Logger) *API {
+	if email == nil {
+		email = mailer.Disabled{}
+	}
+	if logger == nil {
+		logger = slog.Default()
+	}
 	origins := make(map[string]struct{}, len(cfg.AllowedOrigins))
 	for _, origin := range cfg.AllowedOrigins {
 		origins[origin] = struct{}{}
 	}
-	return &API{cfg: cfg, store: data, tokens: tokens, mfaSecrets: mfaSecrets, logger: logger, origins: origins, rateLimits: newRateLimiter(time.Now)}
+	return &API{cfg: cfg, store: data, tokens: tokens, mfaSecrets: mfaSecrets, email: email, logger: logger, origins: origins, rateLimits: newRateLimiter(time.Now)}
 }
 
 func (a *API) Router() http.Handler {
@@ -110,6 +119,10 @@ func (a *API) Router() http.Handler {
 	mux.HandleFunc("GET /healthz", a.health)
 	mux.HandleFunc("GET /metrics", a.prometheusMetrics)
 	mux.Handle("POST /api/v1/auth/register", a.limitRequests("register", 5, time.Hour, http.HandlerFunc(a.register)))
+	mux.Handle("POST /api/v1/auth/verify-email", a.limitRequests("verify-email", 10, time.Hour, http.HandlerFunc(a.verifyEmail)))
+	mux.Handle("POST /api/v1/auth/resend-verification", a.limitRequests("resend-verification", 3, time.Hour, http.HandlerFunc(a.resendVerification)))
+	mux.Handle("POST /api/v1/auth/password-reset/request", a.limitRequests("password-reset-request", 3, time.Hour, http.HandlerFunc(a.requestPasswordReset)))
+	mux.Handle("POST /api/v1/auth/password-reset/confirm", a.limitRequests("password-reset-confirm", 8, time.Hour, http.HandlerFunc(a.confirmPasswordReset)))
 	mux.Handle("POST /api/v1/auth/login", a.limitRequests("login", 8, time.Minute, http.HandlerFunc(a.login)))
 	mux.Handle("POST /api/v1/auth/mfa/verify", a.limitRequests("mfa-verify", 8, time.Minute, http.HandlerFunc(a.verifyMFA)))
 	mux.Handle("POST /api/v1/auth/mfa/recovery-codes", a.requireAdmin(a.limitRequests("mfa-recovery-regenerate", 3, time.Minute, a.auditAdmin(http.HandlerFunc(a.regenerateMFARecoveryCodes)))))
@@ -212,8 +225,8 @@ func (a *API) register(w http.ResponseWriter, r *http.Request) {
 	}
 	input.Name = strings.TrimSpace(input.Name)
 	input.Email = strings.ToLower(strings.TrimSpace(input.Email))
-	if len(input.Name) < 2 || len(input.Name) > 120 || !validEmail(input.Email) || len(input.Password) < 8 || len(input.Password) > 72 {
-		writeError(w, http.StatusUnprocessableEntity, "provide a valid name, email, and password of 8–72 characters")
+	if len(input.Name) < 2 || len(input.Name) > 120 || !validEmail(input.Email) || len(input.Password) < 12 || len(input.Password) > 72 {
+		writeError(w, http.StatusUnprocessableEntity, "provide a valid name, email, and password of 12 to 72 characters")
 		return
 	}
 	hash, err := auth.HashPassword(input.Password)
@@ -230,11 +243,145 @@ func (a *API) register(w http.ResponseWriter, r *http.Request) {
 		a.internalError(w, r, err)
 		return
 	}
+	if err := a.sendAccountToken(r.Context(), user, "email_verification", 24*time.Hour); err != nil {
+		a.logger.Error("send registration verification email", "user_id", user.ID, "error", err)
+		writeError(w, http.StatusServiceUnavailable, "account created, but verification email delivery failed; use resend verification")
+		return
+	}
+	writeJSON(w, http.StatusAccepted, map[string]any{"message": "Check your email to verify your account."})
+}
+
+func (a *API) verifyEmail(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		Token string `json:"token"`
+	}
+	if !a.decode(w, r, &input) {
+		return
+	}
+	hash, ok := auth.AccountTokenHash(input.Token)
+	if !ok {
+		writeError(w, http.StatusUnprocessableEntity, "verification link is invalid or expired")
+		return
+	}
+	user, err := a.store.VerifyEmailToken(r.Context(), hash)
+	if errors.Is(err, store.ErrNotFound) {
+		writeError(w, http.StatusUnprocessableEntity, "verification link is invalid or expired")
+		return
+	}
+	if err != nil {
+		a.internalError(w, r, err)
+		return
+	}
 	if err := a.startSession(w, user, false); err != nil {
 		a.internalError(w, r, err)
 		return
 	}
-	writeJSON(w, http.StatusCreated, map[string]any{"user": user})
+	writeJSON(w, http.StatusOK, map[string]any{"user": user})
+}
+
+func (a *API) resendVerification(w http.ResponseWriter, r *http.Request) {
+	email, ok := a.decodeAccountEmail(w, r)
+	if !ok {
+		return
+	}
+	user, err := a.store.FindUserByEmail(r.Context(), email)
+	if err == nil && user.AccountActive && user.EmailVerifiedAt == nil {
+		if sendErr := a.sendAccountToken(r.Context(), user, "email_verification", 24*time.Hour); sendErr != nil {
+			a.logger.Error("resend verification email", "user_id", user.ID, "error", sendErr)
+		}
+	} else if err != nil && !errors.Is(err, store.ErrNotFound) {
+		a.internalError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusAccepted, map[string]any{"message": "If the account is eligible, a verification email has been sent."})
+}
+
+func (a *API) requestPasswordReset(w http.ResponseWriter, r *http.Request) {
+	email, ok := a.decodeAccountEmail(w, r)
+	if !ok {
+		return
+	}
+	user, err := a.store.FindUserByEmail(r.Context(), email)
+	if err == nil && user.AccountActive && user.EmailVerifiedAt != nil {
+		if sendErr := a.sendAccountToken(r.Context(), user, "password_reset", 30*time.Minute); sendErr != nil {
+			a.logger.Error("send password reset email", "user_id", user.ID, "error", sendErr)
+		}
+	} else if err != nil && !errors.Is(err, store.ErrNotFound) {
+		a.internalError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusAccepted, map[string]any{"message": "If the account exists, password reset instructions have been sent."})
+}
+
+func (a *API) confirmPasswordReset(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		Token    string `json:"token"`
+		Password string `json:"password"`
+	}
+	if !a.decode(w, r, &input) {
+		return
+	}
+	hash, ok := auth.AccountTokenHash(input.Token)
+	if !ok || len(input.Password) < 12 || len(input.Password) > 72 {
+		writeError(w, http.StatusUnprocessableEntity, "provide a valid reset link and a password of 12 to 72 characters")
+		return
+	}
+	passwordHash, err := auth.HashPassword(input.Password)
+	if err != nil {
+		a.internalError(w, r, err)
+		return
+	}
+	user, err := a.store.ResetPasswordWithToken(r.Context(), hash, passwordHash)
+	if errors.Is(err, store.ErrNotFound) {
+		writeError(w, http.StatusUnprocessableEntity, "password reset link is invalid or expired")
+		return
+	}
+	if err != nil {
+		a.internalError(w, r, err)
+		return
+	}
+	a.clearSession(w)
+	a.recordSecurityAudit(r, user.ID, "/api/v1/auth/password-reset/complete", http.StatusOK)
+	writeJSON(w, http.StatusOK, map[string]any{"message": "Password updated. Sign in with your new password."})
+}
+
+func (a *API) decodeAccountEmail(w http.ResponseWriter, r *http.Request) (string, bool) {
+	var input struct {
+		Email string `json:"email"`
+	}
+	if !a.decode(w, r, &input) {
+		return "", false
+	}
+	input.Email = strings.ToLower(strings.TrimSpace(input.Email))
+	if !validEmail(input.Email) {
+		writeError(w, http.StatusUnprocessableEntity, "provide a valid email address")
+		return "", false
+	}
+	return input.Email, true
+}
+
+func (a *API) sendAccountToken(ctx context.Context, user model.User, purpose string, lifetime time.Duration) error {
+	raw, hash, err := auth.GenerateAccountToken()
+	if err != nil {
+		return err
+	}
+	if err := a.store.ReplaceAccountToken(ctx, user.ID, purpose, hash, time.Now().UTC().Add(lifetime)); err != nil {
+		return err
+	}
+	path := "/verify-email"
+	subject := "Verify your AKELUWA SH account"
+	intro := "Verify your email address to activate your AKELUWA SH account."
+	if purpose == "password_reset" {
+		path = "/reset-password"
+		subject = "Reset your AKELUWA SH password"
+		intro = "Use this one-time link to reset your AKELUWA SH account password."
+	}
+	link, _ := url.Parse(a.cfg.FrontendURL + path)
+	query := link.Query()
+	query.Set("token", raw)
+	link.RawQuery = query.Encode()
+	body := fmt.Sprintf("Hello %s,\n\n%s\n\n%s\n\nThis link expires in %s. If you did not request this, you can ignore this email.\n", user.Name, intro, link.String(), lifetime.Round(time.Minute))
+	return a.email.Send(ctx, user.Email, subject, body)
 }
 
 func (a *API) login(w http.ResponseWriter, r *http.Request) {
@@ -260,6 +407,10 @@ func (a *API) login(w http.ResponseWriter, r *http.Request) {
 	}
 	if !user.AccountActive {
 		writeError(w, http.StatusUnauthorized, "invalid email or password")
+		return
+	}
+	if user.Role == "user" && user.EmailVerifiedAt == nil {
+		writeError(w, http.StatusForbidden, "verify your email address before signing in")
 		return
 	}
 	user.PasswordHash = ""
@@ -290,7 +441,7 @@ func (a *API) login(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
-		challenge, err := a.tokens.IssueMFAChallenge(user.ID)
+		challenge, err := a.tokens.IssueMFAChallenge(user.ID, user.SessionVersion)
 		if err != nil {
 			a.internalError(w, r, err)
 			return
@@ -328,7 +479,7 @@ func (a *API) verifyMFA(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	user, err := a.store.FindUserByID(r.Context(), claims.UserID)
-	if err != nil || !user.AccountActive || !isPrivilegedRole(user.Role) || len(user.MFASecret) == 0 {
+	if err != nil || !user.AccountActive || !isPrivilegedRole(user.Role) || len(user.MFASecret) == 0 || user.SessionVersion != claims.SessionVersion {
 		writeError(w, http.StatusUnauthorized, "MFA challenge is no longer valid")
 		return
 	}
@@ -450,18 +601,8 @@ func (a *API) logout(w http.ResponseWriter, _ *http.Request) {
 
 func (a *API) me(w http.ResponseWriter, r *http.Request) {
 	claims := claimsFromContext(r.Context())
-	user, err := a.store.FindUserByID(r.Context(), claims.UserID)
-	if err != nil {
-		if errors.Is(err, store.ErrNotFound) {
-			a.clearSession(w)
-			writeError(w, http.StatusUnauthorized, "session is no longer valid")
-			return
-		}
-		a.internalError(w, r, err)
-		return
-	}
-	if !user.AccountActive {
-		a.clearSession(w)
+	user, ok := r.Context().Value(authUserKey).(model.User)
+	if !ok {
 		writeError(w, http.StatusUnauthorized, "session is no longer valid")
 		return
 	}
@@ -686,7 +827,13 @@ func (a *API) publicVerifyRecord(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	item, err := a.store.VerifyCompanyRecord(r.Context(), code)
+	contentHash := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("fingerprint")))
+	if contentHash != "" && !contractHashPattern.MatchString(contentHash) {
+		writeError(w, http.StatusUnprocessableEntity, "provide a valid 64-character SHA-256 fingerprint")
+		return
+	}
+
+	item, err := a.store.VerifyCompanyRecord(r.Context(), code, contentHash)
 	if errors.Is(err, store.ErrNotFound) {
 		writeError(w, http.StatusNotFound, "This code is not registered in AKELUWA SH records. Contact akeluwasoftwarehub@gmail.com for confirmation.")
 		return
@@ -1348,7 +1495,7 @@ func (a *API) adminUpdateVerificationRecord(w http.ResponseWriter, r *http.Reque
 	if !ok {
 		return
 	}
-	updated, err := a.store.UpdateVerificationRecord(r.Context(), r.PathValue("id"), item)
+	updated, err := a.store.UpdateVerificationRecord(r.Context(), r.PathValue("id"), item, claimsFromContext(r.Context()).UserID)
 	if isUniqueViolation(err) {
 		writeError(w, http.StatusConflict, "a verification record already uses this code")
 		return
@@ -1370,6 +1517,7 @@ func (a *API) decodeVerificationRecord(w http.ResponseWriter, r *http.Request) (
 	item.HolderName = strings.TrimSpace(item.HolderName)
 	item.Status = strings.ToLower(strings.TrimSpace(item.Status))
 	item.PublicNote = strings.TrimSpace(item.PublicNote)
+	item.ContentHash = strings.ToLower(strings.TrimSpace(item.ContentHash))
 	issued, issuedErr := time.Parse("2006-01-02", item.IssuedOn)
 	expires, expiresErr := time.Time{}, error(nil)
 	if item.ExpiresOn != "" {
@@ -1377,7 +1525,8 @@ func (a *API) decodeVerificationRecord(w http.ResponseWriter, r *http.Request) (
 	}
 	validType := item.RecordType == "certificate" || item.RecordType == "document" || item.RecordType == "letter" || item.RecordType == "report" || item.RecordType == "approval" || item.RecordType == "other"
 	validStatus := item.Status == "active" || item.Status == "revoked"
-	if len(item.VerificationCode) < 3 || len(item.VerificationCode) > 80 || !invoiceNumberPattern.MatchString(item.VerificationCode) || !validType || len(item.Title) < 3 || len(item.Title) > 200 || len(item.HolderName) > 160 || issuedErr != nil || expiresErr != nil || (!expires.IsZero() && expires.Before(issued)) || !validStatus || len(item.PublicNote) > 500 {
+	validHash := item.ContentHash == "" || contractHashPattern.MatchString(item.ContentHash)
+	if len(item.VerificationCode) < 3 || len(item.VerificationCode) > 80 || !invoiceNumberPattern.MatchString(item.VerificationCode) || !validType || len(item.Title) < 3 || len(item.Title) > 200 || len(item.HolderName) > 160 || issuedErr != nil || expiresErr != nil || (!expires.IsZero() && expires.Before(issued)) || !validStatus || len(item.PublicNote) > 500 || !validHash {
 		writeError(w, http.StatusUnprocessableEntity, "verification record fields are incomplete or invalid")
 		return item, false
 	}
@@ -1462,8 +1611,8 @@ func (a *API) validateContractClient(w http.ResponseWriter, r *http.Request, ite
 		a.internalError(w, r, err)
 		return false
 	}
-	if client.Role != "user" || !client.AccountActive || !strings.EqualFold(client.Email, item.ClientEmail) {
-		writeError(w, http.StatusUnprocessableEntity, "contract email must match the selected active client account")
+	if client.Role != "user" || !client.AccountActive || client.EmailVerifiedAt == nil || !strings.EqualFold(client.Email, item.ClientEmail) {
+		writeError(w, http.StatusUnprocessableEntity, "contract email must match the selected verified client account")
 		return false
 	}
 	return true
@@ -1844,7 +1993,7 @@ func (a *API) decodePortfolio(w http.ResponseWriter, r *http.Request) (model.Por
 }
 
 func (a *API) startSession(w http.ResponseWriter, user model.User, mfaVerified bool) error {
-	value, expiresAt, err := a.tokens.Issue(user.ID, user.Role, user.Name, mfaVerified)
+	value, expiresAt, err := a.tokens.Issue(user.ID, user.Role, user.Name, mfaVerified, user.SessionVersion)
 	if err != nil {
 		return err
 	}
@@ -1894,7 +2043,23 @@ func (a *API) requireAuth(next http.Handler) http.Handler {
 			writeError(w, http.StatusUnauthorized, "authentication required")
 			return
 		}
+		user, err := a.store.FindUserByID(r.Context(), claims.UserID)
+		if err != nil {
+			if !errors.Is(err, store.ErrNotFound) {
+				a.internalError(w, r, err)
+				return
+			}
+			a.clearSession(w)
+			writeError(w, http.StatusUnauthorized, "session is no longer valid")
+			return
+		}
+		if !user.AccountActive || user.SessionVersion != claims.SessionVersion || (user.Role == "user" && user.EmailVerifiedAt == nil) {
+			a.clearSession(w)
+			writeError(w, http.StatusUnauthorized, "session is no longer valid")
+			return
+		}
 		ctx := context.WithValue(r.Context(), claimsKey, claims)
+		ctx = context.WithValue(ctx, authUserKey, user)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
@@ -1918,13 +2083,9 @@ func (a *API) requireAnyAdminPermission(permissions []string, next http.Handler)
 func (a *API) requireAdminAccess(permissions []string, fullAdminOnly bool, next http.Handler) http.Handler {
 	return a.requireAuth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		claims := claimsFromContext(r.Context())
-		user, err := a.store.FindUserByID(r.Context(), claims.UserID)
-		if err != nil {
-			if errors.Is(err, store.ErrNotFound) {
-				writeError(w, http.StatusUnauthorized, "session is no longer valid")
-				return
-			}
-			a.internalError(w, r, err)
+		user, ok := r.Context().Value(authUserKey).(model.User)
+		if !ok {
+			writeError(w, http.StatusUnauthorized, "session is no longer valid")
 			return
 		}
 		if !user.AccountActive || !isPrivilegedRole(user.Role) {

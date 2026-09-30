@@ -738,7 +738,7 @@ h1 em { color: var(--signal); font-family: Georgia, "Times New Roman", serif; fo
 .portfolio-proof small { color: var(--signal); font: 7px/1 ui-monospace, monospace; letter-spacing: .14em; text-transform: uppercase; }
 .portfolio-card > a, .portfolio-private { margin-top: 32px; font: 8px/1.4 ui-monospace, monospace; letter-spacing: .12em; }
 .portfolio-card > a { color: var(--saffron); }
-.portfolio-private { color: #62635f; }
+.portfolio-private { color: #8b8c86; }
 
 .principle-content { padding: clamp(90px, 12vw, 170px) 5vw 130px; }
 .principle-content h2 { font-size: clamp(54px, 8.5vw, 144px); line-height: .88; }
@@ -829,7 +829,7 @@ h1 em { color: var(--signal); font-family: Georgia, "Times New Roman", serif; fo
 .footer-column > a { color: var(--paper-dim); font-size: 13px; transition: color 180ms ease, transform 180ms ease; }
 .footer-column > a:hover { color: var(--paper); transform: translateX(3px); }
 .footer-company-data span { display: grid; gap: 5px; color: var(--paper); font-size: 11px; line-height: 1.4; }
-.footer-company-data small { color: #6f6f6b; font: 7px/1 ui-monospace, monospace; letter-spacing: .12em; }
+.footer-company-data small { color: #898983; font: 7px/1 ui-monospace, monospace; letter-spacing: .12em; }
 
 .footer-assurance {
   padding: 0 5vw;
@@ -854,7 +854,7 @@ h1 em { color: var(--signal); font-family: Georgia, "Times New Roman", serif; fo
 .footer-legal details p { max-width: 660px; margin: 22px 40px 0 0; color: var(--paper-dim); font-size: 12px; line-height: 1.7; }
 .footer-legal details p a { color: var(--saffron); border-bottom: 1px solid currentColor; }
 
-.footer-bottom { min-height: 78px; padding: 0 5vw; display: flex; align-items: center; justify-content: space-between; gap: 28px; color: #6f6f6b; font: 7px/1.4 ui-monospace, monospace; letter-spacing: .11em; }
+.footer-bottom { min-height: 78px; padding: 0 5vw; display: flex; align-items: center; justify-content: space-between; gap: 28px; color: #898983; font: 7px/1.4 ui-monospace, monospace; letter-spacing: .11em; }
 .footer-bottom a { color: var(--paper-dim); }
 .footer-bottom a:hover { color: var(--signal); }
 
@@ -1102,10 +1102,11 @@ h1 em { color: var(--signal); font-family: Georgia, "Times New Roman", serif; fo
 .portal-form label, .content-editor label { display: grid; gap: 7px; color: var(--paper-dim); font: 8px/1 ui-monospace, monospace; letter-spacing: .12em; text-transform: uppercase; }
 .portal-form input, .content-editor input, .content-editor textarea, .user-table select, .inquiry-admin-meta select { width: 100%; min-height: 42px; padding: 6px 0; border: 0; border-bottom: 1px solid var(--line); outline: none; background: transparent; color: var(--paper); border-radius: 0; font: 15px/1.4 Arial, sans-serif; letter-spacing: 0; text-transform: none; }
 .portal-form input:focus, .content-editor input:focus, .content-editor textarea:focus { border-bottom-color: var(--saffron); }
-.field-note { margin-top: -12px; color: #777872; font-size: 11px; }
-.portal-primary { min-height: 46px; padding: 0 20px; border: 1px solid var(--signal); background: var(--signal); color: var(--paper); cursor: pointer; font: 9px/1 ui-monospace, monospace; letter-spacing: .12em; text-transform: uppercase; }
-.portal-primary:hover { background: transparent; }
+.field-note { margin-top: -12px; color: #898983; font-size: 11px; }
+.portal-primary { min-height: 46px; padding: 0 20px; border: 1px solid var(--signal); background: var(--signal); color: var(--ink); cursor: pointer; font: 9px/1 ui-monospace, monospace; letter-spacing: .12em; text-transform: uppercase; }
+.portal-primary:hover { background: transparent; color: var(--paper); }
 .portal-primary:disabled { opacity: .55; cursor: wait; }
+.auth-card a.portal-primary { width: max-content; margin-top: 28px; display: inline-flex; align-items: center; text-decoration: none; }
 .auth-switch { margin: 18px 0 0; color: var(--paper-dim); font-size: 12px; }
 .auth-switch a { color: var(--saffron); }
 .auth-card.has-mfa-enrollment { width: min(100%, 760px); }
@@ -1613,6 +1614,12 @@ h1 em { color: var(--signal); font-family: Georgia, "Times New Roman", serif; fo
 .publish-list .danger-action { color: var(--signal); }
 .publish-list button:disabled { color: var(--paper-dim); cursor: not-allowed; opacity: .55; }
 .verification-editor label small { display: block; margin-top: 4px; color: #777873; font: 9px/1.4 ui-monospace, monospace; text-transform: none; }
+.verification-code-control { display: grid; grid-template-columns: minmax(0, 1fr) 44px; gap: 8px; align-items: end; }
+.verification-id-field { display: grid; gap: 7px; color: var(--paper-dim); font: 8px/1 ui-monospace, monospace; letter-spacing: .12em; text-transform: uppercase; }
+.verification-code-control button { width: 44px; height: 44px; display: grid; place-items: center; border: 1px solid var(--line); background: transparent; color: var(--saffron); cursor: pointer; }
+.verification-file-field { padding: 14px; border: 1px dashed var(--line); }
+.verification-file-field input { padding-top: 8px; border-bottom: 0; }
+.verification-file-field input::file-selector-button, .contract-verification-tool input::file-selector-button { margin-right: 14px; padding: 9px 12px; border: 1px solid var(--line); background: #111216; color: var(--paper); cursor: pointer; }
 .verification-editor-actions { margin-top: 26px; display: flex; align-items: center; gap: 18px; }
 .verification-editor-actions button { min-height: 44px; padding: 0 20px; border: 1px solid var(--line); background: transparent; color: var(--paper); cursor: pointer; }
 .verification-editor-actions .portal-primary { border-color: transparent; }

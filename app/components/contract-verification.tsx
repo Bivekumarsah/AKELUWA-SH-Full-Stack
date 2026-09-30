@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
-import { BadgeCheck, CircleAlert, LoaderCircle, Search } from "lucide-react";
+import { BadgeCheck, CircleAlert, FileCheck2, LoaderCircle, Search } from "lucide-react";
 import { APIError, apiFetch, ContractVerification, readableError, RecordVerification } from "@/app/lib/api";
 
 type VerificationDisplay = {
@@ -18,6 +18,7 @@ type VerificationDisplay = {
   version?: number;
   providerSignedAt?: string;
   clientSignedAt?: string;
+  exactMatch?: boolean;
 };
 
 function displayDate(value?: string) {
@@ -40,6 +41,7 @@ function contractDisplay(item: ContractVerification): VerificationDisplay {
     version: item.version,
     providerSignedAt: item.provider_signed_at,
     clientSignedAt: item.client_signed_at,
+    exactMatch: true,
   };
 }
 
@@ -54,6 +56,8 @@ function recordDisplay(item: RecordVerification): VerificationDisplay {
     status: item.status,
     providerName: item.provider_name,
     publicNote: item.public_note,
+    fingerprint: item.content_hash,
+    exactMatch: item.exact_match,
   };
 }
 
@@ -64,24 +68,26 @@ export default function ContractVerificationTool() {
   const [error, setError] = useState("");
   const [checking, setChecking] = useState(false);
 
-  const verify = useCallback(async (rawCode: string, rawFingerprint = "") => {
+  const verify = useCallback(async (rawCode: string, rawFingerprint = "", exactContract = false) => {
     const normalizedCode = rawCode.trim().toUpperCase();
     const normalizedFingerprint = rawFingerprint.trim().toLowerCase();
     setChecking(true);
     setError("");
     setResult(null);
     try {
-      if (normalizedFingerprint) {
+      if (exactContract && normalizedFingerprint) {
         const response = await apiFetch<{ verification: ContractVerification }>(`/contracts/verify?number=${encodeURIComponent(normalizedCode)}&fingerprint=${encodeURIComponent(normalizedFingerprint)}`, { cache: "no-store" });
         setResult(contractDisplay(response.verification));
       } else {
-        const response = await apiFetch<{ verification: RecordVerification }>(`/records/verify?code=${encodeURIComponent(normalizedCode)}`, { cache: "no-store" });
+        const query = new URLSearchParams({ code: normalizedCode });
+        if (normalizedFingerprint) query.set("fingerprint", normalizedFingerprint);
+        const response = await apiFetch<{ verification: RecordVerification }>(`/records/verify?${query}`, { cache: "no-store" });
         setResult(recordDisplay(response.verification));
       }
       const url = new URL(window.location.href);
       url.search = "";
       if (normalizedFingerprint) {
-        url.searchParams.set("number", normalizedCode);
+        url.searchParams.set(exactContract ? "number" : "code", normalizedCode);
         url.searchParams.set("fingerprint", normalizedFingerprint);
       } else {
         url.searchParams.set("code", normalizedCode);
@@ -104,7 +110,7 @@ export default function ContractVerificationTool() {
       if (!initialCode && !initialFingerprint) return;
       setCode(initialCode.toUpperCase());
       setFingerprint(initialFingerprint.toLowerCase());
-      if (initialCode) void verify(initialCode, initialFingerprint);
+      if (initialCode) void verify(initialCode, initialFingerprint, params.has("number"));
     }, 0);
     return () => window.clearTimeout(initialLookup);
   }, [verify]);
@@ -112,6 +118,17 @@ export default function ContractVerificationTool() {
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     void verify(code, fingerprint);
+  }
+
+  async function fingerprintFile(file?: File) {
+    if (!file) return;
+    setError("");
+    try {
+      const digest = await crypto.subtle.digest("SHA-256", await file.arrayBuffer());
+      setFingerprint(Array.from(new Uint8Array(digest), (value) => value.toString(16).padStart(2, "0")).join(""));
+    } catch {
+      setError("This browser could not calculate the file fingerprint.");
+    }
   }
 
   const verified = result && result.status !== "revoked" && result.status !== "expired" && result.status !== "cancelled";
@@ -124,8 +141,11 @@ export default function ContractVerificationTool() {
       <label htmlFor="verification-code">Document, certificate, or contract ID
         <input id="verification-code" value={code} onChange={(event) => setCode(event.target.value.toUpperCase())} placeholder="AK-CERT-2026-0001" required minLength={3} maxLength={80} autoComplete="off" spellCheck={false} />
       </label>
-      <label htmlFor="contract-fingerprint">SHA-256 fingerprint <small>Optional: use for exact contract-copy matching</small>
+      <label htmlFor="contract-fingerprint">SHA-256 fingerprint <small>Optional: use for exact file matching</small>
         <input id="contract-fingerprint" value={fingerprint} onChange={(event) => setFingerprint(event.target.value.toLowerCase())} placeholder="64-character fingerprint" minLength={64} maxLength={64} pattern="[a-fA-F0-9]{64}" autoComplete="off" spellCheck={false} />
+      </label>
+      <label htmlFor="verification-file"><FileCheck2 size={16} aria-hidden="true" /> Calculate from file
+        <input id="verification-file" type="file" onChange={(event) => void fingerprintFile(event.target.files?.[0])} />
       </label>
       <button className="portal-primary" type="submit" disabled={checking}>
         {checking ? <LoaderCircle className="verification-spinner" size={18} aria-hidden="true" /> : <Search size={18} aria-hidden="true" />}
@@ -151,7 +171,7 @@ export default function ContractVerificationTool() {
           {result.clientSignedAt && <div><dt>Client signature</dt><dd>{displayDate(result.clientSignedAt)}</dd></div>}
         </dl>
         {result.publicNote && <p className="verification-public-note">{result.publicNote}</p>}
-        {result.fingerprint && <div><span>Matched fingerprint</span><code>{result.fingerprint}</code></div>}
+        {result.fingerprint && <div><span>{result.exactMatch ? "Exact fingerprint match" : "Registered fingerprint"}</span><code>{result.fingerprint}</code></div>}
       </div>}
     </div>
   </section>;

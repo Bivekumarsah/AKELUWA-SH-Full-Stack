@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"net/mail"
 	"net/url"
 	"os"
 	"strconv"
@@ -23,6 +24,12 @@ type Config struct {
 	CookieSameSite    string
 	AllowedOrigins    []string
 	TrustProxyHeaders bool
+	FrontendURL       string
+	SMTPHost          string
+	SMTPPort          string
+	SMTPUsername      string
+	SMTPPassword      string
+	SMTPFrom          string
 	AdminName         string
 	AdminEmail        string
 	AdminPassword     string
@@ -48,6 +55,12 @@ func Load() (Config, error) {
 		CookieSameSite:    strings.ToLower(env("COOKIE_SAME_SITE", "lax")),
 		AllowedOrigins:    splitCSV(env("CORS_ORIGINS", "http://localhost:3000,http://localhost:5173")),
 		TrustProxyHeaders: envBool("TRUST_PROXY_HEADERS", false),
+		FrontendURL:       strings.TrimRight(env("FRONTEND_URL", "http://localhost:5173"), "/"),
+		SMTPHost:          strings.TrimSpace(os.Getenv("SMTP_HOST")),
+		SMTPPort:          env("SMTP_PORT", "587"),
+		SMTPUsername:      strings.TrimSpace(os.Getenv("SMTP_USERNAME")),
+		SMTPPassword:      os.Getenv("SMTP_PASSWORD"),
+		SMTPFrom:          strings.TrimSpace(os.Getenv("SMTP_FROM")),
 		AdminName:         env("ADMIN_NAME", "AKELUWA Administrator"),
 		AdminEmail:        strings.ToLower(strings.TrimSpace(os.Getenv("ADMIN_EMAIL"))),
 		AdminPassword:     os.Getenv("ADMIN_PASSWORD"),
@@ -103,6 +116,13 @@ func Load() (Config, error) {
 			return Config{}, fmt.Errorf("invalid CORS origin %q: %w", origin, err)
 		}
 	}
+	if err := validateOrigin(cfg.FrontendURL); err != nil {
+		return Config{}, fmt.Errorf("invalid FRONTEND_URL: %w", err)
+	}
+	smtpPort, err := strconv.Atoi(cfg.SMTPPort)
+	if err != nil || smtpPort < 1 || smtpPort > 65535 {
+		return Config{}, fmt.Errorf("SMTP_PORT must be between 1 and 65535")
+	}
 	if cfg.Environment == "production" {
 		if !cfg.CookieSecure {
 			return Config{}, fmt.Errorf("COOKIE_SECURE must be true in production")
@@ -121,6 +141,20 @@ func Load() (Config, error) {
 		}
 		if cfg.MFAEncryptionKey == cfg.JWTSecret {
 			return Config{}, fmt.Errorf("MFA_ENCRYPTION_KEY must be different from JWT_SECRET in production")
+		}
+		frontend, _ := url.Parse(cfg.FrontendURL)
+		if frontend.Scheme != "https" {
+			return Config{}, fmt.Errorf("FRONTEND_URL must use https in production")
+		}
+		if cfg.SMTPHost == "" || cfg.SMTPUsername == "" || cfg.SMTPPassword == "" || cfg.SMTPFrom == "" {
+			return Config{}, fmt.Errorf("SMTP_HOST, SMTP_USERNAME, SMTP_PASSWORD, and SMTP_FROM are required in production")
+		}
+		if looksLikePlaceholder(cfg.SMTPPassword) {
+			return Config{}, fmt.Errorf("production SMTP password must not use a placeholder value")
+		}
+		from, err := mail.ParseAddress(cfg.SMTPFrom)
+		if err != nil || from.Address != cfg.SMTPFrom || strings.ContainsAny(cfg.SMTPHost, "\r\n") {
+			return Config{}, fmt.Errorf("SMTP_FROM must be a plain email address and SMTP_HOST must be valid")
 		}
 	}
 

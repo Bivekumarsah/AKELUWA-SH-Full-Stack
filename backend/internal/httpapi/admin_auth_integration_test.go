@@ -15,6 +15,7 @@ import (
 	"github.com/akeluwa/software-hub/backend/internal/auth"
 	"github.com/akeluwa/software-hub/backend/internal/config"
 	"github.com/akeluwa/software-hub/backend/internal/database"
+	"github.com/akeluwa/software-hub/backend/internal/mailer"
 	"github.com/akeluwa/software-hub/backend/internal/model"
 	"github.com/akeluwa/software-hub/backend/internal/store"
 )
@@ -50,6 +51,9 @@ func TestAdminAuthorizationAgainstStoredRoles(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create user: %v", err)
 	}
+	if _, err := pool.Exec(ctx, `UPDATE users SET email_verified_at=now() WHERE id=$1`, user.ID); err != nil {
+		t.Fatalf("verify integration user: %v", err)
+	}
 	subAdmin, err := data.CreateSubAdmin(ctx, "Integration Sub-admin", fmt.Sprintf("sub-admin-%d@example.test", suffix), passwordHash, []string{permissionOverviewView})
 	if err != nil {
 		t.Fatalf("create sub-admin: %v", err)
@@ -78,11 +82,15 @@ func TestAdminAuthorizationAgainstStoredRoles(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create secret cipher: %v", err)
 	}
-	api := New(config.Config{CookieName: "session", MaxRequestBytes: 1 << 20}, data, tokens, secretCipher, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	api := New(config.Config{CookieName: "session", MaxRequestBytes: 1 << 20}, data, tokens, secretCipher, mailer.Disabled{}, slog.New(slog.NewTextHandler(io.Discard, nil)))
 
 	requestStatus := func(userID, role string, mfaVerified bool, path string) int {
 		t.Helper()
-		token, _, issueErr := tokens.Issue(userID, role, "Test User", mfaVerified)
+		storedUser, findErr := data.FindUserByID(ctx, userID)
+		if findErr != nil {
+			t.Fatalf("find request user: %v", findErr)
+		}
+		token, _, issueErr := tokens.Issue(userID, role, "Test User", mfaVerified, storedUser.SessionVersion)
 		if issueErr != nil {
 			t.Fatalf("issue token: %v", issueErr)
 		}
@@ -123,8 +131,8 @@ func TestAdminAuthorizationAgainstStoredRoles(t *testing.T) {
 	if _, err := data.UpdateSubAdminAccess(ctx, subAdmin.ID, []string{permissionServicesView}, false); err != nil {
 		t.Fatalf("suspend sub-admin: %v", err)
 	}
-	if status := requestStatus(subAdmin.ID, "sub_admin", true, "/api/v1/admin/services"); status != http.StatusForbidden {
-		t.Fatalf("suspended sub-admin: expected 403, got %d", status)
+	if status := requestStatus(subAdmin.ID, "sub_admin", true, "/api/v1/admin/services"); status != http.StatusUnauthorized {
+		t.Fatalf("suspended sub-admin: expected 401, got %d", status)
 	}
 
 	service, err := data.CreateService(ctx, model.Service{
@@ -139,7 +147,11 @@ func TestAdminAuthorizationAgainstStoredRoles(t *testing.T) {
 	if _, err := data.UpdateSubAdminAccess(ctx, subAdmin.ID, []string{permissionServicesView}, true); err != nil {
 		t.Fatalf("reactivate sub-admin: %v", err)
 	}
-	subAdminToken, _, err := tokens.Issue(subAdmin.ID, "sub_admin", subAdmin.Name, true)
+	currentSubAdmin, err := data.FindUserByID(ctx, subAdmin.ID)
+	if err != nil {
+		t.Fatalf("load reactivated sub-admin: %v", err)
+	}
+	subAdminToken, _, err := tokens.Issue(subAdmin.ID, "sub_admin", subAdmin.Name, true, currentSubAdmin.SessionVersion)
 	if err != nil {
 		t.Fatalf("issue sub-admin token: %v", err)
 	}
@@ -155,6 +167,17 @@ func TestAdminAuthorizationAgainstStoredRoles(t *testing.T) {
 	}
 	if _, err := data.UpdateSubAdminAccess(ctx, subAdmin.ID, []string{permissionServicesView, permissionServicesDelete}, true); err != nil {
 		t.Fatalf("grant delete permission: %v", err)
+	}
+	if response := requestDelete(subAdminToken); response.Code != http.StatusUnauthorized {
+		t.Fatalf("old delegated session after permission change: expected 401, got %d", response.Code)
+	}
+	currentSubAdmin, err = data.FindUserByID(ctx, subAdmin.ID)
+	if err != nil {
+		t.Fatalf("load updated sub-admin: %v", err)
+	}
+	subAdminToken, _, err = tokens.Issue(subAdmin.ID, "sub_admin", subAdmin.Name, true, currentSubAdmin.SessionVersion)
+	if err != nil {
+		t.Fatalf("issue updated sub-admin token: %v", err)
 	}
 	if response := requestDelete(subAdminToken); response.Code != http.StatusAccepted {
 		t.Fatalf("delegated delete request: expected 202, got %d: %s", response.Code, response.Body.String())

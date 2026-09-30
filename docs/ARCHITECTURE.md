@@ -43,7 +43,7 @@ The frontend must not be trusted to protect a record. A hidden button or absent 
 
 ## Authentication And Authorization
 
-Sessions are signed HttpOnly cookies. Passwords use bcrypt. Administrators and sub-administrators require TOTP MFA after password verification and receive hashed, single-use recovery codes. Sensitive public endpoints use PostgreSQL-coordinated limits so protection is consistent across replicas.
+Sessions are signed HttpOnly cookies and carry a server-checked session version. Passwords use bcrypt. Customer email ownership and password recovery use expiring, hashed, single-use random tokens delivered through STARTTLS SMTP. Password resets and access changes increment the session version to revoke older cookies. Administrators and sub-administrators require TOTP MFA after password verification and receive hashed, single-use recovery codes. Sensitive public endpoints use PostgreSQL-coordinated limits so protection is consistent across replicas.
 
 | Request type | Protection |
 |---|---|
@@ -54,7 +54,7 @@ Sessions are signed HttpOnly cookies. Passwords use bcrypt. Administrators and s
 | Admin write | Admin MFA session, exact action permission, CSRF/origin check, audit record |
 | Protected sub-admin delete or void | Stored review request; a full administrator must approve it |
 
-Role decisions are loaded from PostgreSQL during protected requests. This means an account suspension, permission change, or role demotion takes effect without relying on old frontend state.
+Identity, ownership, role, and session-version decisions are loaded from PostgreSQL during protected requests. This means an account suspension, password reset, permission change, or role demotion takes effect without relying on old frontend state.
 
 ## Persistence Layer
 

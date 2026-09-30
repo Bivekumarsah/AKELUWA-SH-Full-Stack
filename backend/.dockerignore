@@ -1,4 +1,5 @@
 .env
 coverage.out
 tmp
+.gocache
 *.log

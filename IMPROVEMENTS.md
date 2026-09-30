@@ -6,16 +6,16 @@ This document records the maintainability, security, portability, and testing im
 
 | Area | Previous review | Current | Evidence |
 |---|---:|---:|---|
-| Design and UI | 8.2/10 | 9.5/10 | Distinct responsive visual system, accessible states, permission-aware controls, and browser checks from 360px through 1440px. |
-| Architecture | 8.6/10 | 9.5/10 | Clear frontend, HTTP, store, migration, and deployment boundaries with documented ownership. |
-| Backend quality | 8.7/10 | 9.5/10 | Transactional PostgreSQL workflows, strict validation, graceful shutdown, health checks, metrics, vet, and focused tests. |
-| System protection | 8.5/10 | 9.5/10 | Shared rate limits, container capability reduction, private networking, readiness checks, metrics, backups, and restore drills. |
-| Application security | 8.4/10 | 9.5/10 | MFA, hashed single-use recovery codes, live RBAC checks, CSRF defenses, security headers, immutable audits, and approval workflows. |
-| Dependency security | 5.5/10 | 9.5/10 | Patched framework and toolchain with zero known npm audit findings and a CI production-audit gate. |
-| Testing | 8.2/10 | 9.5/10 | Build, rendered-route, browser, responsive, Go, security, and static-analysis coverage enforced in CI. |
-| Deployment readiness | 7.8/10 | 9.5/10 | Hardened Compose services, log rotation, private metrics, operations runbook, backups, restore verification, and release checklist. |
-| Maintainability | 8.5/10 | 9.5/10 | Clean lint/typecheck, current documentation, sequential migrations, CI, and narrowly owned components. |
-| **Overall** | **8.0/10** | **9.5/10** | Production-ready codebase with the remaining release duties explicitly assigned to the deployment environment. |
+| Design and UI | 8.2/10 | 10/10 | Distinct responsive visual system, AA-checked public/authentication routes, permission-aware controls, and browser checks from 360px through 1440px. |
+| Architecture | 8.6/10 | 9.8/10 | Clear frontend, HTTP, store, migration, mail, and deployment boundaries with documented ownership. |
+| Backend quality | 8.7/10 | 9.8/10 | Transactional PostgreSQL workflows, strict validation, graceful shutdown, health checks, metrics, vet, and database-backed tests. |
+| System protection | 8.5/10 | 9.7/10 | Shared rate limits, revocable sessions, container hardening, private networking, metrics, backups, and restore procedures. |
+| Application security | 8.4/10 | 9.8/10 | Verified email ownership, MFA, one-time recovery tokens, live RBAC/session checks, CSRF defenses, immutable audits, and approval workflows. |
+| Dependency security | 5.5/10 | 10/10 | Patched framework and toolchain with zero known production npm audit findings and a CI audit gate. |
+| Testing | 8.2/10 | 10/10 | Build, bundle budgets, rendered routes, real browsers, WCAG, PostgreSQL integration, Go race, vet, and security checks enforced in CI. |
+| Deployment readiness | 7.8/10 | 9.8/10 | Hardened Compose services, required STARTTLS mail, Cloudflare dry-run, private metrics, operations runbook, backups, and release checklist. |
+| Maintainability | 8.5/10 | 9.8/10 | Clean lint/typecheck, current documentation, sequential migrations, CI, and narrowly owned components. |
+| **Overall** | **8.0/10** | **9.8/10** | The source-controlled production baseline is complete; external operations and independent assurance cannot honestly be scored by repository code alone. |
 
 The score is an engineering assessment, not a certification or formal penetration-test result.
 
@@ -85,6 +85,9 @@ The score is an engineering assessment, not a certification or formal penetratio
 - Added ten cryptographically random, hashed, single-use MFA recovery codes at enrollment, audited recovery-code use, and authenticated self-service replacement after fresh TOTP verification.
 - Upgraded Next.js, React, Vinext, Vite, Cloudflare tooling, and vulnerable transitive dependencies; the complete npm audit now reports zero findings.
 - Added private Prometheus metrics, public edge blocking for `/metrics`, hardened container capabilities and filesystems, bounded container logs, daily backup tooling, isolated restore verification, and an incident-response runbook.
+- Added verified customer email ownership and password recovery with 256-bit random, hashed, expiring, single-use tokens delivered through mandatory STARTTLS SMTP in production.
+- Added server-checked session versions so password resets, suspensions, role changes, and delegated permission changes invalidate existing cookies and in-flight MFA challenges.
+- Added exact SHA-256 matching for certificates and other registered files, secure browser-generated record IDs, local file hashing without upload, editor attribution, and revocation timestamps.
 
 ### Administrator MFA implementation
 
@@ -125,6 +128,8 @@ Enrollment now creates ten recovery codes and displays them once. Only SHA-256 h
 - Expanded the rendered-homepage test to verify product metadata, navigation, inquiry UI, and privacy disclosure.
 - Added rendered-page checks for favicon tags and the absence of unsupported Vinext image-proxy URLs.
 - Fixed every ESLint error and warning found by the project rules.
+- Added client asset budgets, automated WCAG A/AA checks, Cloudflare Worker deployment dry-runs, and the full Chromium workflow suite to CI.
+- Added PostgreSQL to the backend CI job so account, contract, accounting, company, and administrator authorization integration tests no longer skip in automation.
 
 ### Shared account profiles
 
@@ -136,12 +141,12 @@ Enrollment now creates ten recovery codes and displays them once. Only SHA-256 h
 
 - `go test ./...`: passed.
 - `npm run lint`: passed with zero errors and zero warnings.
-- `npm test`: passed; the production build completed and all 12 rendered-page, documentation, CSV, and QR tests passed.
-- `npm run test:browser`: passed across desktop/mobile layouts, including the MFA recovery workflow.
+- `npm test`: passed; the production build completed and all 13 bundle, rendered-page, documentation, CSV, and QR tests passed.
+- `npm run test:browser`: passed across 24 desktop/mobile, authentication, contract, record-verification, and WCAG scenarios.
 - `npm audit`: passed with zero known vulnerabilities across production and development dependencies.
 - `go vet ./...`: passed.
 - Docker API build was previously verified after the Go version and lockfile fix.
 
 ## Important Remaining Work
 
-The codebase controls are implemented. A production operator must still complete the environment-specific release duties in `docs/OPERATIONS.md`: configure an external metrics collector and alert destinations, copy backups to encrypted off-host storage, complete a recorded restore drill, run PostgreSQL integration tests against an isolated CI service, perform a third-party penetration test, and confirm legal/privacy obligations for the launch jurisdiction.
+The codebase controls are implemented. A production operator must still complete the environment-specific release duties in `docs/OPERATIONS.md`: configure SMTP credentials, an external metrics collector and alert destinations, copy backups to encrypted off-host storage, complete a recorded restore drill, perform a third-party penetration test, and confirm legal/privacy obligations for the launch jurisdiction.
