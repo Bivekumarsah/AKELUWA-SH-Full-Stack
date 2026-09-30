@@ -66,7 +66,7 @@ Every route requires a signed session. Store queries enforce that customers only
 | GET | `/account/invoices` | Current user's invoices and balances |
 | POST | `/account/contracts/{id}/sign` | Customer electronic contract signature |
 
-Contract creation requires an active, email-verified client, and the submitted email must match that account. Drafts remain admin-only; sent-contract visibility and signing are enforced by the permanent user ID. Signature uploads must decode as bounded PNG images, and the send action snapshots company identity before calculating the locked content fingerprint.
+Contract creation accepts an existing active client or securely provisions one from the normalized client email. New and unverified clients receive a single-use password-setup link instead of an emailed password. Draft creation and publishing send separate summaries, while drafts remain admin-only; sent-contract visibility and signing are enforced by the permanent user ID. Invoice creation emails itemized totals and automatically links a matching active client account. Signature uploads must decode as bounded PNG images, and the send action snapshots company identity before calculating the locked content fingerprint.
 
 ## Administration
 

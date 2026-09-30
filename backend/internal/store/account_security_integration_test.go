@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -93,5 +94,43 @@ func TestAccountVerificationAndPasswordResetTokensAreSingleUse(t *testing.T) {
 	}
 	if _, err := data.ResetPasswordWithToken(ctx, resetHash, newPasswordHash); !errors.Is(err, store.ErrNotFound) {
 		t.Fatalf("reused reset token: expected not found, got %v", err)
+	}
+}
+
+func TestEnsureClientUserCreatesOnceAndMatchesEmailCaseInsensitively(t *testing.T) {
+	databaseURL := os.Getenv("TEST_DATABASE_URL")
+	if databaseURL == "" {
+		t.Skip("set TEST_DATABASE_URL to run PostgreSQL account-security integration tests")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	pool, err := database.Open(ctx, databaseURL)
+	if err != nil {
+		t.Fatalf("open test database: %v", err)
+	}
+	defer pool.Close()
+	if err := database.Migrate(ctx, pool); err != nil {
+		t.Fatalf("migrate test database: %v", err)
+	}
+
+	data := store.New(pool)
+	passwordHash, err := auth.HashPassword("invited-client-random-password")
+	if err != nil {
+		t.Fatalf("hash password: %v", err)
+	}
+	email := fmt.Sprintf("invited-%d@example.test", time.Now().UnixNano())
+	user, created, err := data.EnsureClientUser(ctx, "Invited Client", email, passwordHash)
+	if err != nil || !created {
+		t.Fatalf("create invited client: created=%v err=%v", created, err)
+	}
+	defer pool.Exec(context.Background(), `DELETE FROM users WHERE id=$1`, user.ID)
+	if user.EmailVerifiedAt != nil || user.Role != "user" {
+		t.Fatalf("invited account should be an unverified client: %#v", user)
+	}
+
+	matched, createdAgain, err := data.EnsureClientUser(ctx, "Different Name", strings.ToUpper(email), passwordHash)
+	if err != nil || createdAgain || matched.ID != user.ID || matched.Name != "Invited Client" {
+		t.Fatalf("match existing invited client: matched=%#v created=%v err=%v", matched, createdAgain, err)
 	}
 }

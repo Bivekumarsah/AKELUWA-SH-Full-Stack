@@ -7,7 +7,7 @@ AKELUWA SH is a company website and operational platform. It combines a React/Ty
 | Area | Purpose | Main location |
 |---|---|---|
 | Public website | Marketing pages, inquiry form, downloads, careers, SEO | `app/` |
-| Customer portal | Resilient profile, inquiries, contracts, invoices, signing, and public company-record verification | `app/account/page.tsx`, `app/verify-contract/page.tsx` |
+| Customer portal | Resilient profile, emailed account invitations, contracts, invoices, signing, and public company-record verification | `app/account/page.tsx`, `app/verify-contract/page.tsx` |
 | Authentication | Shared login for customers, administrators, and sub-administrators | `app/login/page.tsx`, `app/register/page.tsx` |
 | Admin workspace | Content, inquiries, contracts, accounting, access, audit work | `app/admin/page.tsx` |
 | API | Authentication, authorization, REST handlers, HTTP security | `backend/internal/httpapi/` |
@@ -125,7 +125,7 @@ db/ and worker/                Frontend platform support source; not the Go/Post
 | `backend/internal/httpapi/api.go` | Every HTTP route, request validation, session middleware, CORS, CSRF, headers, audit logging |
 | `backend/internal/httpapi/ratelimit.go` | Per-client limits for login, registration, inquiries, and career applications |
 | `backend/internal/model/model.go` | User, inquiry, contract, accounting, company, and publishing data types |
-| `backend/internal/store/store.go` | SQL access, ownership checks, atomic contracts, invoices, payments, and approval workflows |
+| `backend/internal/store/store.go` | SQL access, client provisioning, ownership checks, atomic contracts, invoices, payments, and approval workflows |
 | `backend/internal/database/database.go` | Migration discovery, ordering, and execution |
 
 When adding a database-backed feature, follow this path: add a migration, update the domain model, add store methods, add protected API handlers, add API types/client calls, then add the page or component and tests.

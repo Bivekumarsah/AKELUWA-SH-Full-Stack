@@ -30,6 +30,11 @@ services:
       TRUST_PROXY_HEADERS: "false"
       CORS_ORIGINS: http://localhost:3000,http://localhost:5173,http://localhost:5174,http://127.0.0.1:3000,http://127.0.0.1:5173,http://127.0.0.1:5174
       FRONTEND_URL: http://localhost:5173
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-}
       ADMIN_NAME: AKELUWA Administrator
       ADMIN_EMAIL: admin@localhost.test
       ADMIN_PASSWORD: change-this-admin-password

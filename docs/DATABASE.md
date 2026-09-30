@@ -49,7 +49,8 @@ careers
 - User emails are unique case-insensitively.
 - New customer accounts require verified email ownership. Session versions provide immediate server-side revocation after security or access changes.
 - Inquiry, contract, and invoice records link to the owning customer where applicable.
-- Contract creation validates that the selected active client account owns the contract email. Visibility and client signing use the immutable user ID, avoiding trust in an unverified email-only claim.
+- Contract creation resolves the normalized email to an active client account or provisions an unverified client inside the same transaction. Visibility and signing then use the immutable user ID; email ownership is completed through a hashed, expiring, single-use setup token.
+- Invoice creation links a matching active client account when one exists, while preserving delivery to valid external client addresses.
 - Sent contracts snapshot company legal/contact identifiers and include them in the SHA-256 content fingerprint so later company-account edits do not rewrite an issued document.
 - Contract and invoice foreign keys preserve records by restricting unsafe deletion or setting optional links to null.
 - Invoice line items and payments are calculated server-side; clients do not choose trusted totals.

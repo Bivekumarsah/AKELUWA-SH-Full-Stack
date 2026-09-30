@@ -64,6 +64,19 @@ func (s *Store) CreateUser(ctx context.Context, name, email, passwordHash, role 
 	return user, err
 }
 
+func (s *Store) EnsureClientUser(ctx context.Context, name, email, passwordHash string) (model.User, bool, error) {
+	result, err := s.pool.Exec(ctx, `
+		INSERT INTO users (name, email, password_hash, role)
+		VALUES ($1, lower($2), $3, 'user')
+		ON CONFLICT (lower(email)) DO NOTHING
+	`, name, email, passwordHash)
+	if err != nil {
+		return model.User{}, false, err
+	}
+	user, err := s.FindUserByEmail(ctx, email)
+	return user, result.RowsAffected() == 1, err
+}
+
 func (s *Store) FindUserByEmail(ctx context.Context, email string) (model.User, error) {
 	var user model.User
 	err := s.pool.QueryRow(ctx, `
@@ -170,7 +183,7 @@ func (s *Store) ListClientUsers(ctx context.Context) ([]model.User, error) {
 	rows, err := s.pool.Query(ctx, `
 		SELECT id::text, name, email, role, admin_permissions, account_active,
 			mfa_enabled, email_verified_at, session_version, created_at, avatar_updated_at
-		FROM users WHERE role='user' AND account_active=true AND email_verified_at IS NOT NULL ORDER BY name, email LIMIT 500
+		FROM users WHERE role='user' AND account_active=true ORDER BY name, email LIMIT 500
 	`)
 	if err != nil {
 		return nil, err

@@ -302,7 +302,7 @@ func (a *API) requestPasswordReset(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	user, err := a.store.FindUserByEmail(r.Context(), email)
-	if err == nil && user.AccountActive && user.EmailVerifiedAt != nil {
+	if err == nil && user.AccountActive && user.Role == "user" {
 		if sendErr := a.sendAccountToken(r.Context(), user, "password_reset", 30*time.Minute); sendErr != nil {
 			a.logger.Error("send password reset email", "user_id", user.ID, "error", sendErr)
 		}
@@ -1200,12 +1200,22 @@ func (a *API) adminCreateInvoice(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		item.ClientName = user.Name
+	} else if user, err := a.store.FindUserByEmail(r.Context(), item.ClientEmail); err == nil && user.Role == "user" && user.AccountActive {
+		item.UserID = user.ID
 	}
 	created, err := a.store.CreateInvoice(r.Context(), item)
 	if !a.handleAccountingError(w, r, err) {
 		return
 	}
-	writeJSON(w, http.StatusCreated, map[string]any{"invoice": created})
+	emailSent := true
+	if err := a.sendInvoiceNotification(r.Context(), created); err != nil {
+		emailSent = false
+		a.logger.Error("send invoice notification", "invoice_id", created.ID, "error", err)
+	}
+	writeJSON(w, http.StatusCreated, map[string]any{
+		"invoice": created, "email_sent": emailSent,
+		"email_warning": notificationWarning(emailSent),
+	})
 }
 
 func (a *API) adminVoidInvoice(w http.ResponseWriter, r *http.Request) {
@@ -1392,19 +1402,39 @@ func (a *API) adminCreateContract(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	if !a.validateContractClient(w, r, item) {
+	var created model.Contract
+	var client model.User
+	accountCreated := false
+	err := a.store.WithTransaction(r.Context(), func(data *store.Store) error {
+		var resolveErr error
+		client, accountCreated, resolveErr = resolveContractClient(r.Context(), data, item)
+		if resolveErr != nil {
+			return resolveErr
+		}
+		item.UserID = client.ID
+		item, resolveErr = companyContractIdentity(r.Context(), data, item)
+		if resolveErr != nil {
+			return resolveErr
+		}
+		created, resolveErr = data.CreateContract(r.Context(), item)
+		return resolveErr
+	})
+	if errors.Is(err, errInvalidContractClient) {
+		writeError(w, http.StatusUnprocessableEntity, "contract client must be an active customer account and match the supplied email")
 		return
 	}
-	item, err := a.withCompanyContractIdentity(r.Context(), item)
-	if err != nil {
-		a.internalError(w, r, err)
-		return
-	}
-	created, err := a.store.CreateContract(r.Context(), item)
 	if !a.handleStoreError(w, r, err) {
 		return
 	}
-	writeJSON(w, http.StatusCreated, map[string]any{"contract": created})
+	emailSent := true
+	if err := a.sendContractNotification(r.Context(), client, created, false); err != nil {
+		emailSent = false
+		a.logger.Error("send contract creation notification", "contract_id", created.ID, "error", err)
+	}
+	writeJSON(w, http.StatusCreated, map[string]any{
+		"contract": created, "account_created": accountCreated, "email_sent": emailSent,
+		"email_warning": notificationWarning(emailSent),
+	})
 }
 
 func (a *API) adminUpdateContract(w http.ResponseWriter, r *http.Request) {
@@ -1432,7 +1462,20 @@ func (a *API) adminSendContract(w http.ResponseWriter, r *http.Request) {
 	if !a.handleStoreError(w, r, err) {
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"contract": item})
+	client, clientErr := a.store.FindUserByID(r.Context(), item.UserID)
+	emailSent := clientErr == nil
+	if clientErr == nil {
+		if err := a.sendContractNotification(r.Context(), client, item, true); err != nil {
+			emailSent = false
+			a.logger.Error("send published contract notification", "contract_id", item.ID, "error", err)
+		}
+	} else {
+		a.logger.Error("load contract client for notification", "contract_id", item.ID, "error", clientErr)
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"contract": item, "email_sent": emailSent,
+		"email_warning": notificationWarning(emailSent),
+	})
 }
 
 func (a *API) adminSignContract(w http.ResponseWriter, r *http.Request) {
@@ -1594,7 +1637,7 @@ func (a *API) decodeContract(w http.ResponseWriter, r *http.Request) (model.Cont
 		}
 	}
 	item.SpecialTerms = strings.TrimSpace(item.SpecialTerms)
-	if !uuidPattern.MatchString(item.UserID) || len(item.ContractNumber) < 3 || len(item.ContractNumber) > 60 || len(item.Title) < 3 || len(item.Title) > 200 || len(item.ClientName) < 2 || !validEmail(item.ClientEmail) || len(item.ClientCompany) > 160 || len(item.ProviderName) < 2 || len(item.ProviderName) > 160 || len(item.Currency) != 3 || item.AmountCents < 0 || startErr != nil || endErr != nil || end.Before(start) || !validTerms || len(item.SpecialTerms) > 10000 {
+	if (item.UserID != "" && !uuidPattern.MatchString(item.UserID)) || len(item.ContractNumber) < 3 || len(item.ContractNumber) > 60 || len(item.Title) < 3 || len(item.Title) > 200 || len(item.ClientName) < 2 || !validEmail(item.ClientEmail) || len(item.ClientCompany) > 160 || len(item.ProviderName) < 2 || len(item.ProviderName) > 160 || len(item.Currency) != 3 || item.AmountCents < 0 || startErr != nil || endErr != nil || end.Before(start) || !validTerms || len(item.SpecialTerms) > 10000 {
 		writeError(w, http.StatusUnprocessableEntity, "contract fields are incomplete or invalid")
 		return model.Contract{}, false
 	}
@@ -1611,33 +1654,15 @@ func (a *API) validateContractClient(w http.ResponseWriter, r *http.Request, ite
 		a.internalError(w, r, err)
 		return false
 	}
-	if client.Role != "user" || !client.AccountActive || client.EmailVerifiedAt == nil || !strings.EqualFold(client.Email, item.ClientEmail) {
-		writeError(w, http.StatusUnprocessableEntity, "contract email must match the selected verified client account")
+	if client.Role != "user" || !client.AccountActive || !strings.EqualFold(client.Email, item.ClientEmail) {
+		writeError(w, http.StatusUnprocessableEntity, "contract email must match the selected active client account")
 		return false
 	}
 	return true
 }
 
 func (a *API) withCompanyContractIdentity(ctx context.Context, item model.Contract) (model.Contract, error) {
-	company, err := a.store.CompanyAccount(ctx)
-	if err != nil {
-		return model.Contract{}, err
-	}
-	item.ProviderName = company.DisplayName
-	item.ProviderLegalName = company.LegalName
-	item.ProviderEmail = company.PrimaryEmail
-	item.ProviderPhone = company.Phone
-	item.ProviderWebsite = company.WebsiteURL
-	item.ProviderRegistration = company.RegistrationNumber
-	item.ProviderTaxID = company.TaxID
-	addressParts := make([]string, 0, 5)
-	for _, part := range []string{company.AddressLine, company.City, company.Region, company.PostalCode, company.Country} {
-		if strings.TrimSpace(part) != "" {
-			addressParts = append(addressParts, strings.TrimSpace(part))
-		}
-	}
-	item.ProviderAddress = strings.Join(addressParts, ", ")
-	return item, nil
+	return companyContractIdentity(ctx, a.store, item)
 }
 
 func (a *API) adminDownloads(w http.ResponseWriter, r *http.Request) {

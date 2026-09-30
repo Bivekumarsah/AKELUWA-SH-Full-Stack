@@ -80,7 +80,7 @@ func TestDecodeCompanyAccount(t *testing.T) {
 	}
 }
 
-func TestDecodeContractRequiresRegisteredClientID(t *testing.T) {
+func TestDecodeContractAllowsClientInvitationWithoutRegisteredID(t *testing.T) {
 	body := `{
 		"contract_number":"ak-2026-101","title":"Website delivery agreement",
 		"client_name":"Future Client","client_email":"CLIENT@EXAMPLE.COM","provider_name":"AKELUWA SH",
@@ -95,8 +95,12 @@ func TestDecodeContractRequiresRegisteredClientID(t *testing.T) {
 	api := &API{cfg: config.Config{MaxRequestBytes: 1 << 20}}
 	response := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodPost, "/api/v1/admin/contracts", strings.NewReader(body))
-	if _, ok := api.decodeContract(response, request); ok || response.Code != http.StatusUnprocessableEntity {
-		t.Fatalf("contract without a selected client: expected 422, got %d", response.Code)
+	item, ok := api.decodeContract(response, request)
+	if !ok {
+		t.Fatalf("contract invitation was rejected with status %d: %s", response.Code, response.Body.String())
+	}
+	if item.UserID != "" || item.ClientEmail != "client@example.com" {
+		t.Fatalf("contract invitation was not normalized: %#v", item)
 	}
 }
 

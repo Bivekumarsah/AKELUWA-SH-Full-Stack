@@ -49,7 +49,7 @@ The script creates a uniquely named temporary database, restores with `--exit-on
 
 - CI lint, build, bundle budgets, Chromium workflows, WCAG A/AA scans, frontend deployment dry-run, Go race tests, Go vet, and the production dependency audit pass.
 - Production environment validation passes with unique secrets and exact HTTPS origins.
-- STARTTLS SMTP delivery is confirmed for ownership and password-recovery links without logging tokens.
+- STARTTLS SMTP delivery is confirmed for ownership, client invitation, contract, invoice, and password-recovery messages without logging tokens.
 - Database migrations are reviewed and a current verified backup exists.
 - Health checks, metrics collection, alerts, and log retention are active.
 - A rollback image and the previous known-good configuration remain available.

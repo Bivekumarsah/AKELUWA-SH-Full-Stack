@@ -86,6 +86,7 @@ The score is an engineering assessment, not a certification or formal penetratio
 - Upgraded Next.js, React, Vinext, Vite, Cloudflare tooling, and vulnerable transitive dependencies; the complete npm audit now reports zero findings.
 - Added private Prometheus metrics, public edge blocking for `/metrics`, hardened container capabilities and filesystems, bounded container logs, daily backup tooling, isolated restore verification, and an incident-response runbook.
 - Added verified customer email ownership and password recovery with 256-bit random, hashed, expiring, single-use tokens delivered through mandatory STARTTLS SMTP in production.
+- Added automatic client provisioning for contracts, secure one-time password setup instead of emailed credentials, contract draft/publish notices, and itemized invoice email delivery with account auto-linking.
 - Added server-checked session versions so password resets, suspensions, role changes, and delegated permission changes invalidate existing cookies and in-flight MFA challenges.
 - Added exact SHA-256 matching for certificates and other registered files, secure browser-generated record IDs, local file hashing without upload, editor attribution, and revocation timestamps.
 

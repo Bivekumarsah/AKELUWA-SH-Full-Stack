@@ -128,8 +128,8 @@ export default function AccountingManagement({ users, contracts, administrator }
         notes: invoiceDraft.notes,
         items: invoiceDraft.items.map(({ description, quantity, unit_price_cents }, position) => ({ description, quantity, unit_price_cents, position })),
       };
-      const response = await apiFetch<{ invoice: Invoice }>("/admin/accounting/invoices", { method: "POST", body: JSON.stringify(payload) });
-      setInvoiceDraft(null); setSelectedInvoice(response.invoice); setNotice("Invoice issued."); await load();
+      const response = await apiFetch<{ invoice: Invoice; email_sent?: boolean; email_warning?: string }>("/admin/accounting/invoices", { method: "POST", body: JSON.stringify(payload) });
+      setInvoiceDraft(null); setSelectedInvoice(response.invoice); if (response.email_sent === false) { setNotice(""); setError(response.email_warning || "Invoice issued, but the email could not be delivered."); } else { setNotice("Invoice issued and emailed to the client."); } await load();
     } catch (requestError) { setError(readableError(requestError)); } finally { setSaving(false); }
   }
 
@@ -181,7 +181,7 @@ export default function AccountingManagement({ users, contracts, administrator }
     const link = document.createElement("a"); link.href = url; link.download = "akeluwa-ledger.csv"; link.click(); URL.revokeObjectURL(url);
   }
 
-  if (selectedInvoice) return <InvoiceDocument invoice={selectedInvoice} company={company} canRecordPayment={canCreate} canVoid={canDelete} onBack={() => setSelectedInvoice(null)} onPayment={() => startPayment(selectedInvoice)} onVoid={() => voidInvoice(selectedInvoice)} />;
+  if (selectedInvoice) return <>{error && <p className="form-alert is-error">{error}</p>}{notice && <p className="form-alert is-success">{notice}</p>}<InvoiceDocument invoice={selectedInvoice} company={company} canRecordPayment={canCreate} canVoid={canDelete} onBack={() => setSelectedInvoice(null)} onPayment={() => startPayment(selectedInvoice)} onVoid={() => voidInvoice(selectedInvoice)} /></>;
   if (selectedTransaction) return <ReceiptDocument transaction={selectedTransaction} company={company} canVoid={canDelete} onBack={() => setSelectedTransaction(null)} onVoid={() => voidTransaction(selectedTransaction)} />;
   if (invoiceDraft) return <InvoiceEditor value={invoiceDraft} contracts={contracts} saving={saving} onChange={setInvoiceDraft} onContract={chooseContract} onSubmit={createInvoice} onCancel={() => setInvoiceDraft(null)} />;
 

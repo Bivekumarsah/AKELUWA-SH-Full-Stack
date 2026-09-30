@@ -7,7 +7,7 @@
   },
   "scripts": {
     "install:ci": "bash scripts/install-ci.sh",
-    "dev": "node scripts/with-wrangler-log.mjs vite",
+    "dev": "node scripts/with-wrangler-log.mjs vite --host 0.0.0.0 --port 5173 --strictPort",
     "build": "node scripts/with-wrangler-log.mjs vite build",
     "start": "node scripts/with-wrangler-log.mjs vinext start",
     "test": "npm run typecheck && npm run build && node --import ./tests/register-worker-loader.mjs --test tests/*.test.mjs",
