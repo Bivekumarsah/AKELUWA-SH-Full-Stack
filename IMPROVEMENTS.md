@@ -27,7 +27,7 @@ These are targets, not achieved scores. Each area needs the listed evidence befo
 |---|---:|---|
 | Design and UI | 9.5/10 | Validate core customer and admin tasks with real users on mobile and desktop, then resolve observed usability issues. |
 | Architecture | 9.5/10 | Review the deployed frontend/API boundary, failure modes, and notification worker under realistic load. |
-| Backend quality | 9.5/10 | Exercise document retries, concurrent workers, and error recovery against PostgreSQL in CI and staging. |
+| Backend quality | 9.5/10 | Exercise document delivery and error recovery under realistic staging load; keep the PostgreSQL retry and concurrent-worker checks green in CI. |
 | System protection | 9.5/10 | Verify live alerts, off-host backups, restore drills, and incident-response access. |
 | Application security | 9.5/10 | Complete an independent penetration test and remediate findings. |
 | Dependency security | 9.5/10 | Keep scheduled audits and update reviews passing as dependencies change. |
@@ -133,7 +133,7 @@ Enrollment now creates ten recovery codes and displays them once. Only SHA-256 h
 
 ### Automated verification
 
-- Added a PostgreSQL-backed document email outbox with automatic retries, lease-based worker claims, cancellation for obsolete notifications, queue-age metrics, and a real-database failure/retry test.
+- Added a PostgreSQL-backed document email outbox with automatic retries, lease-based worker claims, cancellation for obsolete notifications, queue-age metrics, and real-database failure/retry and concurrent-claim tests.
 - Added rate-limiter unit tests.
 - Added recovery-code generation and normalization tests, metrics tests, and an end-to-end browser test for MFA enrollment and mandatory recovery-code acknowledgement.
 - Added configuration tests for valid environments and unsafe production settings.
@@ -151,6 +151,7 @@ Enrollment now creates ten recovery codes and displays them once. Only SHA-256 h
 - Fixed every ESLint error and warning found by the project rules.
 - Added client asset budgets, automated WCAG A/AA checks, Cloudflare Worker deployment dry-runs, and the full Chromium workflow suite to CI.
 - Added PostgreSQL to the backend CI job so account, contract, accounting, company, and administrator authorization integration tests no longer skip in automation.
+- Added a full-stack CI job that exercises published services and project inquiry submission through Chromium, the Go API, and an isolated PostgreSQL service.
 
 ### Shared account profiles
 
@@ -160,6 +161,12 @@ Enrollment now creates ten recovery codes and displays them once. Only SHA-256 h
 
 ## Verification Results
 
+- Local verification on 2026-09-30: the full-stack browser suite passed 2/2 scenarios against an isolated Go API and PostgreSQL database; the existing browser suite passed 24/24 scenarios.
+- The isolated PostgreSQL concurrency test passed: one of eight workers claimed the notification, an expired lease was reclaimed, and stale completion was rejected.
+- `go test -race ./...` passed across all backend packages against isolated PostgreSQL; `npm test` passed the production build and 13 frontend tests, and lint/typecheck passed.
+- The Go race suite passed against isolated PostgreSQL, and a disposable `pg_dump`/`pg_restore` drill recovered all 18 migrations and a seeded marker value.
+- The production dependency audit reported zero vulnerabilities; the frontend deployment dry-run, Compose configuration check, and workflow YAML parse passed.
+- These local checks do not verify staging SMTP delivery, live alert routing, off-host backup retention, production recovery, or independent security assessment.
 - `go test ./...`: passed.
 - `npm run lint`: passed with zero errors and zero warnings.
 - `npm test`: passed; the production build completed and all 13 bundle, rendered-page, documentation, CSV, and QR tests passed.

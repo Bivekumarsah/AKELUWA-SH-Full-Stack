@@ -60,3 +60,54 @@ jobs:
           cache-dependency-path: backend/go.sum
       - run: go test -race ./...
       - run: go vet ./...
+
+  full-stack:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: akeluwa_test
+          POSTGRES_USER: akeluwa_test
+          POSTGRES_PASSWORD: integration-test-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U akeluwa_test -d akeluwa_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      APP_ENV: test
+      DATABASE_URL: postgres://akeluwa_test:integration-test-password@localhost:5432/akeluwa_test?sslmode=disable
+      JWT_SECRET: full-stack-ci-jwt-secret-please-replace-in-production
+      MFA_ENCRYPTION_KEY: full-stack-ci-mfa-secret-please-replace-in-production
+      COOKIE_SECURE: "false"
+      FRONTEND_URL: http://localhost:5173
+      CORS_ORIGINS: http://localhost:5173
+      NEXT_PUBLIC_API_URL: http://localhost:8080/api/v1
+      NEXT_PUBLIC_SITE_URL: http://localhost:5173
+      FULL_STACK_API_URL: http://localhost:8080/api/v1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+      - run: npm ci
+      - run: go run ./cmd/api > "$RUNNER_TEMP/api.log" 2>&1 &
+        working-directory: backend
+      - run: |
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://localhost:8080/readyz > /dev/null; then exit 0; fi
+            sleep 2
+          done
+          cat "$RUNNER_TEMP/api.log"
+          exit 1
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test tests/browser/full-stack.spec.ts

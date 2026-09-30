@@ -99,13 +99,13 @@ func TestContractInvitationPublishingAndInvoiceNotifications(t *testing.T) {
 	if err != nil {
 		t.Fatalf("find invited client: %v", err)
 	}
-	t.Cleanup(func() {
+	defer func() {
 		_, _ = pool.Exec(context.Background(), `DELETE FROM document_notification_outbox WHERE record_id IN (
 			SELECT id FROM contracts WHERE user_id=$1 UNION SELECT id FROM accounting_invoices WHERE user_id=$1)`, client.ID)
 		_, _ = pool.Exec(context.Background(), `DELETE FROM accounting_invoices WHERE user_id=$1`, client.ID)
 		_, _ = pool.Exec(context.Background(), `DELETE FROM contracts WHERE user_id=$1`, client.ID)
 		_, _ = pool.Exec(context.Background(), `DELETE FROM users WHERE id=$1`, client.ID)
-	})
+	}()
 	if contractResult.Contract.UserID != client.ID || client.EmailVerifiedAt != nil || !strings.Contains(mailbox.messages[0].body, "/reset-password?token=") {
 		t.Fatalf("invited client was not securely linked: client=%#v email=%#v", client, mailbox.messages[0])
 	}
@@ -201,5 +201,80 @@ func TestContractInvitationPublishingAndInvoiceNotifications(t *testing.T) {
 	if err := pool.QueryRow(ctx, `SELECT cancelled_at IS NOT NULL FROM document_notification_outbox
 		WHERE kind='invoice_created' AND record_id=$1`, voidResult.Invoice.ID).Scan(&cancelled); err != nil || !cancelled {
 		t.Fatalf("void invoice email was not cancelled: cancelled=%t err=%v", cancelled, err)
+	}
+}
+
+func TestDocumentNotificationConcurrentClaims(t *testing.T) {
+	databaseURL := os.Getenv("TEST_DATABASE_URL")
+	if databaseURL == "" {
+		t.Skip("set TEST_DATABASE_URL to run PostgreSQL document-notification integration tests")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	pool, err := database.Open(ctx, databaseURL)
+	if err != nil {
+		t.Fatalf("open test database: %v", err)
+	}
+	defer pool.Close()
+	if err := database.Migrate(ctx, pool); err != nil {
+		t.Fatalf("migrate test database: %v", err)
+	}
+
+	data := store.New(pool)
+	var recordID string
+	if err := pool.QueryRow(ctx, `SELECT gen_random_uuid()::text`).Scan(&recordID); err != nil {
+		t.Fatalf("create record ID: %v", err)
+	}
+	id, err := data.QueueDocumentNotification(ctx, "invoice_created", recordID, map[string]string{"to": "claim-test@example.test"})
+	if err != nil {
+		t.Fatalf("queue notification: %v", err)
+	}
+	defer func() {
+		_, _ = pool.Exec(context.Background(), `DELETE FROM document_notification_outbox WHERE id=$1`, id)
+	}()
+
+	type claimResult struct {
+		job store.DocumentNotification
+		err error
+	}
+	start := make(chan struct{})
+	results := make(chan claimResult, 8)
+	for range 8 {
+		go func() {
+			<-start
+			job, err := data.ClaimDocumentNotification(ctx, id)
+			results <- claimResult{job: job, err: err}
+		}()
+	}
+	close(start)
+	var first store.DocumentNotification
+	claimed := 0
+	for range 8 {
+		result := <-results
+		if result.err == nil {
+			first = result.job
+			claimed++
+		} else if !errors.Is(result.err, store.ErrNotFound) {
+			t.Fatalf("claim notification: %v", result.err)
+		}
+	}
+	if claimed != 1 || first.Attempts != 1 {
+		t.Fatalf("expected exactly one first claim, got %d claims and %d attempts", claimed, first.Attempts)
+	}
+	if _, err := pool.Exec(ctx, `UPDATE document_notification_outbox SET lease_until=now()-interval '1 second' WHERE id=$1`, id); err != nil {
+		t.Fatalf("expire first lease: %v", err)
+	}
+	second, err := data.ClaimDocumentNotification(ctx, id)
+	if err != nil || second.Attempts != 2 {
+		t.Fatalf("reclaim expired notification: job=%#v err=%v", second, err)
+	}
+	if err := data.FinishDocumentNotification(ctx, first, true); err == nil {
+		t.Fatal("stale worker completed a reclaimed notification")
+	}
+	if err := data.FinishDocumentNotification(ctx, second, true); err != nil {
+		t.Fatalf("complete active claim: %v", err)
+	}
+	if _, err := data.ClaimDocumentNotification(ctx, id); !errors.Is(err, store.ErrNotFound) {
+		t.Fatalf("delivered notification was claimable again: %v", err)
 	}
 }

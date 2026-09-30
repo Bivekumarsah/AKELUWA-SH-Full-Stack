@@ -216,6 +216,7 @@ Production requires independent strong secrets for `JWT_SECRET`, `MFA_ENCRYPTION
 | `npm run lint` | ESLint checks |
 | `npm test` | TypeScript, production build, rendered-page tests, CSV tests |
 | `npm run test:browser` | Playwright workflows, WCAG A/AA scans, auth, document verification, and responsive checks |
+| `npx playwright test tests/browser/full-stack.spec.ts` | Opt-in browser-to-Go-to-PostgreSQL service and inquiry checks |
 | `npm run deploy:frontend:dry-run` | Validate the generated Cloudflare Worker deployment artifact |
 | `npm run test:docs` | Documentation structure and source-reference validation |
 | `npm run audit:production` | Fails on high-severity production dependency advisories |
@@ -224,6 +225,8 @@ Production requires independent strong secrets for `JWT_SECRET`, `MFA_ENCRYPTION
 PostgreSQL-backed Go tests require an isolated `TEST_DATABASE_URL`. They create temporary records and must never target a production database.
 
 Playwright starts the frontend automatically and reuses an existing local server. The suite uses `http://localhost:5173` by default. Set `PLAYWRIGHT_BASE_URL` for another frontend URL. Local runs default to Microsoft Edge; CI installs and uses Chromium.
+
+The full-stack browser tests require a running Go API backed by an isolated PostgreSQL database and `FULL_STACK_API_URL` set to its `/api/v1` URL. They are skipped in ordinary local browser runs; the dedicated CI job supplies the API and database. If a local frontend is already running against another API URL, set `FULL_STACK_API_PROXY_FROM` to that URL to route test-browser API requests to the isolated API. Do not run these write tests against production.
 
 ## Common Change Workflows
 
