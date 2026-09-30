@@ -13,6 +13,7 @@ export const publicRoutes = [
   { path: "/terms", priority: 0.5 },
   { path: "/careers", priority: 0.5 },
   { path: "/downloads", priority: 0.5 },
+  { path: "/verify-contract", priority: 0.5 },
 ];
 
 export function absoluteURL(path: string) {

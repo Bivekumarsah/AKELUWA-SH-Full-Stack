@@ -65,6 +65,7 @@ async function mockAccount(page: Page) {
     if (path.endsWith("/account/inquiries")) return route.fulfill({ json: { inquiries: [] } });
     if (path.endsWith("/account/invoices")) return route.fulfill({ json: { invoices: [] } });
     if (path.endsWith("/account/contracts")) return route.fulfill({ json: { contracts: [contract] } });
+    if (path.endsWith(`/account/contracts/${contract.id}/sign`) && route.request().method() === "POST") return route.fulfill({ json: { contract: { ...contract, status: "active", client_signer_name: user.name, client_signature: legacySignaturePNG, client_signed_at: "2026-09-29T09:30:00Z", updated_at: "2026-09-29T09:30:00Z" } } });
     return route.fulfill({ status: 404, json: { error: "not mocked" } });
   });
 }
@@ -80,6 +81,7 @@ test("client contract is branded, traceable, responsive, and supports signature 
   await expect(page.getByText("Akeluwa Software Hub Pvt. Ltd.").first()).toBeVisible();
   await expect(page.getByText(contract.content_hash).first()).toBeVisible();
   await expect(page.getByText("CONTROLLED CONTRACT COPY")).toBeAttached();
+  await expect(page.getByLabel("Contract verification QR code")).toBeVisible();
   await expect(page.locator(".contract-signatures img")).toHaveCSS("filter", "brightness(0) saturate(1)");
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 
@@ -100,6 +102,13 @@ test("client contract is branded, traceable, responsive, and supports signature 
   await expect(page.getByText("1 stroke recorded")).toBeVisible();
   await page.getByRole("button", { name: "Erase signature" }).click();
   await expect(page.getByText("Sign inside the area above")).toBeVisible();
+
+  await page.getByRole("button", { name: "Type", exact: true }).click();
+  await expect(page.getByLabel("Typed legal signature")).toHaveValue(user.name);
+  await page.getByRole("checkbox").check();
+  await page.getByRole("button", { name: "Accept and sign contract" }).click();
+  await expect(page.getByText("Signature pending")).toHaveCount(0);
+  await expect(page.getByText(/Accepted .*2026/)).toHaveCount(2);
 });
 
 test("contract paper uses the full readable desktop measure", async ({ page }) => {
@@ -133,4 +142,114 @@ test("print output includes the complete multi-page contract", async ({ page }) 
   const pdf = await page.pdf({ format: "A4", printBackground: true, preferCSSPageSize: true });
   const pageCount = Buffer.from(pdf).toString("latin1").match(/\/Type\s*\/Page\b/g)?.length || 0;
   expect(pageCount).toBeGreaterThan(1);
+});
+
+test("public verification matches an issued contract without exposing client data", async ({ page }) => {
+  await page.route("**/api/v1/contracts/verify**", async route => route.fulfill({ json: { verification: {
+    contract_number: contract.contract_number,
+    title: contract.title,
+    status: "active",
+    version: contract.version,
+    content_hash: contract.content_hash,
+    provider_name: contract.provider_legal_name,
+    provider_signed_at: contract.provider_signed_at,
+    client_signed_at: "2026-09-29T09:30:00Z",
+    issued_at: contract.sent_at,
+  } } }));
+
+  await page.goto(`/verify-contract?number=${contract.contract_number}&fingerprint=${contract.content_hash}`);
+  await expect(page.getByText("VERIFIED AKELUWA SH RECORD")).toBeVisible();
+  await expect(page.getByRole("heading", { name: contract.contract_number })).toBeVisible();
+  await expect(page.getByText(contract.content_hash)).toBeVisible();
+  await expect(page.getByText(contract.client_email)).toHaveCount(0);
+  await expect(page.getByText("NPR 125,000.00")).toHaveCount(0);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});
+
+test("public verification confirms a registered company record by ID", async ({ page }) => {
+  await page.route("**/api/v1/records/verify**", async route => route.fulfill({ json: { verification: {
+    verification_code: "AK-CERT-2026-0042",
+    record_type: "certificate",
+    title: "Cloud Security Completion",
+    holder_name: "Example Person",
+    issued_on: "2026-09-01",
+    expires_on: "2027-09-01",
+    status: "valid",
+    public_note: "Issued after successful assessment.",
+    provider_name: "Akeluwa Software Hub Pvt. Ltd.",
+  } } }));
+
+  await page.goto("/verify-contract?code=AK-CERT-2026-0042");
+  await expect(page.getByText("VERIFIED AKELUWA SH RECORD")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "AK-CERT-2026-0042" })).toBeVisible();
+  await expect(page.getByText("Example Person")).toBeVisible();
+  await expect(page.getByText("Issued after successful assessment.")).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});
+
+test("public verification gives contact guidance for an unknown ID", async ({ page }) => {
+  await page.route("**/api/v1/records/verify**", async route => route.fulfill({ status: 404, json: { error: "not registered" } }));
+
+  await page.goto("/verify-contract?code=AK-UNKNOWN-9000");
+  await expect(page.getByText("Not an AKELUWA SH verified record")).toBeVisible();
+  await expect(page.getByRole("link", { name: /Contact akeluwasoftwarehub@gmail.com/ })).toHaveAttribute("href", "mailto:akeluwasoftwarehub@gmail.com");
+});
+
+test("administrator can issue a public verification ID", async ({ page }) => {
+  const admin = { ...user, id: "33333333-3333-4333-8333-333333333333", name: "Admin Example", email: "admin@example.com", role: "admin", mfa_enabled: true };
+  await page.route("**/api/v1/**", async route => {
+    const path = new URL(route.request().url()).pathname;
+    const method = route.request().method();
+    if (path.endsWith("/auth/me")) return route.fulfill({ json: { user: admin } });
+    if (path.endsWith("/admin/stats")) return route.fulfill({ json: { stats: { users: 1, new_inquiries: 0, active_services: 0, active_projects: 0 } } });
+    if (path.endsWith("/admin/inquiries")) return route.fulfill({ json: { inquiries: [] } });
+    if (path.endsWith("/admin/services")) return route.fulfill({ json: { services: [] } });
+    if (path.endsWith("/admin/portfolio")) return route.fulfill({ json: { portfolio: [] } });
+    if (path.endsWith("/admin/users")) return route.fulfill({ json: { users: [admin] } });
+    if (path.endsWith("/admin/contracts")) return route.fulfill({ json: { contracts: [] } });
+    if (path.endsWith("/admin/client-options")) return route.fulfill({ json: { users: [] } });
+    if (path.endsWith("/admin/verification-records") && method === "GET") return route.fulfill({ json: { verification_records: [] } });
+    if (path.endsWith("/admin/verification-records") && method === "POST") {
+      const body = route.request().postDataJSON();
+      return route.fulfill({ status: 201, json: { verification_record: { ...body, id: "44444444-4444-4444-8444-444444444444", created_at: "2026-09-29T00:00:00Z", updated_at: "2026-09-29T00:00:00Z" } } });
+    }
+    return route.fulfill({ status: 404, json: { error: "not mocked" } });
+  });
+
+  await page.goto("/admin");
+  await expect(page.getByRole("heading", { name: "System overview" })).toBeVisible();
+  await page.getByRole("button", { name: "Open admin navigation" }).click();
+  await page.getByRole("button", { name: /Verification/ }).click();
+  await expect(page.getByRole("heading", { name: "Record verification" })).toBeVisible();
+  await page.getByRole("button", { name: "New record" }).click();
+  await page.getByLabel("Verification ID").fill("AK-CERT-2026-0099");
+  await page.getByLabel("Public title").fill("Production Readiness Certificate");
+  await page.getByLabel(/Issued to/).fill("Example Organization");
+  await page.getByRole("button", { name: "Issue record" }).click();
+  await expect(page.getByText("Verification record issued.")).toBeVisible();
+  await expect(page.getByText("AK-CERT-2026-0099")).toBeVisible();
+});
+
+test("account keeps successful sections available and retries a failed contract request", async ({ page }) => {
+  let contractAttempts = 0;
+  await page.route("**/api/v1/**", async route => {
+    const path = new URL(route.request().url()).pathname;
+    if (path.endsWith("/auth/me")) return route.fulfill({ json: { user } });
+    if (path.endsWith("/account/inquiries")) return route.fulfill({ json: { inquiries: [] } });
+    if (path.endsWith("/account/invoices")) return route.fulfill({ json: { invoices: [] } });
+    if (path.endsWith("/account/contracts")) {
+      contractAttempts += 1;
+      return contractAttempts === 1
+        ? route.fulfill({ status: 503, json: { error: "temporarily unavailable" } })
+        : route.fulfill({ json: { contracts: [contract] } });
+    }
+    return route.fulfill({ status: 404, json: { error: "not mocked" } });
+  });
+
+  await page.goto("/account");
+  await expect(page.getByText(user.email)).toBeVisible();
+  await expect(page.getByText(/temporarily unavailable: contracts/)).toBeVisible();
+  await expect(page.getByText("No invoices have been issued to this account.")).toBeVisible();
+  await page.locator(".account-contracts").getByRole("button", { name: "Try again" }).click();
+  await expect(page.getByRole("button", { name: /Commerce platform design and development/ })).toBeVisible();
 });

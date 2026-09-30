@@ -98,9 +98,9 @@ test("administrator enrollment requires recovery codes to be saved", async ({ pa
 for (const width of [360, 390, 768, 1440]) {
   test(`public layouts fit ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
-    for (const path of ["/", "/services", "/case-studies", "/contact", "/login"]) {
+    for (const path of ["/", "/services", "/case-studies", "/contact", "/verify-contract", "/login"]) {
       await page.goto(path);
-      await expect(page.locator("main")).toBeVisible();
+      await expect(page.locator("main:not(.app-route-loading)")).toBeVisible();
       await expect(page.getByText("Loading published content...", { exact: true })).toHaveCount(0);
       await expect(page.getByRole("heading", { level: 1 }).first()).toBeVisible();
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${path} overflows at ${width}px`).toBe(true);

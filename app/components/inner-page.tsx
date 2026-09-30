@@ -12,8 +12,9 @@ type InnerPageProps = {
 export function InnerPage({ eyebrow, title, intro, children }: InnerPageProps) {
   return (
     <main className="inner-page" id="top">
+      <a className="skip-link" href="#main-content">Skip to main content</a>
       <SiteHeader />
-      <section className="inner-hero">
+      <section className="inner-hero" id="main-content" tabIndex={-1}>
         <p className="section-label">{eyebrow}</p>
         <h1>{title}</h1>
         <p>{intro}</p>

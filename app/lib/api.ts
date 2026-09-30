@@ -239,6 +239,37 @@ export type Contract = {
   updated_at: string;
 };
 
+export type ContractVerification = {
+  contract_number: string;
+  title: string;
+  status: "pending" | "active" | "completed" | "cancelled";
+  version: number;
+  content_hash: string;
+  provider_name: string;
+  provider_signed_at?: string;
+  client_signed_at?: string;
+  issued_at?: string;
+};
+
+export type VerificationRecord = {
+  id: string;
+  verification_code: string;
+  record_type: "certificate" | "document" | "letter" | "report" | "approval" | "other";
+  title: string;
+  holder_name?: string;
+  issued_on: string;
+  expires_on?: string;
+  status: "active" | "revoked";
+  public_note?: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type RecordVerification = Omit<VerificationRecord, "id" | "created_at" | "updated_at" | "status"> & {
+  status: "valid" | "expired" | "revoked";
+  provider_name: string;
+};
+
 export type DownloadResource = {
   id: string; title: string; description: string; file_name: string; content_type: string;
   file_size: number; active: boolean; position: number; download_count: number;

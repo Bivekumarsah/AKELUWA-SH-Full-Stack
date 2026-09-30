@@ -1,7 +1,10 @@
 "use client";
 
+import { useEffect, useMemo, useRef } from "react";
 import Image from "next/image";
+import QRCode from "qrcode";
 import { Contract } from "@/app/lib/api";
+import { siteURL } from "@/app/lib/site";
 
 const sections: Array<[keyof Contract, string]> = [
   ["scope", "1. Scope of work"],
@@ -71,6 +74,7 @@ export default function ContractDocument({ contract }: { contract: Contract }) {
         <div><dt>Record status</dt><dd>{contract.status}</dd></div>
       </dl>
       <p>The fingerprint identifies the locked commercial content and company identity snapshot stored for this version. Any change to those fields produces a different fingerprint.</p>
+      {contract.content_hash && <ContractVerificationMark contract={contract} />}
     </section>
 
     <section className="contract-acceptance">
@@ -84,6 +88,31 @@ export default function ContractDocument({ contract }: { contract: Contract }) {
 
     <footer><strong>{contract.contract_number} / VERSION {contract.version}</strong><span>AKELUWA SH / CONTROLLED ELECTRONIC RECORD</span><p>This record includes electronic signatures and an integrity fingerprint; it is not represented as a licensed certificate-based digital signature. The parties should obtain legal review appropriate to their jurisdiction and risk.</p></footer>
   </article>;
+}
+
+function ContractVerificationMark({ contract }: { contract: Contract }) {
+  const canvas = useRef<HTMLCanvasElement>(null);
+  const verificationURL = useMemo(() => {
+    const url = new URL("/verify-contract", siteURL);
+    url.searchParams.set("number", contract.contract_number);
+    url.searchParams.set("fingerprint", contract.content_hash);
+    return url.toString();
+  }, [contract.content_hash, contract.contract_number]);
+
+  useEffect(() => {
+    if (!canvas.current) return;
+    void QRCode.toCanvas(canvas.current, verificationURL, {
+      width: 92,
+      margin: 1,
+      errorCorrectionLevel: "M",
+      color: { dark: "#172554", light: "#ffffff" },
+    });
+  }, [verificationURL]);
+
+  return <div className="contract-verification-mark">
+    <canvas ref={canvas} role="img" aria-label="Contract verification QR code" />
+    <div><span>Independent verification</span><strong>Scan or open the verification link</strong><a href={verificationURL}>{verificationURL}</a></div>
+  </div>;
 }
 
 function Party({ title, name, secondary, details, identifiers }: { title: string; name: string; secondary: string; details: Array<string | undefined>; identifiers: Array<string | undefined> }) {

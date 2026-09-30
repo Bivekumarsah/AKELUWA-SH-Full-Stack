@@ -227,6 +227,44 @@ type Contract struct {
 	UpdatedAt            time.Time  `json:"updated_at"`
 }
 
+type ContractVerification struct {
+	ContractNumber   string     `json:"contract_number"`
+	Title            string     `json:"title"`
+	Status           string     `json:"status"`
+	Version          int        `json:"version"`
+	ContentHash      string     `json:"content_hash"`
+	ProviderName     string     `json:"provider_name"`
+	ProviderSignedAt *time.Time `json:"provider_signed_at,omitempty"`
+	ClientSignedAt   *time.Time `json:"client_signed_at,omitempty"`
+	IssuedAt         *time.Time `json:"issued_at,omitempty"`
+}
+
+type VerificationRecord struct {
+	ID               string    `json:"id"`
+	VerificationCode string    `json:"verification_code"`
+	RecordType       string    `json:"record_type"`
+	Title            string    `json:"title"`
+	HolderName       string    `json:"holder_name,omitempty"`
+	IssuedOn         string    `json:"issued_on"`
+	ExpiresOn        string    `json:"expires_on,omitempty"`
+	Status           string    `json:"status"`
+	PublicNote       string    `json:"public_note,omitempty"`
+	CreatedAt        time.Time `json:"created_at"`
+	UpdatedAt        time.Time `json:"updated_at"`
+}
+
+type RecordVerification struct {
+	VerificationCode string `json:"verification_code"`
+	RecordType       string `json:"record_type"`
+	Title            string `json:"title"`
+	HolderName       string `json:"holder_name,omitempty"`
+	IssuedOn         string `json:"issued_on"`
+	ExpiresOn        string `json:"expires_on,omitempty"`
+	Status           string `json:"status"`
+	PublicNote       string `json:"public_note,omitempty"`
+	ProviderName     string `json:"provider_name"`
+}
+
 type Download struct {
 	ID            string    `json:"id"`
 	Title         string    `json:"title"`

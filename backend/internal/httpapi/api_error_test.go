@@ -124,6 +124,47 @@ func TestDecodeSignatureRequiresRealPNG(t *testing.T) {
 	}
 }
 
+func TestPublicContractVerificationRejectsMalformedLookup(t *testing.T) {
+	api := &API{cfg: config.Config{MaxRequestBytes: 1 << 20}}
+	response := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "/api/v1/contracts/verify?number=AK-1&fingerprint=not-a-hash", nil)
+
+	api.publicVerifyContract(response, request)
+
+	if response.Code != http.StatusUnprocessableEntity {
+		t.Fatalf("malformed verification: expected 422, got %d", response.Code)
+	}
+	if !strings.Contains(response.Body.String(), "SHA-256 fingerprint") {
+		t.Fatalf("malformed verification returned an unclear response: %s", response.Body.String())
+	}
+}
+
+func TestDecodeVerificationRecordNormalizesAndValidates(t *testing.T) {
+	api := &API{cfg: config.Config{MaxRequestBytes: 1 << 20}}
+	response := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodPost, "/api/v1/admin/verification-records", strings.NewReader(`{
+		"verification_code":" ak-cert-2026-001 ","record_type":"Certificate","title":"Security Training",
+		"holder_name":"Example Person","issued_on":"2026-09-01","expires_on":"2027-09-01",
+		"status":"ACTIVE","public_note":"Issued after assessment."
+	}`))
+	item, ok := api.decodeVerificationRecord(response, request)
+	if !ok {
+		t.Fatalf("valid verification record was rejected with status %d: %s", response.Code, response.Body.String())
+	}
+	if item.VerificationCode != "AK-CERT-2026-001" || item.RecordType != "certificate" || item.Status != "active" {
+		t.Fatalf("verification record was not normalized: %#v", item)
+	}
+
+	response = httptest.NewRecorder()
+	request = httptest.NewRequest(http.MethodPost, "/api/v1/admin/verification-records", strings.NewReader(`{
+		"verification_code":"bad code","record_type":"certificate","title":"Test certificate",
+		"issued_on":"2027-09-01","expires_on":"2026-09-01","status":"active"
+	}`))
+	if _, ok := api.decodeVerificationRecord(response, request); ok || response.Code != http.StatusUnprocessableEntity {
+		t.Fatalf("invalid verification record: expected 422, got %d", response.Code)
+	}
+}
+
 func TestDecodeInvoiceCalculatesTrustedTotals(t *testing.T) {
 	body := `{
 		"invoice_number":"inv-2026-001","client_name":"Example Client","client_email":"client@example.com",

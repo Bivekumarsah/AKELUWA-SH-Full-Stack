@@ -40,6 +40,7 @@ careers
 | `admin_action_requests` | Delayed destructive-action approval workflow |
 | `mfa_recovery_codes` | Hashed, single-use administrator recovery codes |
 | `api_rate_limits` | Shared request limits across API instances |
+| `verification_records` | Public certificate, document, letter, report, and approval authenticity registry |
 
 ## Data Integrity Rules
 
@@ -71,6 +72,7 @@ careers
 | `012_client_invoice_access.sql` | Invoice customer ownership |
 | `013_security_operations.sql` | MFA recovery codes and distributed API rate limits |
 | `014_contract_identity.sql` | Locked company legal/contact identity snapshots for issued contracts |
+| `015_verification_registry.sql` | Public company-record verification IDs, status, dates, and safe display fields |
 
 ## Migration Rules
 

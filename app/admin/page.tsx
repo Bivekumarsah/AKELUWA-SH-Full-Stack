@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import ContractManagement from "@/app/components/contract-management";
+import RecordVerificationManagement from "@/app/components/record-verification-management";
 import AccountingManagement from "@/app/components/accounting-management";
 import ActionReviewManagement from "@/app/components/action-review-management";
 import ProfileMenu from "@/app/components/profile-menu";
@@ -26,15 +27,16 @@ import {
 import { useProtectedPage } from "@/app/lib/use-session";
 import { serializeCSV } from "@/app/lib/csv";
 
-type Tab = "overview" | "inquiries" | "contracts" | "services" | "portfolio" | "downloads" | "careers" | "users" | "accounts" | "access" | "reviews" | "security";
+type Tab = "overview" | "inquiries" | "contracts" | "verification" | "services" | "portfolio" | "downloads" | "careers" | "users" | "accounts" | "access" | "reviews" | "security";
 type InquiryFilter = "all" | Inquiry["status"];
 
 const PAGE_SIZE = 8;
-const tabOrder: Tab[] = ["overview", "inquiries", "contracts", "services", "portfolio", "downloads", "careers", "users", "accounts", "access", "reviews", "security"];
+const tabOrder: Tab[] = ["overview", "inquiries", "contracts", "verification", "services", "portfolio", "downloads", "careers", "users", "accounts", "access", "reviews", "security"];
 const tabLabels: Record<Tab, string> = {
   overview: "Overview",
   inquiries: "Inquiries",
   contracts: "Contracts",
+  verification: "Verification",
   services: "Services",
   portfolio: "Portfolio",
   downloads: "Downloads",
@@ -49,6 +51,7 @@ const tabPermissions: Partial<Record<Tab, AdminPermission>> = {
   overview: "overview.view",
   inquiries: "inquiries.view",
   contracts: "contracts.view",
+  verification: "contracts.view",
   services: "services.view",
   portfolio: "portfolio.view",
   downloads: "downloads.view",
@@ -337,6 +340,7 @@ export default function AdminPage() {
             {tab === "overview" && <Overview stats={stats} inquiries={inquiries} services={services} portfolio={portfolio} />}
             {tab === "inquiries" && <InquiriesPanel inquiries={inquiries} onUpdate={updateInquiry} canUpdate={hasPermission(admin, "inquiries.update")} />}
             {tab === "contracts" && <ContractManagement initialContracts={contracts} users={clientUsers} adminName={admin?.name || ""} administrator={admin} onContractsChange={setContracts} />}
+            {tab === "verification" && <RecordVerificationManagement administrator={admin} />}
             {tab === "services" && (
               <ContentPanel title="Services" copy="Control the capabilities shown on the public website.">
                 {(serviceForm.id ? hasPermission(admin, "services.update") : hasPermission(admin, "services.create")) && <ServiceEditor value={serviceForm} onChange={setServiceForm} onSubmit={saveService} onCancel={() => setServiceForm(emptyService)} />}

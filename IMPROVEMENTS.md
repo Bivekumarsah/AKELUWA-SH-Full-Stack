@@ -26,6 +26,8 @@ The score is an engineering assessment, not a certification or formal penetratio
 - Upgraded the admin panel with inquiry pipeline analytics, search and status filters, pagination, CSV exports, inquiry details and email actions, content visibility filters, safer role changes, and responsive empty states.
 - Hardened authentication navigation so signed-in users cannot return to login/register forms through browser history, while restored private pages revalidate the live session.
 - Added a full project-contract workflow: structured commercial and legal terms, draft locking, SHA-256 content fingerprints, client/provider electronic acceptance, signer metadata, lifecycle controls, and print/PDF output.
+- Added QR-backed public contract verification, privacy-limited authenticity results, typed or drawn signatures, and independently retryable customer account sections.
+- Added a public company-record registry for certificates, documents, letters, reports, approvals, and contract numbers, with administrator issuance, expiry, revocation, and privacy-limited results.
 - Added admin-managed public resources and career openings, including validated file uploads, visibility controls, download counts, role deadlines, and direct application links.
 - Replaced email-only career applications with a dedicated applicant form, validated resume uploads, consent capture, admin candidate queue, resume access, and recruitment status tracking.
 - Removed the public homepage live-console section that contained `AKELUWA SYSTEM LAB / LIVE`.

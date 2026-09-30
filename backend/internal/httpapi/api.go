@@ -41,6 +41,7 @@ var (
 	currencyPattern      = regexp.MustCompile(`^[A-Z]{3}$`)
 	uuidPattern          = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$`)
 	invoiceNumberPattern = regexp.MustCompile(`^[A-Z0-9][A-Z0-9_/-]*$`)
+	contractHashPattern  = regexp.MustCompile(`^[a-f0-9]{64}$`)
 )
 
 const (
@@ -119,6 +120,8 @@ func (a *API) Router() http.Handler {
 	mux.Handle("DELETE /api/v1/account/avatar", a.requireAuth(http.HandlerFunc(a.removeAvatar)))
 	mux.Handle("GET /api/v1/account/avatar", a.requireAuth(http.HandlerFunc(a.avatar)))
 	mux.HandleFunc("GET /api/v1/company-brand", a.publicCompanyBrand)
+	mux.Handle("GET /api/v1/records/verify", a.limitRequests("record-verify", 30, time.Minute, http.HandlerFunc(a.publicVerifyRecord)))
+	mux.Handle("GET /api/v1/contracts/verify", a.limitRequests("contract-verify", 20, time.Minute, http.HandlerFunc(a.publicVerifyContract)))
 	mux.HandleFunc("GET /api/v1/services", a.publicServices)
 	mux.HandleFunc("GET /api/v1/portfolio", a.publicPortfolio)
 	mux.HandleFunc("GET /api/v1/downloads", a.publicDownloads)
@@ -165,6 +168,9 @@ func (a *API) Router() http.Handler {
 	mux.Handle("POST /api/v1/admin/contracts/{id}/send", a.requireAdminPermission(permissionContractsUpdate, a.auditAdmin(http.HandlerFunc(a.adminSendContract))))
 	mux.Handle("POST /api/v1/admin/contracts/{id}/sign", a.requireAdminPermission(permissionContractsUpdate, a.auditAdmin(http.HandlerFunc(a.adminSignContract))))
 	mux.Handle("PATCH /api/v1/admin/contracts/{id}/status", a.requireAdminPermission(permissionContractsUpdate, a.auditAdmin(http.HandlerFunc(a.adminContractStatus))))
+	mux.Handle("GET /api/v1/admin/verification-records", a.requireAdminPermission(permissionContractsView, http.HandlerFunc(a.adminVerificationRecords)))
+	mux.Handle("POST /api/v1/admin/verification-records", a.requireAdminPermission(permissionContractsCreate, a.auditAdmin(http.HandlerFunc(a.adminCreateVerificationRecord))))
+	mux.Handle("PUT /api/v1/admin/verification-records/{id}", a.requireAdminPermission(permissionContractsUpdate, a.auditAdmin(http.HandlerFunc(a.adminUpdateVerificationRecord))))
 	mux.Handle("GET /api/v1/admin/downloads", a.requireAdminPermission(permissionDownloadsView, http.HandlerFunc(a.adminDownloads)))
 	mux.Handle("POST /api/v1/admin/downloads", a.requireAdminPermission(permissionDownloadsCreate, a.auditAdmin(http.HandlerFunc(a.adminCreateDownload))))
 	mux.Handle("PATCH /api/v1/admin/downloads/{id}", a.requireAdminPermission(permissionDownloadsUpdate, a.auditAdmin(http.HandlerFunc(a.adminUpdateDownload))))
@@ -654,6 +660,42 @@ func (a *API) createInquiry(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusCreated, map[string]any{"inquiry": item})
+}
+
+func (a *API) publicVerifyContract(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Cache-Control", "no-store")
+	contractNumber := strings.ToUpper(strings.TrimSpace(r.URL.Query().Get("number")))
+	contentHash := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("fingerprint")))
+	if len(contractNumber) < 3 || len(contractNumber) > 60 || !invoiceNumberPattern.MatchString(contractNumber) || !contractHashPattern.MatchString(contentHash) {
+		writeError(w, http.StatusUnprocessableEntity, "provide a valid contract reference and SHA-256 fingerprint")
+		return
+	}
+
+	item, err := a.store.VerifyContract(r.Context(), contractNumber, contentHash)
+	if !a.handleStoreError(w, r, err) {
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"verification": item})
+}
+
+func (a *API) publicVerifyRecord(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Cache-Control", "no-store")
+	code := strings.ToUpper(strings.TrimSpace(r.URL.Query().Get("code")))
+	if len(code) < 3 || len(code) > 80 || !invoiceNumberPattern.MatchString(code) {
+		writeError(w, http.StatusUnprocessableEntity, "provide a valid document or certificate code")
+		return
+	}
+
+	item, err := a.store.VerifyCompanyRecord(r.Context(), code)
+	if errors.Is(err, store.ErrNotFound) {
+		writeError(w, http.StatusNotFound, "This code is not registered in AKELUWA SH records. Contact akeluwasoftwarehub@gmail.com for confirmation.")
+		return
+	}
+	if err != nil {
+		a.internalError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"verification": item})
 }
 
 func (a *API) accountInquiries(w http.ResponseWriter, r *http.Request) {
@@ -1274,6 +1316,72 @@ func (a *API) adminContractStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"contract": item})
+}
+
+func (a *API) adminVerificationRecords(w http.ResponseWriter, r *http.Request) {
+	items, err := a.store.ListVerificationRecords(r.Context())
+	if err != nil {
+		a.internalError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"verification_records": items})
+}
+
+func (a *API) adminCreateVerificationRecord(w http.ResponseWriter, r *http.Request) {
+	item, ok := a.decodeVerificationRecord(w, r)
+	if !ok {
+		return
+	}
+	created, err := a.store.CreateVerificationRecord(r.Context(), item, claimsFromContext(r.Context()).UserID)
+	if isUniqueViolation(err) {
+		writeError(w, http.StatusConflict, "a verification record already uses this code")
+		return
+	}
+	if !a.handleStoreError(w, r, err) {
+		return
+	}
+	writeJSON(w, http.StatusCreated, map[string]any{"verification_record": created})
+}
+
+func (a *API) adminUpdateVerificationRecord(w http.ResponseWriter, r *http.Request) {
+	item, ok := a.decodeVerificationRecord(w, r)
+	if !ok {
+		return
+	}
+	updated, err := a.store.UpdateVerificationRecord(r.Context(), r.PathValue("id"), item)
+	if isUniqueViolation(err) {
+		writeError(w, http.StatusConflict, "a verification record already uses this code")
+		return
+	}
+	if !a.handleStoreError(w, r, err) {
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"verification_record": updated})
+}
+
+func (a *API) decodeVerificationRecord(w http.ResponseWriter, r *http.Request) (model.VerificationRecord, bool) {
+	var item model.VerificationRecord
+	if !a.decode(w, r, &item) {
+		return item, false
+	}
+	item.VerificationCode = strings.ToUpper(strings.TrimSpace(item.VerificationCode))
+	item.RecordType = strings.ToLower(strings.TrimSpace(item.RecordType))
+	item.Title = strings.TrimSpace(item.Title)
+	item.HolderName = strings.TrimSpace(item.HolderName)
+	item.Status = strings.ToLower(strings.TrimSpace(item.Status))
+	item.PublicNote = strings.TrimSpace(item.PublicNote)
+	issued, issuedErr := time.Parse("2006-01-02", item.IssuedOn)
+	expires, expiresErr := time.Time{}, error(nil)
+	if item.ExpiresOn != "" {
+		expires, expiresErr = time.Parse("2006-01-02", item.ExpiresOn)
+	}
+	validType := item.RecordType == "certificate" || item.RecordType == "document" || item.RecordType == "letter" || item.RecordType == "report" || item.RecordType == "approval" || item.RecordType == "other"
+	validStatus := item.Status == "active" || item.Status == "revoked"
+	if len(item.VerificationCode) < 3 || len(item.VerificationCode) > 80 || !invoiceNumberPattern.MatchString(item.VerificationCode) || !validType || len(item.Title) < 3 || len(item.Title) > 200 || len(item.HolderName) > 160 || issuedErr != nil || expiresErr != nil || (!expires.IsZero() && expires.Before(issued)) || !validStatus || len(item.PublicNote) > 500 {
+		writeError(w, http.StatusUnprocessableEntity, "verification record fields are incomplete or invalid")
+		return item, false
+	}
+	return item, true
 }
 
 func (a *API) decodeSignature(w http.ResponseWriter, r *http.Request) (string, string, bool) {

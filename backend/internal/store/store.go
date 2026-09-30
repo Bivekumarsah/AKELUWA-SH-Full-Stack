@@ -430,6 +430,87 @@ func (s *Store) ListContracts(ctx context.Context, userID string) ([]model.Contr
 	return items, rows.Err()
 }
 
+func (s *Store) VerifyContract(ctx context.Context, contractNumber, contentHash string) (model.ContractVerification, error) {
+	var item model.ContractVerification
+	err := s.pool.QueryRow(ctx, `SELECT contract_number, title, status, version, content_hash,
+		COALESCE(NULLIF(provider_legal_name, ''), provider_name), provider_signed_at, client_signed_at, sent_at
+		FROM contracts
+		WHERE contract_number=$1 AND content_hash=$2 AND status <> 'draft'`, contractNumber, contentHash).Scan(
+		&item.ContractNumber, &item.Title, &item.Status, &item.Version, &item.ContentHash,
+		&item.ProviderName, &item.ProviderSignedAt, &item.ClientSignedAt, &item.IssuedAt,
+	)
+	return item, mapNotFound(err)
+}
+
+const verificationRecordColumns = `id::text, verification_code, record_type, title, holder_name,
+	issued_on::text, COALESCE(expires_on::text, ''), status, public_note, created_at, updated_at`
+
+func scanVerificationRecord(row scanner) (model.VerificationRecord, error) {
+	var item model.VerificationRecord
+	err := row.Scan(&item.ID, &item.VerificationCode, &item.RecordType, &item.Title, &item.HolderName,
+		&item.IssuedOn, &item.ExpiresOn, &item.Status, &item.PublicNote, &item.CreatedAt, &item.UpdatedAt)
+	return item, err
+}
+
+func (s *Store) VerifyCompanyRecord(ctx context.Context, code string) (model.RecordVerification, error) {
+	var item model.RecordVerification
+	err := s.pool.QueryRow(ctx, `WITH matched AS (
+		SELECT vr.verification_code, vr.record_type, vr.title, vr.holder_name, vr.issued_on::text AS issued_on,
+			COALESCE(vr.expires_on::text, '') AS expires_on,
+			CASE WHEN vr.status='revoked' THEN 'revoked' WHEN vr.expires_on IS NOT NULL AND vr.expires_on < CURRENT_DATE THEN 'expired' ELSE 'valid' END AS status,
+			vr.public_note, COALESCE(NULLIF(ca.legal_name, ''), ca.display_name) AS provider_name, 1 AS priority
+		FROM verification_records vr CROSS JOIN company_account ca
+		WHERE vr.verification_code=$1 AND ca.singleton=true
+		UNION ALL
+		SELECT c.contract_number, 'contract', c.title, '', COALESCE(c.sent_at::date::text, c.created_at::date::text), '',
+			CASE WHEN c.status='cancelled' THEN 'revoked' ELSE 'valid' END,
+			'Issued project agreement; use the printed SHA-256 fingerprint for full document matching.',
+			COALESCE(NULLIF(c.provider_legal_name, ''), c.provider_name), 0
+		FROM contracts c WHERE c.contract_number=$1 AND c.status <> 'draft'
+	)
+	SELECT verification_code, record_type, title, holder_name, issued_on, expires_on, status, public_note, provider_name
+	FROM matched ORDER BY priority LIMIT 1`, code).Scan(
+		&item.VerificationCode, &item.RecordType, &item.Title, &item.HolderName, &item.IssuedOn,
+		&item.ExpiresOn, &item.Status, &item.PublicNote, &item.ProviderName,
+	)
+	return item, mapNotFound(err)
+}
+
+func (s *Store) ListVerificationRecords(ctx context.Context) ([]model.VerificationRecord, error) {
+	rows, err := s.pool.Query(ctx, `SELECT `+verificationRecordColumns+` FROM verification_records ORDER BY issued_on DESC, created_at DESC LIMIT 1000`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := make([]model.VerificationRecord, 0)
+	for rows.Next() {
+		item, err := scanVerificationRecord(rows)
+		if err != nil {
+			return nil, err
+		}
+		items = append(items, item)
+	}
+	return items, rows.Err()
+}
+
+func (s *Store) CreateVerificationRecord(ctx context.Context, item model.VerificationRecord, createdBy string) (model.VerificationRecord, error) {
+	row := s.pool.QueryRow(ctx, `INSERT INTO verification_records
+		(verification_code, record_type, title, holder_name, issued_on, expires_on, status, public_note, created_by)
+		VALUES ($1,$2,$3,$4,$5::date,NULLIF($6,'')::date,$7,$8,$9::uuid) RETURNING `+verificationRecordColumns,
+		item.VerificationCode, item.RecordType, item.Title, item.HolderName, item.IssuedOn, item.ExpiresOn,
+		item.Status, item.PublicNote, createdBy)
+	return scanVerificationRecord(row)
+}
+
+func (s *Store) UpdateVerificationRecord(ctx context.Context, id string, item model.VerificationRecord) (model.VerificationRecord, error) {
+	row := s.pool.QueryRow(ctx, `UPDATE verification_records SET verification_code=$2, record_type=$3, title=$4,
+		holder_name=$5, issued_on=$6::date, expires_on=NULLIF($7,'')::date, status=$8, public_note=$9
+		WHERE id=$1 RETURNING `+verificationRecordColumns, id, item.VerificationCode, item.RecordType,
+		item.Title, item.HolderName, item.IssuedOn, item.ExpiresOn, item.Status, item.PublicNote)
+	result, err := scanVerificationRecord(row)
+	return result, mapNotFound(err)
+}
+
 func (s *Store) CreateContract(ctx context.Context, item model.Contract) (model.Contract, error) {
 	row := s.pool.QueryRow(ctx, `INSERT INTO contracts (
 		user_id, inquiry_id, contract_number, title, client_name, client_email, client_company,

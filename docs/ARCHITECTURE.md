@@ -21,7 +21,8 @@ The frontend and API are separate deployable applications. The browser receives 
 |---|---|
 | Public routes | Display published services, portfolio, downloads, careers, legal pages, and contact forms |
 | `app/login/`, `app/register/` | Shared sign-in and customer registration; API assigns the signed-in destination from role |
-| `app/account/` | Customer-only profile, inquiries, contracts, invoices, and contract signing |
+| `app/account/` | Customer-only profile, independently retryable inquiries/contracts/invoices, and accessible contract signing |
+| `app/verify-contract/` | Public company-record lookup plus exact SHA-256 contract-copy verification with non-sensitive results |
 | `app/admin/` | Administrator and sub-administrator workspace; UI hides unavailable tabs from delegated users |
 | `app/lib/api.ts` | Typed request wrapper, API models, cookie-based requests, and readable API errors |
 | `app/lib/use-session.ts` | Redirects guest-only, customer, and administrator routes based on `/auth/me` |

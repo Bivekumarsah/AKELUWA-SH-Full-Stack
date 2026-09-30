@@ -72,6 +72,7 @@ test("renders SEO support pages", async () => {
     ["/careers", /Build systems/],
     ["/careers/apply", /Show us how you/],
     ["/downloads", /Resources for a cleaner/],
+    ["/verify-contract", /Verify an issued/],
   ];
 
   for (const [path, expected] of routes) {
@@ -92,6 +93,10 @@ test("renders the admin control surface", async () => {
     new URL("../app/components/action-review-management.tsx", import.meta.url),
     "utf8",
   );
+  const verificationSource = await readFile(
+    new URL("../app/components/record-verification-management.tsx", import.meta.url),
+    "utf8",
+  );
 
   assert.match(html, /AKELUWA CONTROL \/ LIVE/);
   assert.match(html, /Admin sections/);
@@ -104,6 +109,8 @@ test("renders the admin control surface", async () => {
   assert.match(adminSource, /aria-label="Admin section"/);
   assert.match(adminSource, /tabLabels/);
   assert.match(adminSource, /"contracts"/);
+  assert.match(adminSource, /"verification"/);
+  assert.match(adminSource, /<RecordVerificationManagement/);
   assert.match(adminSource, /"downloads"/);
   assert.match(adminSource, /"careers"/);
   assert.match(adminSource, /"accounts"/);
@@ -113,6 +120,8 @@ test("renders the admin control surface", async () => {
   assert.match(accessSource, /permission-matrix/);
   assert.match(reviewSource, /Approve action/);
   assert.match(reviewSource, /\/admin\/action-requests/);
+  assert.match(verificationSource, /\/admin\/verification-records/);
+  assert.match(verificationSource, /New record/);
   assert.doesNotMatch(html, /â|Ã|�/);
 });
 

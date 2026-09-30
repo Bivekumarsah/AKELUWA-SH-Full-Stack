@@ -30,6 +30,7 @@ export function SiteFooter() {
           <Link href="/contact">Start a project</Link>
           <Link href="/careers">Careers</Link>
           <Link href="/downloads">Downloads</Link>
+          <Link href="/verify-contract">Verify a record</Link>
         </nav>
 
         <div className="footer-column footer-company-data">

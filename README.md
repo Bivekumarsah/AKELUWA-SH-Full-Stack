@@ -7,7 +7,7 @@ AKELUWA SH is a company website and operational platform. It combines a React/Ty
 | Area | Purpose | Main location |
 |---|---|---|
 | Public website | Marketing pages, inquiry form, downloads, careers, SEO | `app/` |
-| Customer portal | Profile, inquiries, contracts, invoices | `app/account/page.tsx` |
+| Customer portal | Resilient profile, inquiries, contracts, invoices, signing, and public company-record verification | `app/account/page.tsx`, `app/verify-contract/page.tsx` |
 | Authentication | Shared login for customers, administrators, and sub-administrators | `app/login/page.tsx`, `app/register/page.tsx` |
 | Admin workspace | Content, inquiries, contracts, accounting, access, audit work | `app/admin/page.tsx` |
 | API | Authentication, authorization, REST handlers, HTTP security | `backend/internal/httpapi/` |
@@ -150,6 +150,7 @@ Migrations execute once, in number order. Never edit a migration that may have r
 | `012_client_invoice_access.sql` | Customer ownership for invoice access |
 | `013_security_operations.sql` | Hashed MFA recovery codes and shared rate limits |
 | `014_contract_identity.sql` | Locked company identity snapshots for issued contracts |
+| `015_verification_registry.sql` | Public authenticity registry for company-issued records |
 
 ## API Guide
 
@@ -159,11 +160,11 @@ The router is the complete API source of truth: `backend/internal/httpapi/api.go
 |---|---|---|
 | Health | `/livez`, `/readyz`, `/healthz`, `/metrics` | Process health and private-network Prometheus metrics |
 | Authentication | `/api/v1/auth` | Register, login, MFA verification, current user, logout |
-| Public content | `/api/v1` | Services, portfolio, company brand, downloads, careers, inquiry submission |
+| Public content | `/api/v1` | Services, portfolio, company brand, downloads, careers, inquiry submission, and privacy-preserving record verification |
 | Customer account | `/api/v1/account` | Profile, avatar, inquiries, contracts, invoices, contract signing |
-| Administration | `/api/v1/admin` | Stats, content, inquiries, contracts, users, accounts, access, reviews, audit logs |
+| Administration | `/api/v1/admin` | Stats, content, inquiries, contracts, verification registry, users, accounts, access, reviews, audit logs |
 
-Write requests that use a session cookie require an allowed browser `Origin`. Authentication and public submissions are rate limited. Administrator write requests are audited; selected destructive sub-administrator actions become review requests until a full administrator approves them.
+Write requests that use a session cookie require an allowed browser `Origin`. Authentication, public submissions, and record verification are rate limited. A single issued ID confirms a registered company record, while exact contract-copy matching additionally requires the full SHA-256 fingerprint. Public responses exclude confidential client and commercial data. Administrator write requests are audited; selected destructive sub-administrator actions become review requests until a full administrator approves them.
 
 ## Local Development
 
@@ -189,7 +190,7 @@ npm install
 npm run dev
 ```
 
-Open the URL printed by the frontend dev server, normally `http://localhost:5173`.
+Open the URL printed by the frontend dev server, normally `http://localhost:5173` or `http://127.0.0.1:5173`. The development API allows both loopback host forms.
 
 `NEXT_PUBLIC_API_URL` must point at the API base path, normally `http://localhost:8080/api/v1`. `NEXT_PUBLIC_SITE_URL` must match the frontend browser origin.
 

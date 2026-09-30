@@ -39,6 +39,8 @@ The Go router in `backend/internal/httpapi/api.go` is the executable source of t
 | Method | Path | Purpose |
 |---|---|---|
 | GET | `/company-brand` | Public display name, tagline, and tagline meaning |
+| GET | `/contracts/verify?number={reference}&fingerprint={sha256}` | Verify a locked contract using non-sensitive authenticity data |
+| GET | `/records/verify?code={id}` | Verify a company-issued certificate, document, letter, report, approval, or contract number |
 | GET | `/services` | Published services |
 | GET | `/portfolio` | Published portfolio items |
 | GET | `/downloads` | Published downloadable resources |
@@ -47,7 +49,7 @@ The Go router in `backend/internal/httpapi/api.go` is the executable source of t
 | POST | `/careers/{id}/applications` | Submit candidate details and resume |
 | POST | `/inquiries` | Submit project inquiry |
 
-Registration, login, MFA verification, recovery-code replacement, inquiries, and career applications use PostgreSQL-coordinated rate limits that remain consistent across API replicas.
+Registration, login, MFA verification, recovery-code replacement, record verification, inquiries, and career applications use PostgreSQL-coordinated rate limits that remain consistent across API replicas. Exact contract verification requires both the reference and full fingerprint and does not return client identity, commercial terms, signature images, or request metadata. General record lookup returns only the administrator-approved public title, optional holder, dates, status, and note; an unknown code receives a generic not-registered response.
 
 ## Customer Account
 
@@ -73,6 +75,7 @@ Every admin route requires an MFA-verified administrator or sub-administrator se
 | Services | `GET`, `POST /admin/services`; `PUT`, `DELETE /admin/services/{id}` | `services.view/create/update/delete` |
 | Portfolio | `GET`, `POST /admin/portfolio`; `PUT`, `DELETE /admin/portfolio/{id}` | `portfolio.view/create/update/delete` |
 | Contracts | `GET`, `POST /admin/contracts`; `PUT /admin/contracts/{id}`; send, sign, and status routes | `contracts.view/create/update` |
+| Verification registry | `GET`, `POST /admin/verification-records`; `PUT /admin/verification-records/{id}` | `contracts.view/create/update` |
 | Downloads | `GET`, `POST /admin/downloads`; `PATCH`, `DELETE /admin/downloads/{id}` | `downloads.view/create/update/delete` |
 | Careers | `GET`, `POST /admin/careers`; `PUT`, `DELETE /admin/careers/{id}` | `careers.view/create/update/delete` |
 | Career applications | List, update status, resume, delete under `/admin/career-applications` | `careers.view/update/delete` |

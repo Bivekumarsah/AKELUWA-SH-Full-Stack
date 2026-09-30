@@ -1,16 +1,37 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Eraser, Redo2, Undo2 } from "lucide-react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { Eraser, PenLine, Redo2, Type, Undo2 } from "lucide-react";
 
 type Point = { x: number; y: number };
 type Stroke = Point[];
 
-export default function SignaturePad({ onChange }: { onChange: (value: string) => void }) {
+function typedSignature(value: string) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 900;
+  canvas.height = 240;
+  const context = canvas.getContext("2d");
+  if (!context) return "";
+  context.fillStyle = "#172554";
+  context.textBaseline = "middle";
+  context.font = "italic 96px Georgia, serif";
+  const available = canvas.width - 80;
+  const measured = context.measureText(value).width;
+  if (measured > available) {
+    context.font = `italic ${Math.max(44, Math.floor(96 * available / measured))}px Georgia, serif`;
+  }
+  context.fillText(value, 40, canvas.height / 2, available);
+  return canvas.toDataURL("image/png");
+}
+
+export default function SignaturePad({ onChange, suggestedName = "" }: { onChange: (value: string) => void; suggestedName?: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const strokesRef = useRef<Stroke[]>([]);
   const redoRef = useRef<Stroke[]>([]);
   const activeStroke = useRef<Stroke | null>(null);
+  const typedInputID = useId();
+  const [mode, setMode] = useState<"draw" | "type">("draw");
+  const [typedName, setTypedName] = useState(suggestedName);
   const [history, setHistory] = useState({ strokes: 0, redo: 0 });
 
   const draw = useCallback((preview?: Stroke) => {
@@ -73,7 +94,7 @@ export default function SignaturePad({ onChange }: { onChange: (value: string) =
     observer.observe(canvas);
     resize();
     return () => observer.disconnect();
-  }, [draw]);
+  }, [draw, mode]);
 
   function point(event: PointerEvent | React.PointerEvent<HTMLCanvasElement>) {
     const canvas = canvasRef.current;
@@ -147,12 +168,45 @@ export default function SignaturePad({ onChange }: { onChange: (value: string) =
     if (event.shiftKey) redo(); else undo();
   }
 
-  return <div className="signature-pad">
-    <canvas ref={canvasRef} tabIndex={0} onKeyDown={keyboard} onPointerDown={start} onPointerMove={move} onPointerUp={finish} onPointerCancel={finish} aria-label="Signature drawing area" />
-    <div><span aria-live="polite">{history.strokes ? `${history.strokes} stroke${history.strokes === 1 ? "" : "s"} recorded` : "Sign inside the area above"}</span><div className="signature-tools">
-      <button type="button" onClick={undo} disabled={!history.strokes} aria-label="Undo last signature stroke" title="Undo"><Undo2 size={16} aria-hidden="true" /></button>
-      <button type="button" onClick={redo} disabled={!history.redo} aria-label="Redo signature stroke" title="Redo"><Redo2 size={16} aria-hidden="true" /></button>
-      <button type="button" onClick={clear} disabled={!history.strokes} aria-label="Erase signature" title="Erase signature"><Eraser size={16} aria-hidden="true" /></button>
-    </div></div>
+  function selectMode(nextMode: "draw" | "type") {
+    if (nextMode === mode) return;
+    setMode(nextMode);
+    activeStroke.current = null;
+    strokesRef.current = [];
+    redoRef.current = [];
+    setHistory({ strokes: 0, redo: 0 });
+    if (nextMode === "type") {
+      const value = suggestedName.trim();
+      setTypedName(suggestedName);
+      onChange(value.length >= 2 ? typedSignature(value) : "");
+    } else {
+      onChange("");
+      window.requestAnimationFrame(() => draw());
+    }
+  }
+
+  function updateTypedName(value: string) {
+    setTypedName(value);
+    const normalized = value.trim();
+    onChange(normalized.length >= 2 ? typedSignature(normalized) : "");
+  }
+
+  return <div className="signature-control">
+    <div className="signature-mode" role="group" aria-label="Signature method">
+      <button type="button" aria-pressed={mode === "draw"} onClick={() => selectMode("draw")}><PenLine size={16} aria-hidden="true" />Draw</button>
+      <button type="button" aria-pressed={mode === "type"} onClick={() => selectMode("type")}><Type size={16} aria-hidden="true" />Type</button>
+    </div>
+    {mode === "draw" ? <div className="signature-pad">
+      <canvas ref={canvasRef} tabIndex={0} onKeyDown={keyboard} onPointerDown={start} onPointerMove={move} onPointerUp={finish} onPointerCancel={finish} aria-label="Signature drawing area" />
+      <div><span aria-live="polite">{history.strokes ? `${history.strokes} stroke${history.strokes === 1 ? "" : "s"} recorded` : "Sign inside the area above"}</span><div className="signature-tools">
+        <button type="button" onClick={undo} disabled={!history.strokes} aria-label="Undo last signature stroke" title="Undo"><Undo2 size={16} aria-hidden="true" /></button>
+        <button type="button" onClick={redo} disabled={!history.redo} aria-label="Redo signature stroke" title="Redo"><Redo2 size={16} aria-hidden="true" /></button>
+        <button type="button" onClick={clear} disabled={!history.strokes} aria-label="Erase signature" title="Erase signature"><Eraser size={16} aria-hidden="true" /></button>
+      </div></div>
+    </div> : <div className="signature-typed">
+      <label htmlFor={typedInputID}>Typed legal signature</label>
+      <div className="signature-typed-input"><input id={typedInputID} value={typedName} onChange={(event) => updateTypedName(event.target.value)} maxLength={120} autoComplete="name" /><button type="button" onClick={() => updateTypedName("")} disabled={!typedName} aria-label="Clear typed signature" title="Clear typed signature"><Eraser size={16} aria-hidden="true" /></button></div>
+      <div className="signature-typed-preview" aria-live="polite">{typedName.trim() || "Signature preview"}</div>
+    </div>}
   </div>;
 }

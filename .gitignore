@@ -85,3 +85,4 @@ backend/*.exe
 backend/*.test
 backend/*.out
 backend/*.prof
+backend/.gocache/
