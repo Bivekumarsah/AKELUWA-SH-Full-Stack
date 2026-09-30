@@ -110,7 +110,7 @@ func TestPrometheusMetricsTrackRequestsAndServerErrors(t *testing.T) {
 	if response.Code != http.StatusOK {
 		t.Fatalf("metrics status = %d", response.Code)
 	}
-	for _, metric := range []string{"akeluwa_http_requests_total 1", "akeluwa_http_errors_total 1", "akeluwa_http_requests_in_flight 0"} {
+	for _, metric := range []string{"akeluwa_http_requests_total 1", "akeluwa_http_errors_total 1", "akeluwa_http_requests_in_flight 0", "akeluwa_document_notifications_pending 0", "akeluwa_document_notifications_oldest_pending_seconds 0"} {
 		if !strings.Contains(response.Body.String(), metric) {
 			t.Errorf("metrics response does not contain %q", metric)
 		}

@@ -1372,6 +1372,10 @@ func (s *Store) VoidInvoice(ctx context.Context, id string) (model.Invoice, erro
 	if command.RowsAffected() == 0 {
 		return model.Invoice{}, ErrNotFound
 	}
+	if _, err := tx.Exec(ctx, `UPDATE document_notification_outbox SET cancelled_at=now(), lease_until=NULL
+		WHERE kind='invoice_created' AND record_id=$1 AND sent_at IS NULL AND cancelled_at IS NULL`, id); err != nil {
+		return model.Invoice{}, err
+	}
 	if err := tx.Commit(ctx); err != nil {
 		return model.Invoice{}, err
 	}

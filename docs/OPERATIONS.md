@@ -11,6 +11,7 @@ Create alerts for the following conditions:
 - Request latency rises materially above the established baseline.
 - `akeluwa_rate_limit_rejections_total` spikes, which may indicate abuse or a broken client.
 - PostgreSQL disk utilization exceeds 75%, backup age exceeds 25 hours, or certificate renewal fails.
+- `akeluwa_document_notifications_oldest_pending_seconds` exceeds 900, or `akeluwa_document_notifications_pending` keeps rising. Inspect `document_notification_outbox` and SMTP health.
 
 Send alerts to at least two maintainers and test the route quarterly.
 

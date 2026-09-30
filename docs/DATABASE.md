@@ -43,6 +43,7 @@ careers
 | `account_tokens` | Hashed, expiring, single-use email verification and password-reset tokens |
 | `api_rate_limits` | Shared request limits across API instances |
 | `verification_records` | Public certificate, document, letter, report, and approval authenticity registry |
+| `document_notification_outbox` | Durable contract and invoice email delivery attempts, without plaintext setup tokens |
 
 ## Data Integrity Rules
 
@@ -58,6 +59,7 @@ careers
 - Customer invoice access requires the invoice ownership relationship introduced in `012_client_invoice_access.sql`.
 - Administrator audit records are protected from updates and deletion by database logic.
 - Verification registry entries can store a SHA-256 file fingerprint, last editor, and revocation timestamp.
+- Contract and invoice saves queue their document notification in the same transaction. Failed deliveries remain available for automatic retry.
 
 ## Migrations
 
@@ -80,6 +82,7 @@ careers
 | `015_verification_registry.sql` | Public company-record verification IDs, status, dates, and safe display fields |
 | `016_account_security_document_integrity.sql` | Email ownership, password recovery tokens, session revocation, and registry fingerprints/audit fields |
 | `017_single_active_account_token.sql` | One active ownership or recovery token per account and purpose, enforced across replicas |
+| `018_document_notification_outbox.sql` | Durable document email queue with retry scheduling and worker leases |
 
 ## Migration Rules
 

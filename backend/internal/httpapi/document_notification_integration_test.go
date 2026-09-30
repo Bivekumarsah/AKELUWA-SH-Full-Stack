@@ -3,6 +3,7 @@ package httpapi
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -27,9 +28,14 @@ type capturedEmail struct {
 
 type captureMailer struct {
 	messages []capturedEmail
+	failNext int
 }
 
 func (m *captureMailer) Send(_ context.Context, to, subject, body string) error {
+	if m.failNext > 0 {
+		m.failNext--
+		return errors.New("simulated SMTP failure")
+	}
 	m.messages = append(m.messages, capturedEmail{to: to, subject: subject, body: body})
 	return nil
 }
@@ -94,6 +100,8 @@ func TestContractInvitationPublishingAndInvoiceNotifications(t *testing.T) {
 		t.Fatalf("find invited client: %v", err)
 	}
 	t.Cleanup(func() {
+		_, _ = pool.Exec(context.Background(), `DELETE FROM document_notification_outbox WHERE record_id IN (
+			SELECT id FROM contracts WHERE user_id=$1 UNION SELECT id FROM accounting_invoices WHERE user_id=$1)`, client.ID)
 		_, _ = pool.Exec(context.Background(), `DELETE FROM accounting_invoices WHERE user_id=$1`, client.ID)
 		_, _ = pool.Exec(context.Background(), `DELETE FROM contracts WHERE user_id=$1`, client.ID)
 		_, _ = pool.Exec(context.Background(), `DELETE FROM users WHERE id=$1`, client.ID)
@@ -132,5 +140,66 @@ func TestContractInvitationPublishingAndInvoiceNotifications(t *testing.T) {
 	}
 	if !invoiceResult.EmailSent || invoiceResult.Invoice.UserID != client.ID || !strings.Contains(mailbox.messages[2].body, "NPR 1130.00") {
 		t.Fatalf("invoice was not linked and notified: result=%#v email=%#v", invoiceResult, mailbox.messages[2])
+	}
+
+	mailbox.failNext = 1
+	retryNumber := fmt.Sprintf("INV-2026-RETRY-%d", suffix)
+	retryBody := strings.Replace(invoiceBody, invoiceNumber, retryNumber, 1)
+	request = httptest.NewRequest(http.MethodPost, "/api/v1/admin/accounting/invoices", strings.NewReader(retryBody))
+	response = httptest.NewRecorder()
+	api.adminCreateInvoice(response, request)
+	if response.Code != http.StatusCreated {
+		t.Fatalf("create invoice after SMTP failure: status=%d body=%s", response.Code, response.Body.String())
+	}
+	var retryResult struct {
+		Invoice   model.Invoice `json:"invoice"`
+		EmailSent bool          `json:"email_sent"`
+	}
+	if err := json.Unmarshal(response.Body.Bytes(), &retryResult); err != nil {
+		t.Fatalf("decode retry invoice response: %v", err)
+	}
+	if retryResult.EmailSent || len(mailbox.messages) != 3 {
+		t.Fatalf("failed SMTP send was reported as delivered: result=%#v messages=%d", retryResult, len(mailbox.messages))
+	}
+	pending, oldestSeconds, err := data.DocumentNotificationBacklog(ctx)
+	if err != nil || pending != 1 || oldestSeconds < 0 {
+		t.Fatalf("notification backlog is incorrect: pending=%d oldest=%f err=%v", pending, oldestSeconds, err)
+	}
+	var notificationID string
+	if err := pool.QueryRow(ctx, `UPDATE document_notification_outbox SET next_attempt_at=now()
+		WHERE kind='invoice_created' AND record_id=$1 RETURNING id::text`, retryResult.Invoice.ID).Scan(&notificationID); err != nil {
+		t.Fatalf("find queued retry: %v", err)
+	}
+	sent, err := api.deliverDocumentNotification(ctx, "")
+	if err != nil || !sent || len(mailbox.messages) != 4 {
+		t.Fatalf("retry did not deliver: sent=%t err=%v messages=%d", sent, err, len(mailbox.messages))
+	}
+	var delivered bool
+	if err := pool.QueryRow(ctx, `SELECT sent_at IS NOT NULL FROM document_notification_outbox WHERE id=$1`, notificationID).Scan(&delivered); err != nil || !delivered {
+		t.Fatalf("retry was not recorded as sent: delivered=%t err=%v", delivered, err)
+	}
+
+	mailbox.failNext = 1
+	voidNumber := fmt.Sprintf("INV-2026-VOID-%d", suffix)
+	voidBody := strings.Replace(invoiceBody, invoiceNumber, voidNumber, 1)
+	request = httptest.NewRequest(http.MethodPost, "/api/v1/admin/accounting/invoices", strings.NewReader(voidBody))
+	response = httptest.NewRecorder()
+	api.adminCreateInvoice(response, request)
+	if response.Code != http.StatusCreated {
+		t.Fatalf("create invoice to void: status=%d body=%s", response.Code, response.Body.String())
+	}
+	var voidResult struct {
+		Invoice model.Invoice `json:"invoice"`
+	}
+	if err := json.Unmarshal(response.Body.Bytes(), &voidResult); err != nil {
+		t.Fatalf("decode void invoice response: %v", err)
+	}
+	if _, err := data.VoidInvoice(ctx, voidResult.Invoice.ID); err != nil {
+		t.Fatalf("void invoice with queued email: %v", err)
+	}
+	var cancelled bool
+	if err := pool.QueryRow(ctx, `SELECT cancelled_at IS NOT NULL FROM document_notification_outbox
+		WHERE kind='invoice_created' AND record_id=$1`, voidResult.Invoice.ID).Scan(&cancelled); err != nil || !cancelled {
+		t.Fatalf("void invoice email was not cancelled: cancelled=%t err=%v", cancelled, err)
 	}
 }

@@ -67,6 +67,7 @@ func main() {
 		emailSender = mailer.NewSMTP(cfg.SMTPHost, cfg.SMTPPort, cfg.SMTPUsername, cfg.SMTPPassword, cfg.SMTPFrom)
 	}
 	api := httpapi.New(cfg, data, tokens, secretCipher, emailSender, logger)
+	go api.RunNotificationWorker(ctx)
 	server := &http.Server{
 		Addr:              cfg.Address,
 		Handler:           api.Router(),

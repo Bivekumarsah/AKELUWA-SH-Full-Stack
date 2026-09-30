@@ -2,9 +2,9 @@
 
 This document records the maintainability, security, portability, and testing improvements completed for the project.
 
-## Current Rating
+## Earlier Self-Assessment
 
-| Area | Previous review | Current | Evidence |
+| Area | Previous review | Earlier self-rating | Evidence |
 |---|---:|---:|---|
 | Design and UI | 8.2/10 | 10/10 | Distinct responsive visual system, AA-checked public/authentication routes, permission-aware controls, and browser checks from 360px through 1440px. |
 | Architecture | 8.6/10 | 9.8/10 | Clear frontend, HTTP, store, migration, mail, and deployment boundaries with documented ownership. |
@@ -17,7 +17,26 @@ This document records the maintainability, security, portability, and testing im
 | Maintainability | 8.5/10 | 9.8/10 | Clean lint/typecheck, current documentation, sequential migrations, CI, and narrowly owned components. |
 | **Overall** | **8.0/10** | **9.8/10** | The source-controlled production baseline is complete; external operations and independent assurance cannot honestly be scored by repository code alone. |
 
-The score is an engineering assessment, not a certification or formal penetration-test result.
+These earlier self-ratings describe repository controls. They do not establish production quality or replace independent testing.
+
+## 9.5/10 Targets
+
+These are targets, not achieved scores. Each area needs the listed evidence before it can be rated 9.5/10 with confidence.
+
+| Area | Target | Evidence still required |
+|---|---:|---|
+| Design and UI | 9.5/10 | Validate core customer and admin tasks with real users on mobile and desktop, then resolve observed usability issues. |
+| Architecture | 9.5/10 | Review the deployed frontend/API boundary, failure modes, and notification worker under realistic load. |
+| Backend quality | 9.5/10 | Exercise document retries, concurrent workers, and error recovery against PostgreSQL in CI and staging. |
+| System protection | 9.5/10 | Verify live alerts, off-host backups, restore drills, and incident-response access. |
+| Application security | 9.5/10 | Complete an independent penetration test and remediate findings. |
+| Dependency security | 9.5/10 | Keep scheduled audits and update reviews passing as dependencies change. |
+| Testing | 9.5/10 | Run a staging smoke test using the real frontend, API, PostgreSQL, and SMTP service. |
+| Deployment readiness | 9.5/10 | Record a successful release, rollback, monitoring check, and backup restoration. |
+| Maintainability | 9.5/10 | Split oversized feature modules as they change and keep fresh-checkout CI green. |
+| **Overall** | **9.5/10** | **Meet every area target and verify the deployed system independently.** |
+
+Document emails now have a transactional PostgreSQL queue and automatic retries. This improves delivery reliability, but SMTP health and queued-job age still need live monitoring.
 
 ## Improvements Completed
 
@@ -114,6 +133,7 @@ Enrollment now creates ten recovery codes and displays them once. Only SHA-256 h
 
 ### Automated verification
 
+- Added a PostgreSQL-backed document email outbox with automatic retries, lease-based worker claims, cancellation for obsolete notifications, queue-age metrics, and a real-database failure/retry test.
 - Added rate-limiter unit tests.
 - Added recovery-code generation and normalization tests, metrics tests, and an end-to-end browser test for MFA enrollment and mandatory recovery-code acknowledgement.
 - Added configuration tests for valid environments and unsafe production settings.

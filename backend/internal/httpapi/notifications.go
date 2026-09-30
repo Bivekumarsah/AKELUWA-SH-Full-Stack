@@ -2,6 +2,7 @@ package httpapi
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -87,7 +88,83 @@ func (a *API) accountAccessInstructions(ctx context.Context, user model.User) (s
 	query := link.Query()
 	query.Set("token", raw)
 	link.RawQuery = query.Encode()
-	return fmt.Sprintf("A secure client account has been prepared for %s. Set your password with this one-time link:\n%s\n\nThe link expires in 24 hours. AKELUWA SH will never email you a password.", user.Email, link.String()), nil
+	return fmt.Sprintf("A secure client account has been prepared for %s. Set your password with this one-time link:\n%s\n\nThe link expires in 24 hours. If you receive another account link, use the most recent one. AKELUWA SH will never email you a password.", user.Email, link.String()), nil
+}
+
+func (a *API) deliverDocumentNotification(ctx context.Context, id string) (bool, error) {
+	job, err := a.store.ClaimDocumentNotification(ctx, id)
+	if errors.Is(err, store.ErrNotFound) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	deliveryErr := a.sendQueuedDocumentNotification(ctx, job)
+	finishCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	finishErr := a.store.FinishDocumentNotification(finishCtx, job, deliveryErr == nil)
+	if deliveryErr != nil {
+		return false, errors.Join(deliveryErr, finishErr)
+	}
+	if finishErr != nil {
+		return false, finishErr
+	}
+	return true, nil
+}
+
+func (a *API) sendQueuedDocumentNotification(ctx context.Context, job store.DocumentNotification) error {
+	switch job.Kind {
+	case "contract_draft", "contract_published":
+		var item model.Contract
+		if err := json.Unmarshal(job.Payload, &item); err != nil {
+			return err
+		}
+		client, err := a.store.FindUserByID(ctx, item.UserID)
+		if err != nil {
+			return err
+		}
+		return a.sendContractNotification(ctx, client, item, job.Kind == "contract_published")
+	case "invoice_created":
+		var item model.Invoice
+		if err := json.Unmarshal(job.Payload, &item); err != nil {
+			return err
+		}
+		return a.sendInvoiceNotification(ctx, item)
+	default:
+		return fmt.Errorf("unknown document notification kind %q", job.Kind)
+	}
+}
+
+func (a *API) RunNotificationWorker(ctx context.Context) {
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+	lastPurge := time.Time{}
+	for {
+		if time.Since(lastPurge) >= 24*time.Hour {
+			if err := a.store.PurgeDeliveredDocumentNotifications(ctx); err != nil {
+				a.logger.Warn("purge delivered notifications", "error", err)
+			}
+			lastPurge = time.Now()
+		}
+		for range 20 {
+			if ctx.Err() != nil {
+				return
+			}
+			sent, err := a.deliverDocumentNotification(ctx, "")
+			if err != nil {
+				a.logger.Error("retry document notification", "error", err)
+				continue
+			}
+			if !sent {
+				break
+			}
+		}
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+		}
+	}
 }
 
 func (a *API) sendContractNotification(ctx context.Context, client model.User, item model.Contract, published bool) error {
@@ -188,5 +265,5 @@ func notificationWarning(sent bool) string {
 	if sent {
 		return ""
 	}
-	return "The record was saved, but email delivery failed. Check SMTP before notifying the client again."
+	return "The record was saved. Email delivery is pending or failed and will be retried automatically."
 }

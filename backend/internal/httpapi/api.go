@@ -1203,14 +1203,23 @@ func (a *API) adminCreateInvoice(w http.ResponseWriter, r *http.Request) {
 	} else if user, err := a.store.FindUserByEmail(r.Context(), item.ClientEmail); err == nil && user.Role == "user" && user.AccountActive {
 		item.UserID = user.ID
 	}
-	created, err := a.store.CreateInvoice(r.Context(), item)
+	var created model.Invoice
+	var notificationID string
+	err := a.store.WithTransaction(r.Context(), func(data *store.Store) error {
+		var createErr error
+		created, createErr = data.CreateInvoice(r.Context(), item)
+		if createErr != nil {
+			return createErr
+		}
+		notificationID, createErr = data.QueueDocumentNotification(r.Context(), "invoice_created", created.ID, created)
+		return createErr
+	})
 	if !a.handleAccountingError(w, r, err) {
 		return
 	}
-	emailSent := true
-	if err := a.sendInvoiceNotification(r.Context(), created); err != nil {
-		emailSent = false
-		a.logger.Error("send invoice notification", "invoice_id", created.ID, "error", err)
+	emailSent, err := a.deliverDocumentNotification(r.Context(), notificationID)
+	if err != nil {
+		a.logger.Error("deliver invoice notification", "invoice_id", created.ID, "error", err)
 	}
 	writeJSON(w, http.StatusCreated, map[string]any{
 		"invoice": created, "email_sent": emailSent,
@@ -1404,6 +1413,7 @@ func (a *API) adminCreateContract(w http.ResponseWriter, r *http.Request) {
 	}
 	var created model.Contract
 	var client model.User
+	var notificationID string
 	accountCreated := false
 	err := a.store.WithTransaction(r.Context(), func(data *store.Store) error {
 		var resolveErr error
@@ -1417,6 +1427,10 @@ func (a *API) adminCreateContract(w http.ResponseWriter, r *http.Request) {
 			return resolveErr
 		}
 		created, resolveErr = data.CreateContract(r.Context(), item)
+		if resolveErr != nil {
+			return resolveErr
+		}
+		notificationID, resolveErr = data.QueueDocumentNotification(r.Context(), "contract_draft", created.ID, created)
 		return resolveErr
 	})
 	if errors.Is(err, errInvalidContractClient) {
@@ -1426,10 +1440,9 @@ func (a *API) adminCreateContract(w http.ResponseWriter, r *http.Request) {
 	if !a.handleStoreError(w, r, err) {
 		return
 	}
-	emailSent := true
-	if err := a.sendContractNotification(r.Context(), client, created, false); err != nil {
-		emailSent = false
-		a.logger.Error("send contract creation notification", "contract_id", created.ID, "error", err)
+	emailSent, err := a.deliverDocumentNotification(r.Context(), notificationID)
+	if err != nil {
+		a.logger.Error("deliver contract creation notification", "contract_id", created.ID, "error", err)
 	}
 	writeJSON(w, http.StatusCreated, map[string]any{
 		"contract": created, "account_created": accountCreated, "email_sent": emailSent,
@@ -1450,7 +1463,15 @@ func (a *API) adminUpdateContract(w http.ResponseWriter, r *http.Request) {
 		a.internalError(w, r, err)
 		return
 	}
-	updated, err := a.store.UpdateContract(r.Context(), r.PathValue("id"), item)
+	var updated model.Contract
+	err = a.store.WithTransaction(r.Context(), func(data *store.Store) error {
+		var updateErr error
+		updated, updateErr = data.UpdateContract(r.Context(), r.PathValue("id"), item)
+		if updateErr != nil {
+			return updateErr
+		}
+		return data.RefreshDocumentNotification(r.Context(), "contract_draft", updated.ID, updated)
+	})
 	if !a.handleStoreError(w, r, err) {
 		return
 	}
@@ -1458,19 +1479,26 @@ func (a *API) adminUpdateContract(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *API) adminSendContract(w http.ResponseWriter, r *http.Request) {
-	item, err := a.store.SendContract(r.Context(), r.PathValue("id"))
+	var item model.Contract
+	var notificationID string
+	err := a.store.WithTransaction(r.Context(), func(data *store.Store) error {
+		var sendErr error
+		item, sendErr = data.SendContract(r.Context(), r.PathValue("id"))
+		if sendErr != nil {
+			return sendErr
+		}
+		if sendErr = data.CancelDocumentNotification(r.Context(), "contract_draft", item.ID); sendErr != nil {
+			return sendErr
+		}
+		notificationID, sendErr = data.QueueDocumentNotification(r.Context(), "contract_published", item.ID, item)
+		return sendErr
+	})
 	if !a.handleStoreError(w, r, err) {
 		return
 	}
-	client, clientErr := a.store.FindUserByID(r.Context(), item.UserID)
-	emailSent := clientErr == nil
-	if clientErr == nil {
-		if err := a.sendContractNotification(r.Context(), client, item, true); err != nil {
-			emailSent = false
-			a.logger.Error("send published contract notification", "contract_id", item.ID, "error", err)
-		}
-	} else {
-		a.logger.Error("load contract client for notification", "contract_id", item.ID, "error", clientErr)
+	emailSent, err := a.deliverDocumentNotification(r.Context(), notificationID)
+	if err != nil {
+		a.logger.Error("deliver published contract notification", "contract_id", item.ID, "error", err)
 	}
 	writeJSON(w, http.StatusOK, map[string]any{
 		"contract": item, "email_sent": emailSent,
@@ -1501,7 +1529,15 @@ func (a *API) adminContractStatus(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnprocessableEntity, "status must be completed or cancelled")
 		return
 	}
-	item, err := a.store.UpdateContractStatus(r.Context(), r.PathValue("id"), input.Status)
+	var item model.Contract
+	err := a.store.WithTransaction(r.Context(), func(data *store.Store) error {
+		var updateErr error
+		item, updateErr = data.UpdateContractStatus(r.Context(), r.PathValue("id"), input.Status)
+		if updateErr != nil || input.Status != "cancelled" {
+			return updateErr
+		}
+		return data.CancelDocumentNotification(r.Context(), "contract_published", item.ID)
+	})
 	if !a.handleStoreError(w, r, err) {
 		return
 	}
