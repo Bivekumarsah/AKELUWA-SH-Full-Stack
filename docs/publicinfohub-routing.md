@@ -4,7 +4,7 @@ PublicInfoHub's source is maintained in [AKELUWA-PublicInfoHub](https://github.c
 
 - Standalone deployment: https://publicinfohub.vercel.app/publicinfohub/
 - Company URL: https://www.akeluwasoftwarehub.com.np/publicinfohub/
-- Company's Next.js `beforeFiles` rewrites send `/publicinfohub/` and its nested assets to the standalone Vercel deployment.
+- Company's dedicated Next.js route handler at `app/publicinfohub/[[...path]]/route.ts` proxies `/publicinfohub/` and its nested assets to the standalone Vercel deployment.
 - `/publicinfohub` redirects to `/publicinfohub/`.
 - Optional `PUBLIC_INFO_HUB_ORIGIN`: override the deployment origin, e.g. `https://publicinfohub.vercel.app` (without a path or trailing slash). Defaults to that deployment when not configured.
 - Keep the standalone PublicInfoHub Vercel project enabled and publicly accessible. Verify its `/publicinfohub/`, `/publicinfohub/styles.css`, and `/publicinfohub/app.js` URLs before merging.
@@ -25,4 +25,4 @@ If the company path does not work, revert this PR to restore the previous bundle
 
 ## Other hosting targets
 
-This change assumes a Next.js/Vercel deployment with support for external rewrites. If deploying via Cloudflare/Vinext, verify equivalent proxy behavior on preview before activating this change there.
+This change uses a Node.js Next.js route handler and outbound HTTPS fetch. Confirm that the chosen deployment platform supports the handler and that the upstream deployment is publicly accessible. If deploying via Cloudflare/Vinext, verify compatibility before merging.
