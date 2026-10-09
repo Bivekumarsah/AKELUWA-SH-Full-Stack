@@ -2,8 +2,6 @@ import type { NextConfig } from "next";
 import toolboxRoutes from "./toolbox/routes.json";
 
 const toolboxBase = "/akeluwatoolbox";
-// PublicInfoHub is owned and deployed by its separate GitHub/Vercel project.
-const publicInfoHubOrigin = (process.env.PUBLIC_INFO_HUB_ORIGIN || "https://publicinfohub.vercel.app").replace(/\/$/, "");
 
 const nextConfig: NextConfig = {
   // Toolbox canonical URLs end in /; let these explicit rules preserve them.
@@ -36,8 +34,6 @@ const nextConfig: NextConfig = {
           source: toolboxBase + route.path,
           destination: toolboxBase + route.path + "index.html",
         })),
-        { source: "/publicinfohub/", destination: `${publicInfoHubOrigin}/publicinfohub/` },
-        { source: "/publicinfohub/:path*", destination: `${publicInfoHubOrigin}/publicinfohub/:path*` },
       ],
       afterFiles: [],
       fallback: [],
