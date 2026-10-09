@@ -33,7 +33,7 @@ const nextConfig: NextConfig = {
       beforeFiles: toolboxRoutes.map(route => ({
         source: toolboxBase + route.path,
         destination: toolboxBase + route.path + "index.html",
-      })).concat({ source: '/publicinfohub/', destination: '/publicinfohub/index.html' }),
+      })),
       afterFiles: [],
       fallback: [],
     };
