@@ -114,33 +114,14 @@ test('production Worker serves toolbox pages, assets, redirects and isolated 404
   assert.equal((await fetch('/akeluwatoolbox/', { method: 'HEAD' })).status, 200);
 });
 
-test('production Worker serves the PublicInfoHub prototype at its isolated path', async () => {
-  const worker = await loadWorker();
-  const assetEnv = {
-    ASSETS: {
-      async fetch(request) {
-        let path = new URL(request.url).pathname;
-        assert.ok(path.startsWith('/publicinfohub/'));
-        if (path.endsWith('/')) path += 'index.html';
-        try {
-          const data = await readFile(new URL('../dist/client' + path, import.meta.url));
-          const type = path.endsWith('.js') ? 'text/javascript' : path.endsWith('.css') ? 'text/css' : 'text/html';
-          return new Response(request.method === 'HEAD' ? null : data, { headers: { 'Content-Type': type } });
-        } catch {
-          return new Response('Not found', { status: 404 });
-        }
-      },
-    },
-  };
-  const context = { waitUntil() {}, passThroughOnException() {} };
-  const fetch = (path, init) => worker.fetch(new Request('https://www.akeluwasoftwarehub.com.np' + path, init), assetEnv, context);
-  const response = await fetch('/publicinfohub/');
-  assert.equal(response.status, 200);
-  assert.match(await response.text(), /AKELUWA PublicInfoHub/);
-  assert.equal((await fetch('/publicinfohub/app.js')).status, 200);
-  assert.equal((await fetch('/publicinfohub')).headers.get('location'), 'https://www.akeluwasoftwarehub.com.np/publicinfohub/');
-  assert.equal((await fetch('/publicinfohub/not-found')).status, 404);
-  assert.equal((await fetch('/publicinfohub/', { method: 'POST' })).status, 405);
+test("PublicInfoHub remains independently deployed rather than bundled into the company Worker", async () => {
+  const config = await readFile(new URL("../next.config.ts", import.meta.url), "utf8");
+  const buildScript = await readFile(new URL("../scripts/build-static-sites.mjs", import.meta.url), "utf8");
+  assert.match(config, /source: "\/publicinfohub\/"/);
+  assert.match(config, /publicInfoHubOrigin/);
+  assert.match(config, /source: "\/publicinfohub\/:path\*"/);
+  assert.doesNotMatch(buildScript, /publicinfohub/i);
+  assert.match(buildScript, /buildStatic/);
 });
 
 test("renders SEO support pages", async () => {
