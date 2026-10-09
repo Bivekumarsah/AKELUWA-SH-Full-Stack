@@ -118,8 +118,10 @@ test("PublicInfoHub remains independently deployed rather than bundled into the 
   const config = await readFile(new URL("../next.config.ts", import.meta.url), "utf8");
   const buildScript = await readFile(new URL("../scripts/build-static-sites.mjs", import.meta.url), "utf8");
   assert.match(config, /source: "\/publicinfohub\/"/);
-  assert.match(config, /publicInfoHubOrigin/);
-  assert.match(config, /source: "\/publicinfohub\/:path\*"/);
+  const proxy = await readFile(new URL("../app/publicinfohub/[[...path]]/route.ts", import.meta.url), "utf8");
+  assert.ok(proxy.includes("PUBLIC_INFO_HUB_ORIGIN"));
+  assert.ok(proxy.includes("export async function GET"));
+  assert.ok(proxy.includes("publicinfohub.vercel.app"));
   assert.doesNotMatch(buildScript, /(?:cp|mkdir|rm)\s*\([^\n]*publicinfohub/i);
   assert.match(buildScript, /buildStatic/);
 });
