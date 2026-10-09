@@ -15,6 +15,10 @@ async function proxyPublicInfoHub(request: Request): Promise<Response> {
     if (upstreamUrl.protocol !== "https:" || upstreamUrl.pathname !== "/" || upstreamUrl.search || upstreamUrl.hash) {
       throw new Error("Expected an HTTPS origin without path or query");
     }
+    // Refuse to proxy to the same host: that would recurse indefinitely.
+    if (upstreamUrl.host === incomingUrl.host) {
+      return new Response("PublicInfoHub upstream cannot point at this website", { status: 503 });
+    }
     upstreamUrl.pathname = incomingUrl.pathname;
     upstreamUrl.search = incomingUrl.search;
   } catch {
