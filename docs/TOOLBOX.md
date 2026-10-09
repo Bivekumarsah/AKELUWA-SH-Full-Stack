@@ -17,9 +17,15 @@ The toolbox card is present in server-rendered homepage and case-study HTML. It 
 
 Deploy the company GitHub repository (`AKELUWA-SH-Full-Stack`) to Vercel using the committed `vercel.json`. Choose the **Next.js** framework and leave Root Directory blank when this folder is the repository root. If deploying the parent AkeluwaToolBox repository instead, set Root Directory to `AKELUWA-SH-Full-Stack`. The parent standalone `vercel.json` does not build the company website.
 
-The Vercel configuration runs `npm ci` and `npm run build:vercel`; this generates the toolbox before building native Next.js into `.next`. Leave Output Directory at its Next.js default (do not set it to `dist`). Use Node.js 22.x. `next.config.ts` maps the ten toolbox URLs to generated static HTML and preserves their trailing slashes. Assets are served from `public`; unknown toolbox paths return its HTML 404. Existing Vinext/Cloudflare scripts remain available separately.
+The Vercel configuration runs `npm ci` and `npm run build:vercel`; this generates the toolbox before building native Next.js into `.next`. Leave Output Directory at its Next.js default (do not set it to `dist`). The existing Vercel project uses Node.js 24.x, matching the verified local build. `next.config.ts` maps the ten toolbox URLs to generated static HTML and preserves their trailing slashes. Assets are served from `public`; unknown toolbox paths return its HTML 404. Existing Vinext/Cloudflare scripts remain available separately.
 
 Set `NEXT_PUBLIC_SITE_URL=https://www.akeluwasoftwarehub.com.np` in Vercel for company metadata. Set `NEXT_PUBLIC_API_URL` to the existing deployed Go API's HTTPS `/api/v1` URL: Vercel builds the frontend, not the Go/PostgreSQL service. The API's CORS configuration must allow the company origin. Optional `TOOLBOX_SITE_URL` controls toolbox canonical URLs and must be an HTTPS origin with no path. Keep development-only localhost values out of production configuration.
+
+When no API URL is configured, production requests use `/api/v1` on the website origin instead of contacting a visitor's localhost. These requests remain unavailable until a backend is deployed and connected; the company homepage and browser toolbox work independently.
+
+Production setup on 9 October 2026: the existing `lancelot5/akeluwatoolbox-website` Vercel project retains the company domain and now connects to `Bivekumarsah/AKELUWA-SH-Full-Stack` on `main`, with Next.js, repository-root builds and the default output directory. `NEXT_PUBLIC_SITE_URL` is configured in Vercel. Future company GitHub pushes trigger its deployments; parent toolbox pushes update the standalone source and submodule pointer.
+
+The production audit prompted updates to Next.js 16.4.0, source-map-js 1.2.2 and a sharp 0.35.5 override. The override prevents the development Cloudflare dependency's exact sharp pin from deduplicating the older vulnerable release into the production Next.js dependency. CI builds both the Worker and the native Vercel artifact.
 
 The toolbox is served from the same build and origin. No proxy to the previous Vercel site is required. Local Python compression is optional for standalone use and is not part of the company-domain hosted runtime.
 
@@ -37,7 +43,7 @@ Run with the installed browser: `node node_modules/@playwright/test/cli.js test 
 
 Verified on 9 October 2026: production build and typecheck passed; all 15 Node regressions passed. All three toolbox browser tests and the updated project-inquiry regression passed against the final production Worker preview. The other fourteen public-browser tests passed in the preceding run. Standalone PDF and SEO suites each passed ten check groups. During final verification, the production preview was used to avoid live-reload interference from rebuilding generated assets in the development server.
 
-Vercel compatibility verified separately on 9 October 2026: `npm run build:vercel` passed native Next.js compilation, TypeScript and static generation. All three toolbox browser tests plus the project-inquiry regression passed against `next start`. The routing regression additionally checks every tool's missing-slash and `index.html` aliases, legacy photo selection and the home query without redirect loops. The Next.js 404 trace includes the generated toolbox 404 HTML for deployment. GitHub pushes, Vercel builds in the cloud, production API connectivity and live DNS have not been performed or verified from this local session.
+Vercel compatibility verified separately on 9 October 2026: `npm run build:vercel` passed native Next.js compilation, TypeScript and static generation. All three toolbox browser tests plus the project-inquiry regression passed against `next start`. The routing regression additionally checks every tool's missing-slash and `index.html` aliases, legacy photo selection and the home query without redirect loops. The Next.js 404 trace includes the generated toolbox 404 HTML for deployment. These were local checks before the production setup described above.
 
 ## Security boundary
 
