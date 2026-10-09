@@ -13,6 +13,12 @@ const eslintConfig = defineConfig([
     "build/**",
     ".tmp-review/**",
     "next-env.d.ts",
+    // Standalone browser snapshot, including upstream minified PDF engines.
+    "toolbox/**",
+    "public/akeluwatoolbox/**",
+    ".sites-runtime/**",
+    ".wrangler/**",
+    ".vinext/**",
   ]),
 ]);
 
