@@ -13,7 +13,6 @@ const nextConfig: NextConfig = {
     const uniqueTools = toolboxRoutes.filter((route, index, all) =>
       route.tool !== "home" && all.findIndex(other => other.tool === route.tool) === index);
     return [
-      { source: "/publicinfohub", destination: "/publicinfohub/", permanent: true },
       ...uniqueTools.map(route => ({
         source: toolboxBase + "/",
         has: [{ type: "query" as const, key: "tool", value: route.tool }],
