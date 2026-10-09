@@ -8,7 +8,6 @@ const nextConfig: NextConfig = {
   skipTrailingSlashRedirect: true,
   outputFileTracingIncludes: {
     "/akeluwatoolbox/*": ["./public/akeluwatoolbox/404.html"],
-    "/publicinfohub/*": ["./public/publicinfohub/index.html", "./public/publicinfohub/styles.css", "./public/publicinfohub/app.js"],
   },
   async redirects() {
     const uniqueTools = toolboxRoutes.filter((route, index, all) =>
@@ -29,10 +28,12 @@ const nextConfig: NextConfig = {
   },
   async rewrites() {
     return {
-      beforeFiles: toolboxRoutes.map(route => ({
-        source: toolboxBase + route.path,
-        destination: toolboxBase + route.path + "index.html",
-      })),
+      beforeFiles: [
+        ...toolboxRoutes.map(route => ({
+          source: toolboxBase + route.path,
+          destination: toolboxBase + route.path + "index.html",
+        })),
+      ],
       afterFiles: [],
       fallback: [],
     };
