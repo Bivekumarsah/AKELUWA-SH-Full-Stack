@@ -1,0 +1,42 @@
+[
+  {
+    "path": "/",
+    "tool": "home"
+  },
+  {
+    "path": "/pdf-editor/",
+    "tool": "pdf"
+  },
+  {
+    "path": "/compress-pdf/",
+    "tool": "reducer"
+  },
+  {
+    "path": "/compress-photo/",
+    "tool": "photo"
+  },
+  {
+    "path": "/pdf-converter/",
+    "tool": "converter"
+  },
+  {
+    "path": "/jpg-to-pdf/",
+    "tool": "converter"
+  },
+  {
+    "path": "/pdf-to-png/",
+    "tool": "converter"
+  },
+  {
+    "path": "/merge-pdf/",
+    "tool": "converter"
+  },
+  {
+    "path": "/extract-pdf-pages/",
+    "tool": "converter"
+  },
+  {
+    "path": "/remove-background/",
+    "tool": "background"
+  }
+]

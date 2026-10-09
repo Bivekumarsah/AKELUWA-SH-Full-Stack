@@ -330,12 +330,12 @@ export default function AdminPage() {
 
       <section className="admin-workspace">
         <header className="admin-topbar">
-          <div className="admin-live"><button className="admin-sidebar-toggle" type="button" onClick={() => setSidebarOpen((open) => !open)} aria-expanded={sidebarOpen} aria-controls="admin-sidebar" aria-label={sidebarOpen ? "Close admin navigation" : "Open admin navigation"} title={sidebarOpen ? "Close navigation" : "Open navigation"}>{sidebarOpen ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}</button><span>AKELUWA CONTROL / LIVE</span><i /></div>
+          <div className="admin-live"><button className="admin-sidebar-toggle" type="button" onClick={() => setSidebarOpen((open) => !open)} aria-expanded={sidebarOpen} aria-controls="admin-sidebar" aria-label={sidebarOpen ? "Close admin navigation" : "Open admin navigation"} title={sidebarOpen ? "Close navigation" : "Open navigation"}>{sidebarOpen ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}</button><span>AKELUWA Administration</span></div>
           <div className="admin-topbar-right"><ProfileMenu user={admin} onUserChange={setAdmin} openOnHover /></div>
         </header>
         {error && <p className="form-alert is-error admin-alert" role="alert">{error}</p>}
         {notice && <p className="form-alert is-success admin-alert" role="status">{notice}</p>}
-        {loading ? <p className="dashboard-state">Loading the control system...</p> : (
+        {loading ? <p className="dashboard-state">Loading your workspace...</p> : (
           <div className="admin-content">
             {tab === "overview" && <Overview stats={stats} inquiries={inquiries} services={services} portfolio={portfolio} />}
             {tab === "inquiries" && <InquiriesPanel inquiries={inquiries} onUpdate={updateInquiry} canUpdate={hasPermission(admin, "inquiries.update")} />}
@@ -391,7 +391,7 @@ function Overview({ stats, inquiries, services, portfolio }: { stats: DashboardS
 }
 
 function ContentPanel({ title, copy, children }: { title: string; copy: string; children: React.ReactNode }) {
-  return <section className="admin-panel"><div className="admin-panel-heading"><p className="portal-kicker">MANAGEMENT FIELD / ACTIVE</p><h1>{title}</h1><p>{copy}</p></div>{children}</section>;
+  return <section className="admin-panel"><div className="admin-panel-heading"><p className="portal-kicker">Administration</p><h1>{title}</h1><p>{copy}</p></div>{children}</section>;
 }
 
 function InquiriesPanel({ inquiries, onUpdate, canUpdate }: { inquiries: Inquiry[]; onUpdate: (item: Inquiry, status: Inquiry["status"]) => void; canUpdate: boolean }) {

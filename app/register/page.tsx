@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import Image from "next/image";
+import { AuthBrand } from "@/app/components/auth-brand";
 import Link from "next/link";
 import { apiFetch, readableError } from "@/app/lib/api";
 import { useGuestOnly } from "@/app/lib/use-session";
@@ -32,11 +32,9 @@ export default function RegisterPage() {
   }
 
   return <main className="portal-shell"><section className="auth-card">
-    <Link className="auth-brand" href="/" aria-label="Return to AKELUWA SH">
-      <Image src="/company-logo.png" alt="" width={48} height={48} priority unoptimized /><span>SH</span>
-    </Link>
-    <p className="portal-kicker">CUSTOMER ACCOUNT / {submittedEmail ? "VERIFY" : "CREATE"}</p>
-    <h1>{submittedEmail ? <>Check your<br /><em>inbox.</em></> : <>Start with<br /><em>clarity.</em></>}</h1>
+    <AuthBrand />
+    <p className="portal-kicker">{submittedEmail ? "Email verification" : "Client account"}</p>
+    <h1>{submittedEmail ? "Check your inbox." : "Create your account."}</h1>
     {submittedEmail ? <>
       <p className="portal-intro">We sent an ownership link to <strong>{submittedEmail}</strong>. Open it to activate your account.</p>
       <p className="auth-switch"><Link href="/verify-email">Resend verification</Link> or <Link href="/login">return to sign in</Link></p>

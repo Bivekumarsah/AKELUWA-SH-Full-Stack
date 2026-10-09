@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useRef, useState } from "react";
-import Image from "next/image";
+import { AuthBrand } from "@/app/components/auth-brand";
 import Link from "next/link";
 import QRCode from "qrcode";
 import { apiFetch, readableError, User } from "@/app/lib/api";
@@ -144,12 +144,9 @@ export default function LoginPage() {
   return (
     <main className="portal-shell">
       <section className={`auth-card${enrollmentRequired || recoveryCodes.length ? " has-mfa-enrollment" : ""}`}>
-        <Link className="auth-brand" href="/" aria-label="Return to AKELUWA SH">
-          <Image src="/company-logo.png" alt="" width={48} height={48} priority unoptimized />
-          <span>SH</span>
-        </Link>
-        <p className="portal-kicker">SECURE ACCOUNT ACCESS / {recoveryCodes.length ? "003" : challengeToken ? "002" : "001"}</p>
-        <h1>{recoveryCodes.length ? <>Save<br /><em>recovery.</em></> : challengeToken ? <>Verify<br /><em>access.</em></> : <>Welcome<br /><em>back.</em></>}</h1>
+        <AuthBrand />
+        <p className="portal-kicker">{recoveryCodes.length ? "Recovery codes" : challengeToken ? "Two-factor authentication" : "Account access"}</p>
+        <h1>{recoveryCodes.length ? "Save recovery." : challengeToken ? "Verify access." : "Welcome back."}</h1>
         {recoveryCodes.length ? <>
           <p className="portal-intro">Store these single-use codes in a secure password manager. They will not be shown again.</p>
           <div className="recovery-code-panel" aria-label="MFA recovery codes">
@@ -160,7 +157,7 @@ export default function LoginPage() {
           {error && <p className="form-alert is-error" role="alert">{error}</p>}
           <button className="portal-primary" type="button" disabled={!recoveryCodesSaved} onClick={() => window.location.replace("/admin")}>Continue to administration</button>
         </> : !challengeToken ? <>
-          <p className="portal-intro">Customers, administrators, and authorized staff use this secure sign-in. Your account access is assigned automatically after verification.</p>
+          <p className="portal-intro">Sign in to manage your projects or company workspace.</p>
           <form className="portal-form" onSubmit={submit}>
             <label>Email address<input type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} required /></label>
             <label>Password<input type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} required /></label>

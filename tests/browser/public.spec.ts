@@ -1,4 +1,24 @@
 import { expect, test } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
+
+test("company homepage explains services and preserves published content and branding", async ({ page }) => {
+  await page.route("**/api/v1/company-brand", route => route.fulfill({ json: { company_brand: {
+    display_name: "AKELUWA SH", tagline: "Software for everyday operations.", tagline_meaning: "A company introduction maintained by the administrator.",
+  } } }));
+  await page.route("**/api/v1/services", route => route.fulfill({ json: { services: [{ id: "service", slug: "product-engineering", title: "Custom product engineering", summary: "Published service description", stack: "React / Go" }] } }));
+  await page.route("**/api/v1/portfolio", route => route.fulfill({ json: { portfolio: [{ id: "project", slug: "business-platform", title: "Business platform", summary: "Published project description", technologies: "Go / PostgreSQL", project_url: "https://example.com/project" }] } }));
+  await page.goto("/");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Software built foryour business.");
+  await expect(page.getByRole("link", { name: "Discuss your project" })).toHaveAttribute("href", "/contact");
+  await expect(page.getByRole("link", { name: "Custom product engineering" })).toHaveAttribute("href", "/services#product-engineering");
+  await expect(page.getByRole("heading", { name: "Business platform" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "View project", exact: true })).toHaveAttribute("href", "https://example.com/project");
+  await expect(page.getByRole("heading", { name: "Software for everyday operations." })).toBeVisible();
+  await expect(page.getByText("A company introduction maintained by the administrator.")).toBeVisible();
+  await expect(page.getByText(/CORE PULSE|ORIGIN SIGNAL|FOLLOW THE SIGNAL/)).toHaveCount(0);
+  await page.getByRole("link", { name: "Use the form", exact: true }).click();
+  await expect(page.locator("#contact-form")).toBeInViewport();
+});
 
 test("mobile navigation opens, supports Escape, and navigates", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
@@ -17,6 +37,10 @@ test("mobile navigation opens, supports Escape, and navigates", async ({ page })
   await navigation.getByRole("link", { name: "Services", exact: true }).click();
   await expect(page).toHaveURL(/\/services$/);
   await expect(navigation).toBeHidden();
+  await page.getByRole("button", { name: "Open navigation" }).click();
+  await expect(page.getByRole("navigation", { name: "Mobile navigation" }).getByRole("link", { name: "Services", exact: true })).toHaveAttribute("aria-current", "page");
+  await page.keyboard.press("Escape");
+  await expect(navigation).toBeHidden();
 });
 
 test("empty publishing lists never restore sample content", async ({ page }) => {
@@ -24,7 +48,12 @@ test("empty publishing lists never restore sample content", async ({ page }) => 
   await page.route("**/api/v1/portfolio", route => route.fulfill({ json: { portfolio: [] } }));
   for (const path of ["/", "/services", "/case-studies"]) {
     await page.goto(path);
-    await expect(page.getByText("No items are published yet.").first()).toBeVisible();
+    if (path === '/case-studies') {
+      await expect(page.getByRole('heading', { name: 'AkeluwaToolBox' })).toBeVisible();
+      await expect(page.getByText('No additional projects are published yet.')).toBeVisible();
+    } else {
+      await expect(page.getByText("No items are published yet.").first()).toBeVisible();
+    }
     await expect(page.getByText("Fintech transaction platform", { exact: true })).toHaveCount(0);
     await expect(page.getByText("Build the product", { exact: true })).toHaveCount(0);
   }
@@ -41,6 +70,68 @@ test("public content recovers after a failed request", async ({ page }) => {
   await page.getByRole("button", { name: "Try again" }).click();
   await expect(page.getByRole("heading", { name: "Published service" })).toBeVisible();
   await expect(page.getByRole("alert")).toHaveCount(0);
+});
+
+test("service inquiries retain their topic and input after a failed submission", async ({ page }) => {
+  await page.route("**/api/v1/services", route => route.fulfill({ json: { services: [{ id: "service", slug: "product-engineering", number: "01", title: "Custom product engineering", summary: "Published service description", stack: "React/Go" }] } }));
+  const requests: Record<string, string>[] = [];
+  await page.route("**/api/v1/inquiries", route => {
+    requests.push(route.request().postDataJSON());
+    return route.fulfill(requests.length === 1 ? { status: 503, json: { error: "Please try again shortly." } } : { status: 201, json: { inquiry: { id: "test-inquiry" } } });
+  });
+  await page.goto("/services");
+  await page.getByRole("link", { name: "Discuss this service" }).click();
+  await expect(page.locator(".inquiry-interest")).toContainText("Custom product engineering");
+  const form = page.locator("#contact-form");
+  await form.getByLabel("Name", { exact: true }).fill("Example Client");
+  await form.getByLabel("Email", { exact: true }).fill("client@example.com");
+  await form.getByLabel("Tell us about the system").fill("We need a new operations platform.");
+  await form.getByText("Add company and budget details", { exact: true }).click();
+  await form.getByLabel("Company optional").fill("Example Company");
+  await form.getByLabel("Budget range optional").fill("Not sure yet");
+  await form.getByRole("button", { name: "Start a project with AKELUWA" }).click();
+  await expect(form.getByRole("alert")).toContainText("Please try again shortly.");
+  await expect(form.getByLabel("Tell us about the system")).toHaveValue("We need a new operations platform.");
+  await form.getByRole("button", { name: "Start a project with AKELUWA" }).click();
+  await expect(form.getByRole("status")).toContainText("project inquiry has been received");
+  await expect(form.getByRole("heading", { name: "Thank you. We have your inquiry." })).toBeFocused();
+  await expect(form.getByText("client@example.com", { exact: true })).toBeVisible();
+  expect(requests).toHaveLength(2);
+  expect(requests[1]).toEqual({ name: "Example Client", email: "client@example.com", company: "Example Company", budget: "Not sure yet", message: "Service interest: Custom product engineering\n\nWe need a new operations platform." });
+  await form.getByRole("button", { name: "Send another inquiry" }).click();
+  await expect(form.getByLabel("Name", { exact: true })).toHaveValue("");
+  await expect(form.getByLabel("Name", { exact: true })).toBeFocused();
+});
+
+test("a project inquiry topic can be removed before sending", async ({ page }) => {
+  await page.route("**/api/v1/portfolio", route => route.fulfill({ json: { portfolio: [{ id: "project", slug: "business-platform", title: "Business platform", summary: "Published project description", technologies: "Go / PostgreSQL" }] } }));
+  let submitted: Record<string, string> | undefined;
+  await page.route("**/api/v1/inquiries", route => {
+    submitted = route.request().postDataJSON();
+    return route.fulfill({ status: 201, json: { inquiry: { id: "test-inquiry" } } });
+  });
+  await page.goto("/case-studies");
+  await page.locator('.project-card').filter({ has: page.getByRole('heading', { name: 'Business platform' }) }).getByRole("link", { name: "Discuss a similar project" }).click();
+  await expect(page.locator(".inquiry-interest")).toContainText("Business platform");
+  await page.getByRole("button", { name: "Remove inquiry topic" }).click();
+  await expect(page.locator(".inquiry-interest")).toHaveCount(0);
+  const form = page.locator("#contact-form");
+  await form.getByLabel("Name", { exact: true }).fill("Example Client");
+  await form.getByLabel("Email", { exact: true }).fill("client@example.com");
+  await form.getByLabel("Tell us about the system").fill("Please review our project requirements.");
+  await form.getByRole("button", { name: "Start a project with AKELUWA" }).click();
+  await expect(form.getByRole("status")).toContainText("project inquiry has been received");
+  expect(submitted?.message).toBe("Please review our project requirements.");
+});
+
+test("delivery details support keyboard access and remain readable when expanded", async ({ page }) => {
+  await page.goto("/", { waitUntil: "networkidle" });
+  const summary = page.locator(".company-process summary").first();
+  await summary.focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByText("An agreed scope and acceptance criteria", { exact: true })).toBeVisible();
+  const result = await new AxeBuilder({ page }).include("#method").withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze();
+  expect(result.violations).toEqual([]);
 });
 
 test("desktop authentication forms keep their primary actions in view", async ({ page }) => {
@@ -125,6 +216,7 @@ test("administrator enrollment requires recovery codes to be saved", async ({ pa
   await page.getByLabel("Password").fill("correct-horse-battery-staple");
   await page.getByRole("button", { name: "Sign in securely" }).click();
   await expect(page.getByLabel("Authenticator enrollment QR code")).toBeVisible();
+  expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze()).violations).toEqual([]);
   await page.getByLabel("Authenticator code").fill("123456");
   await page.getByRole("button", { name: "Enable MFA and continue" }).click();
 
@@ -132,6 +224,7 @@ test("administrator enrollment requires recovery codes to be saved", async ({ pa
   await expect(page.getByRole("heading", { name: "Save recovery." })).toBeVisible();
   await expect(page.locator(".recovery-code-panel code")).toHaveCount(10);
   await expect(continueButton).toBeDisabled();
+  expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze()).violations).toEqual([]);
   await page.getByLabel("I stored these codes securely").check();
   await expect(continueButton).toBeEnabled();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);

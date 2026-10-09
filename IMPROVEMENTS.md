@@ -2,6 +2,16 @@
 
 This document records the maintainability, security, portability, and testing improvements completed for the project.
 
+## Same-domain AkeluwaToolBox integration — 9 October 2026
+
+- The official company website owns `/`; the homepage Projects section and `/case-studies` link to `/akeluwatoolbox/` in the same browser tab.
+- The built-in toolbox project stays available without the portfolio API, and duplicate API records are suppressed. Existing published projects and company/account routes are preserved.
+- Browser source and PDF library licenses live in `toolbox/`; the company build generates its own static subtree. Python services, environments and credentials are excluded from the public assets.
+- Nested tool routes, module and PDF worker assets, history, reload, metadata, sitemap, and installed-app scope use the toolbox prefix. The Worker handles canonical redirects, HEAD/GET requests, unsupported methods and toolbox 404 pages.
+- Filename HTML injection identified in the earlier toolbox review is fixed by escaping filenames in converter/editor display templates before sharing the company's origin.
+- The company frontend's existing performance budget is retained; the toolbox's separately loaded PDF engines have their own download budget.
+- Validation: final production build and typecheck passed; all 15 Node regression checks passed. Fourteen existing public-browser tests passed, then the corrected project-inquiry test and all three toolbox browser tests passed against the final production preview. Ten standalone PDF groups and ten standalone SEO/navigation groups also passed. No live deployment or DNS change was performed because the copied Sites record is unavailable in this account. Details: [docs/TOOLBOX.md](docs/TOOLBOX.md).
+
 ## Earlier Self-Assessment
 
 | Area | Previous review | Earlier self-rating | Evidence |

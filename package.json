@@ -6,6 +6,12 @@
     "node": ">=22.13.0"
   },
   "scripts": {
+    "predev": "node scripts/build-toolbox.mjs",
+    "prebuild": "node scripts/build-toolbox.mjs",
+    "build:toolbox": "node scripts/build-toolbox.mjs",
+    "build:vercel": "npm run build:toolbox && next build --webpack",
+    "dev:vercel": "npm run build:toolbox && next dev",
+    "start:vercel": "next start",
     "install:ci": "bash scripts/install-ci.sh",
     "dev": "node scripts/with-wrangler-log.mjs vite --host 0.0.0.0 --port 5173 --strictPort",
     "build": "node scripts/with-wrangler-log.mjs vite build",

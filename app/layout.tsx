@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "AKELUWA SH - Software Hub",
-    description: "We engineer the invisible edge.",
+    description: "Software development, cloud infrastructure, security and automation from Nepal.",
     type: "website",
     url: siteURL,
     siteName: "AKELUWA SH",
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "AKELUWA SH - Software Hub",
-    description: "We engineer the invisible edge.",
+    description: "Software development, cloud infrastructure, security and automation from Nepal.",
     images: ["/og.png"],
   },
 };

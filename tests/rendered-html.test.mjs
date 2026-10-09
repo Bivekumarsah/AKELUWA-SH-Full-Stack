@@ -42,22 +42,74 @@ test("renders the public homepage and its critical content", async () => {
   assert.match(html, /<title>AKELUWA SH - Software Hub<\/title>/);
   assert.match(html, /aria-label="Primary navigation"/);
   assert.match(html, /Sign in/);
-  assert.match(html, /AKELUWA symbol of trust/);
+  assert.match(html, /Software built for/);
+  assert.doesNotMatch(html, /CORE PULSE|ORIGIN SIGNAL|AKELUWA symbol of trust/);
   assert.doesNotMatch(html, /AKELUWA TRUST STANDARD/);
   assert.doesNotMatch(html, /Secure · Transparent · Accountable/);
   assert.match(html, /Start a project with AKELUWA/);
-  assert.match(html, /Skip to contact/);
+  assert.match(html, /Skip to main content/);
+  assert.match(html, /href="\/akeluwatoolbox\/"/);
+  assert.match(html, /Open AkeluwaToolBox/);
+  assert.doesNotMatch(html, /<script[^>]+src="\/akeluwatoolbox\//);
   assert.match(html, /Loading published content/);
   assert.match(html, /id="contact-form"/);
   assert.match(html, /Use the form/);
   assert.match(html, /mailto:akeluwasoftwarehub@gmail\.com/);
-  assert.match(html, /privacy policy/);
+  assert.match(html, /Privacy policy/);
   assert.match(html, /application\/ld\+json/);
   assert.match(html, /rel="icon"[^>]+icon\.png/);
   assert.match(html, /rel="apple-touch-icon"[^>]+apple-icon\.png/);
   assert.doesNotMatch(html, /\/_vinext\/image/);
   assert.doesNotMatch(html, /AKELUWA SYSTEM LAB \/ LIVE/);
   assert.doesNotMatch(html, /gmail\.com\.com/);
+});
+
+test('production Worker serves toolbox pages, assets, redirects and isolated 404 responses', async () => {
+  const worker = await loadWorker();
+  const assetEnv = {
+    ASSETS: {
+      async fetch(request) {
+        let path = new URL(request.url).pathname;
+        assert.ok(path.startsWith('/akeluwatoolbox/'));
+        if (path.endsWith('/')) path += 'index.html';
+        if (path.endsWith('/404')) path += '.html';
+        try {
+          const data = await readFile(new URL('../dist/client' + path, import.meta.url));
+          const type = path.endsWith('.js') ? 'text/javascript' : path.endsWith('.html') ? 'text/html' : 'application/octet-stream';
+          return new Response(request.method === 'HEAD' ? null : data, { headers: { 'Content-Type': type } });
+        } catch {
+          return new Response('Not found', { status: 404 });
+        }
+      },
+    },
+  };
+  const context = { waitUntil() {}, passThroughOnException() {} };
+  const fetch = (path, init) => worker.fetch(new Request('https://www.akeluwasoftwarehub.com.np' + path, init), assetEnv, context);
+  for (const path of ['/', '/compress-pdf/', '/compress-photo/', '/jpg-to-pdf/']) {
+    const response = await fetch('/akeluwatoolbox' + path);
+    assert.equal(response.status, 200);
+    const html = await response.text();
+    assert.ok(html.includes(`data-seo-path="/akeluwatoolbox${path}"`));
+    assert.ok(html.includes(`href="https://www.akeluwasoftwarehub.com.np/akeluwatoolbox${path}"`));
+  }
+  const engine = await fetch('/akeluwatoolbox/assets/vendor/pdfjs/pdf.worker.min.js');
+  assert.equal(engine.status, 200);
+  assert.equal(engine.headers.get('content-type'), 'text/javascript');
+  for (const [path, destination] of [
+    ['/akeluwatoolbox', '/akeluwatoolbox/'],
+    ['/akeluwatoolbox/compress-photo', '/akeluwatoolbox/compress-photo/'],
+    ['/akeluwatoolbox/?tool=photo', '/akeluwatoolbox/compress-photo/'],
+  ]) {
+    const response = await fetch(path);
+    assert.equal(response.status, 308);
+    assert.equal(response.headers.get('location'), 'https://www.akeluwasoftwarehub.com.np' + destination);
+  }
+  const missing = await fetch('/akeluwatoolbox/not-a-tool/');
+  assert.equal(missing.status, 404);
+  assert.match(await missing.text(), /Page not found/);
+  assert.equal((await fetch('/akeluwatoolbox/pdf-reducer/manage.py')).status, 404);
+  assert.equal((await fetch('/akeluwatoolbox/', { method: 'POST' })).status, 405);
+  assert.equal((await fetch('/akeluwatoolbox/', { method: 'HEAD' })).status, 200);
 });
 
 test("renders SEO support pages", async () => {
@@ -98,10 +150,10 @@ test("renders the admin control surface", async () => {
     "utf8",
   );
 
-  assert.match(html, /AKELUWA CONTROL \/ LIVE/);
+  assert.match(html, /AKELUWA Administration/);
   assert.match(html, /Admin sections/);
   assert.match(html, /overview/i);
-  assert.match(html, /Loading the control system/);
+  assert.match(html, /Loading your workspace/);
   assert.match(adminSource, /canAccessTab/);
   assert.match(adminSource, /admin-mobile-section-picker/);
   assert.match(adminSource, /admin-sidebar-toggle/);
@@ -125,7 +177,7 @@ test("renders the admin control surface", async () => {
   assert.doesNotMatch(html, /â|Ã|�/);
 });
 
-test("connects the company tagline fields to the public hero", async () => {
+test("connects the company tagline fields to the public company introduction", async () => {
   const accountSource = await readFile(
     new URL("../app/components/company-account.tsx", import.meta.url),
     "utf8",
@@ -143,8 +195,8 @@ test("connects the company tagline fields to the public hero", async () => {
   assert.match(homeSource, /apiFetch<\{ company_brand: CompanyBrand \}>\("\/company-brand"\)/);
   assert.match(homeSource, /companyBrand\.tagline/);
   assert.match(homeSource, /companyBrand\.tagline_meaning/);
-  assert.match(homeSource, /splitTagline\(companyBrand\.tagline\)/);
-  assert.match(homeSource, /className="brand-tagline-meaning reveal-three"/);
+  assert.match(homeSource, /className="company-brand-tagline"/);
+  assert.match(homeSource, /className="brand-tagline-meaning"/);
 });
 
 test("gates guest authentication screens behind a session check", async () => {

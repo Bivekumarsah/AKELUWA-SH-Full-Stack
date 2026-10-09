@@ -1,0 +1,17 @@
+{
+  "name": "Akeluwa ToolBox",
+  "short_name": "Akeluwa ToolBox",
+  "description": "Private browser-based PDF and image tools.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f7f9f7",
+  "theme_color": "#195443",
+  "icons": [
+    {
+      "src": "/assets/images/favicon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

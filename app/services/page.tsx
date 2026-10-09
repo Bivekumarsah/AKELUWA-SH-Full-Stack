@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { InnerPage } from "@/app/components/inner-page";
 import { PublishedServices } from "@/app/components/published-content";
+import { DeliveryProcess } from "@/app/components/delivery-process";
+import { PageInvitation } from "@/app/components/page-invitation";
 
 export const metadata: Metadata = {
   title: "Services",
@@ -13,8 +15,8 @@ export default function ServicesPage() {
   return (
     <InnerPage
       eyebrow="SERVICES / SOFTWARE HUB"
-      title={<>Services built for <em>real operations.</em></>}
-      intro="AKELUWA SH connects product, infrastructure, security and intelligent automation so your system can launch cleanly and keep improving."
+      title={<>Services built for<br /><em>your business.</em></>}
+      intro="Software development, infrastructure, security and automation. Work with us on a complete project or bring focused support to your existing team."
     >
       <PublishedServices />
 
@@ -28,6 +30,8 @@ export default function ServicesPage() {
           <p>For long-term systems, we document setup, deployment, environment variables and admin responsibilities so your team is not left guessing after launch.</p>
         </div>
       </section>
+      <section className="inner-section" aria-label="Project delivery stages"><DeliveryProcess /></section>
+      <PageInvitation title="Not sure where to start?" description="Tell us about your current system and the problem you want to solve. We’ll help you identify the right next step." />
     </InnerPage>
   );
 }

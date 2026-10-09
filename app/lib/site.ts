@@ -1,7 +1,7 @@
 export const siteURL = process.env.NEXT_PUBLIC_SITE_URL
   ?? (process.env.NODE_ENV === "development"
     ? "http://localhost:5173"
-    : "https://akeluwa-sh.com");
+    : "https://www.akeluwasoftwarehub.com.np");
 
 export const publicRoutes = [
   { path: "/", priority: 1 },

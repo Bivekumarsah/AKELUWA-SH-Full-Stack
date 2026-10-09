@@ -18,6 +18,16 @@ AKELUWA SH is a company website and operational platform. It combines a React/Ty
 
 ## Architecture
 
+The company homepage remains at `/`. Its Projects section and `/case-studies` include a built-in **AkeluwaToolBox** project linking to `/akeluwatoolbox/` in the same browser tab and on the same domain. This project remains accessible when the portfolio API is unavailable; additional portfolio records still come from the API.
+
+The toolbox browser source lives in `toolbox/`. `scripts/build-toolbox.mjs` generates `public/akeluwatoolbox/` before `npm run dev` and `npm run build`. The Worker serves this static subtree separately from the company React router. Tool navigation, reload, PDF.js workers, previews, downloads, canonical URLs, breadcrumbs, manifest scope, and sitemap entries use `/akeluwatoolbox/`. The Python PDF service is not copied into the company deployment; PDFs and photos use the browser engines.
+
+For production, set `NEXT_PUBLIC_SITE_URL=https://www.akeluwasoftwarehub.com.np`. Toolbox canonical URLs default to that domain; `TOOLBOX_SITE_URL` optionally overrides their HTTPS origin. Deploy this company project to the host currently serving the company domain, and retain its existing Go API configuration. A local build does not change DNS or publish the site. The original standalone toolbox's Vercel configuration is not the deployment entry point for this combined application.
+
+For GitHub-to-Vercel deployment, this company folder includes `vercel.json` using **Next.js** and `npm run build:vercel` (toolbox generation followed by native Next.js). Keep Root Directory blank for the company repository, Output Directory at its default, and set the deployed Go API URL in `NEXT_PUBLIC_API_URL`. See [the Vercel setup and verification guide](docs/TOOLBOX.md#hosting). The original `npm run build` remains the Vinext/Cloudflare build.
+
+From the parent toolbox workspace, run `node scripts/sync-company-toolbox.mjs` after editing the standalone toolbox to refresh the browser-source snapshot in this project. Then rebuild the company project. Only browser source, assets and licenses are synchronized; local environments, uploads, backend code, and credentials are excluded.
+
 ```text
 Browser
   -> React/Vinext pages and components in app/
@@ -28,7 +38,9 @@ Browser
   -> PostgreSQL schema created by backend/internal/database/migrations/
 ```
 
-Public pages that load publishable content use `app/lib/use-published-content.ts`. Private pages use `app/lib/use-session.ts` to confirm the signed session before loading account or administrator data.
+Public pages that load publishable content use `app/lib/use-published-content.ts`. The homepage introduces up to four published services and three projects, the delivery process, company information and project inquiries; the dedicated pages show all published records. Administrators maintain the company tagline and supporting copy shown in its company introduction. The public website and account-access screens share the logo's navy, blue and cyan palette. Private pages use `app/lib/use-session.ts` to confirm the signed session before loading account or administrator data.
+
+Service and project inquiry links carry their topic to `/contact` through the `service` or `project` query parameter. The contact page bounds and renders that topic, and the form includes it in the inquiry message using the existing API. Visitors can remove the topic, expand optional company and budget fields, retry without losing their input, and see a confirmation after submission. Delivery stages have expandable checklists on the homepage and services page.
 
 The Go API is the source of truth for authentication, authorization, business rules, and PostgreSQL data. Frontend visibility controls improve the user experience, while API permissions enforce access securely.
 
@@ -92,10 +104,20 @@ db/ and worker/                Frontend platform support source; not the Go/Post
 | File or folder | Owns |
 |---|---|
 | `app/layout.tsx` | Document shell, global metadata, favicon setup |
-| `app/globals.css` | Global visual system and responsive styles |
+| `app/globals.css` | Global visual system, public company theme, portal readability, and responsive styles |
 | `app/components/site-header.tsx` | Public navigation and customer sign-in entry point |
 | `app/components/site-footer.tsx` | Footer, company details, legal links |
-| `app/components/project-inquiry-form.tsx` | Public project inquiry submission |
+| `app/components/auth-brand.tsx` | Consistent branding across sign-in, registration, and account recovery |
+| `app/components/portfolio-card.tsx` | Shared featured-project layout and technology labels for published work |
+| `app/lib/toolbox.ts` | Built-in toolbox project and duplicate suppression in company project lists |
+| `worker/toolbox.ts` | Same-domain static toolbox routing, canonical redirects, and unknown-path handling |
+| `toolbox/`, `scripts/build-toolbox.mjs` | Toolbox browser source and generation of the public `/akeluwatoolbox/` subtree |
+| `app/components/service-card.tsx` | Shared service comparison cards and service inquiry links |
+| `app/components/technology-list.tsx` | Technology labels for published services and work |
+| `app/components/delivery-process.tsx` | Project stages, deliverables and expandable stage details |
+| `app/components/project-next-steps.tsx` | Inquiry review, scope discussion and written-plan guidance |
+| `app/components/page-invitation.tsx` | Shared contact invitation on company, service and work pages |
+| `app/components/project-inquiry-form.tsx` | Public project inquiry submission, optional fields, contextual topics and confirmation |
 | `app/components/published-content.tsx` | Dynamic published service and portfolio rendering |
 | `app/components/public-downloads.tsx` | Public resource list and download links |
 | `app/components/public-careers.tsx` | Public career opening list |

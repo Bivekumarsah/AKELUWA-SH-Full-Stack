@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import Image from "next/image";
+import { AuthBrand } from "@/app/components/auth-brand";
 import Link from "next/link";
 import { apiFetch, readableError } from "@/app/lib/api";
 
@@ -36,9 +36,9 @@ export default function VerifyEmailPage() {
   }
 
   return <main className="portal-shell"><section className="auth-card">
-    <Link className="auth-brand" href="/" aria-label="Return to AKELUWA SH"><Image src="/company-logo.png" alt="" width={48} height={48} priority unoptimized /><span>SH</span></Link>
-    <p className="portal-kicker">EMAIL OWNERSHIP / VERIFY</p>
-    <h1>{state === "verified" ? <>Email<br /><em>verified.</em></> : <>Confirm<br /><em>ownership.</em></>}</h1>
+    <AuthBrand />
+    <p className="portal-kicker">Email verification</p>
+    <h1>{state === "verified" ? "Email verified." : "Verify your email."}</h1>
     {state === "checking" && <p className="portal-intro" role="status">Validating your secure link...</p>}
     {state === "verified" ? <><p className="portal-intro">Your account is active and your secure session has started.</p><Link className="portal-primary" href="/account">Open account</Link></> : state !== "checking" && <>
       <p className="portal-intro">Enter your account email to receive a new verification link.</p>
