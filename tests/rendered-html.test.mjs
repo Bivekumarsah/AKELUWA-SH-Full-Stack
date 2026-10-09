@@ -117,7 +117,7 @@ test('production Worker serves toolbox pages, assets, redirects and isolated 404
 test("PublicInfoHub remains independently deployed rather than bundled into the company Worker", async () => {
   const config = await readFile(new URL("../next.config.ts", import.meta.url), "utf8");
   const buildScript = await readFile(new URL("../scripts/build-static-sites.mjs", import.meta.url), "utf8");
-  assert.match(config, /source: "\/publicinfohub\/"/);
+  assert.ok(config.includes('source: "/publicinfohub"'));
   const proxy = await readFile(new URL("../app/publicinfohub/[[...path]]/route.ts", import.meta.url), "utf8");
   assert.ok(proxy.includes("PUBLIC_INFO_HUB_ORIGIN"));
   assert.ok(proxy.includes("export async function GET"));
