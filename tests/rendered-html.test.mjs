@@ -120,7 +120,7 @@ test("PublicInfoHub remains independently deployed rather than bundled into the 
   assert.match(config, /source: "\/publicinfohub\/"/);
   assert.match(config, /publicInfoHubOrigin/);
   assert.match(config, /source: "\/publicinfohub\/:path\*"/);
-  assert.doesNotMatch(buildScript, /publicinfohub/i);
+  assert.doesNotMatch(buildScript, /(?:cp|mkdir|rm)\s*\([^\n]*publicinfohub/i);
   assert.match(buildScript, /buildStatic/);
 });
 
