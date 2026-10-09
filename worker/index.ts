@@ -2,6 +2,7 @@
 import { handleImageOptimization, DEFAULT_DEVICE_SIZES, DEFAULT_IMAGE_SIZES } from "vinext/server/image-optimization";
 import handler from "vinext/server/app-router-entry";
 import { serveToolbox } from './toolbox';
+import { servePublicInfoHub } from './public-info-hub';
 
 interface Env {
   ASSETS?: Fetcher;
@@ -31,6 +32,8 @@ const worker = {
     const url = new URL(request.url);
     const toolboxResponse = await serveToolbox(request, env.ASSETS);
     if (toolboxResponse) return toolboxResponse;
+    const publicInfoHubResponse = await servePublicInfoHub(request, env.ASSETS);
+    if (publicInfoHubResponse) return publicInfoHubResponse;
 
     if (url.pathname === "/_vinext/image") {
       const { ASSETS, IMAGES } = env;

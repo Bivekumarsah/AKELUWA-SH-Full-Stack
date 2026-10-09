@@ -23,7 +23,7 @@ export function PortfolioCard({ item, index, headingLevel = "h3" }: PortfolioCar
       <div className="project-card-details">
         {item.technologies.trim() && <div><p className="project-card-detail-label">Built with</p><TechnologyList value={item.technologies} label="Project technologies" /></div>}
         {item.project_url && (
-          <a className="company-text-link" href={item.project_url} target={internalProject ? undefined : '_blank'} rel={internalProject ? undefined : 'noreferrer'}>{item.id === 'akeluwa-toolbox' ? 'Open AkeluwaToolBox' : 'View project'} <ArrowUpRight size={17} aria-hidden="true" /></a>
+          <a className="company-text-link" href={item.project_url} target={internalProject ? undefined : '_blank'} rel={internalProject ? undefined : 'noreferrer'}>{item.id === 'akeluwa-toolbox' ? 'Open AkeluwaToolBox' : item.id === 'akeluwa-public-info-hub' ? 'Open PublicInfoHub' : 'View project'} <ArrowUpRight size={17} aria-hidden="true" /></a>
         )}
         <Link className="company-text-link project-inquiry-link" href={`/contact?project=${encodeURIComponent(item.title)}`}>Discuss a similar project <ArrowRight size={17} aria-hidden="true" /></Link>
       </div>

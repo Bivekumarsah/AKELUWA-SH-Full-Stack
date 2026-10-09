@@ -5,7 +5,7 @@ import toolboxRoutes from '@/toolbox/routes.json';
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
 
-  return [...publicRoutes, ...toolboxRoutes.map(route => ({ path: '/akeluwatoolbox' + route.path, priority: 0.7 }))].map((route) => ({
+  return [...publicRoutes, { path: '/publicinfohub/', priority: 0.7 }, ...toolboxRoutes.map(route => ({ path: '/akeluwatoolbox' + route.path, priority: 0.7 }))].map((route) => ({
     url: absoluteURL(route.path),
     lastModified: now,
     changeFrequency: route.path === "/" ? "weekly" : "monthly",

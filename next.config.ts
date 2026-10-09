@@ -2,20 +2,19 @@ import type { NextConfig } from "next";
 import toolboxRoutes from "./toolbox/routes.json";
 
 const toolboxBase = "/akeluwatoolbox";
-// Optional: enable the separate PublicInfoHub Vercel app without affecting Toolbox.
-const publicInfoHubOrigin = process.env.PUBLIC_INFO_HUB_ORIGIN?.replace(/\/$/, "");
 
 const nextConfig: NextConfig = {
   // Toolbox canonical URLs end in /; let these explicit rules preserve them.
   skipTrailingSlashRedirect: true,
   outputFileTracingIncludes: {
     "/akeluwatoolbox/*": ["./public/akeluwatoolbox/404.html"],
+    "/publicinfohub/*": ["./public/publicinfohub/index.html", "./public/publicinfohub/styles.css", "./public/publicinfohub/app.js"],
   },
   async redirects() {
     const uniqueTools = toolboxRoutes.filter((route, index, all) =>
       route.tool !== "home" && all.findIndex(other => other.tool === route.tool) === index);
     return [
-      ...(publicInfoHubOrigin ? [{ source: "/publicinfohub", destination: "/publicinfohub/", permanent: false }] : []),
+      { source: "/publicinfohub", destination: "/publicinfohub/", permanent: true },
       ...uniqueTools.map(route => ({
         source: toolboxBase + "/",
         has: [{ type: "query" as const, key: "tool", value: route.tool }],
@@ -31,16 +30,10 @@ const nextConfig: NextConfig = {
   },
   async rewrites() {
     return {
-      beforeFiles: [
-        ...toolboxRoutes.map(route => ({
-          source: toolboxBase + route.path,
-          destination: toolboxBase + route.path + "index.html",
-        })),
-        ...(publicInfoHubOrigin ? [
-          { source: "/publicinfohub/", destination: `${publicInfoHubOrigin}/publicinfohub/` },
-          { source: "/publicinfohub/:path*", destination: `${publicInfoHubOrigin}/publicinfohub/:path*` },
-        ] : []),
-      ],
+      beforeFiles: toolboxRoutes.map(route => ({
+        source: toolboxBase + route.path,
+        destination: toolboxBase + route.path + "index.html",
+      })).concat({ source: '/publicinfohub/', destination: '/publicinfohub/index.html' }),
       afterFiles: [],
       fallback: [],
     };

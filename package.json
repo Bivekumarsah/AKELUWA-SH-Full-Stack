@@ -6,9 +6,9 @@
     "node": ">=22.13.0"
   },
   "scripts": {
-    "predev": "node scripts/build-toolbox.mjs",
-    "prebuild": "node scripts/build-toolbox.mjs",
-    "build:toolbox": "node scripts/build-toolbox.mjs",
+    "predev": "node scripts/build-static-sites.mjs",
+    "prebuild": "node scripts/build-static-sites.mjs",
+    "build:toolbox": "node scripts/build-static-sites.mjs",
     "build:vercel": "npm run build:toolbox && next build --webpack",
     "dev:vercel": "npm run build:toolbox && next dev",
     "start:vercel": "next start",

@@ -7,10 +7,17 @@ export const toolboxProject: PortfolioItem = {
   position: 0, active: true, created_at: '', updated_at: '',
 };
 
+export const publicInfoHubProject: PortfolioItem = {
+  id: 'akeluwa-public-info-hub', slug: 'akeluwa-public-info-hub', title: 'AKELUWA PublicInfoHub',
+  summary: 'A simple public-information directory prototype for discovering Nepal government services and official department websites.',
+  technologies: 'HTML / CSS / JavaScript', project_url: '/publicinfohub/',
+  position: 1, active: true, created_at: '', updated_at: '',
+};
+
 export function withToolbox(items: PortfolioItem[]): PortfolioItem[] {
-  return [toolboxProject, ...items.filter(item =>
-    item.title.toLowerCase().replace(/[^a-z0-9]/g, '') !== 'akeluwatoolbox'
-    && item.slug !== toolboxProject.slug
-    && !/^\/akeluwatoolbox(?:\/|$)/.test(item.project_url || '')
+  return [toolboxProject, publicInfoHubProject, ...items.filter(item =>
+    ![toolboxProject.slug, publicInfoHubProject.slug].includes(item.slug)
+    && !['akeluwatoolbox', 'akeluwapublicinfohub'].includes(item.title.toLowerCase().replace(/[^a-z0-9]/g, ''))
+    && !/^\/(?:akeluwatoolbox|publicinfohub)(?:\/|$)/.test(item.project_url || '')
   )];
 }
