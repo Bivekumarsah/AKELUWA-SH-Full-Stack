@@ -5,6 +5,8 @@ import (
 	"embed"
 	"fmt"
 	"io/fs"
+	"net/url"
+	"strings"
 	"sort"
 	"time"
 
@@ -15,6 +17,9 @@ import (
 var migrations embed.FS
 
 func Open(ctx context.Context, databaseURL string) (*pgxpool.Pool, error) {
+	if err := validateDatabaseTransport(databaseURL); err != nil {
+		return nil, err
+	}
 	config, err := pgxpool.ParseConfig(databaseURL)
 	if err != nil {
 		return nil, fmt.Errorf("parse database configuration: %w", err)
@@ -90,6 +95,23 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
 		}
 		if err := tx.Commit(ctx); err != nil {
 			return fmt.Errorf("commit migration %s: %w", entry.Name(), err)
+		}
+	}
+	return nil
+}
+
+// validateDatabaseTransport prevents accidentally connecting to Neon without TLS.
+// Other PostgreSQL hosts retain their existing connection behavior.
+func validateDatabaseTransport(databaseURL string) error {
+	parsed, err := url.Parse(databaseURL)
+	if err != nil || (parsed.Scheme != "postgres" && parsed.Scheme != "postgresql") || parsed.Hostname() == "" {
+		return fmt.Errorf("invalid PostgreSQL DATABASE_URL")
+	}
+	host := strings.ToLower(parsed.Hostname())
+	if host == "neon.tech" || strings.HasSuffix(host, ".neon.tech") {
+		mode := strings.ToLower(strings.TrimSpace(parsed.Query().Get("sslmode")))
+		if mode != "require" && mode != "verify-ca" && mode != "verify-full" {
+			return fmt.Errorf("Neon DATABASE_URL must enable TLS using sslmode=require or stronger")
 		}
 	}
 	return nil
