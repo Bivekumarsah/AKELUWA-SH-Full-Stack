@@ -1,4 +1,5 @@
 import { initStampStudio } from './stamp-studio.js';
+import { initCountryStamps, COUNTRY_STAMP_COUNTS } from './country-stamps.js';
 const $ = (id) => document.getElementById(id);
 
 const defaults = {
@@ -288,7 +289,10 @@ export function initDigitalStamp({toast=()=>{}}={}) {
   quickColor.addEventListener('input',()=>{fields.color.value=quickColor.value;render()});
   quickEditor.querySelector('[data-quick-logo]').addEventListener('click',()=>fields.logo.click());
   quickEditor.querySelector('[data-quick-advanced]').addEventListener('click',()=>setQuickAdvanced(stampRoot?.dataset.quickAdvanced!=='true'));
-  quickEditor.querySelector('[data-quick-back]').addEventListener('click',()=>document.querySelector('.stamp-sample-gallery')?.scrollIntoView({behavior:'smooth',block:'start'}));
+  quickEditor.querySelector('[data-quick-back]').addEventListener('click',()=>{
+    const target=stampRoot?.dataset.countryEditing==='true'?stampRoot.querySelector('[data-country-stamps]'):document.querySelector('.stamp-sample-gallery');
+    target?.scrollIntoView({behavior:'smooth',block:'start'});
+  });
   let template='round',logoData=null,zoom=1;
 
   function state(){return{
@@ -329,6 +333,32 @@ export function initDigitalStamp({toast=()=>{}}={}) {
   }
 
 
+  function openEditableSample(sample,{source='quick',title=sample.label||'Selected stamp'}={}){
+    template=sample.kind in templateDefaults?sample.kind:'round';
+    logoData=null;fields.logo.value='';clearLogo.disabled=true;
+    for(const [key,value] of Object.entries(defaults)){
+      if(fields[key] && fields[key].type==='checkbox') fields[key].checked=Boolean(value);
+      else if(fields[key] && key!=='logo') fields[key].value=value;
+    }
+    for(const [key,value] of Object.entries(sample)){
+      if(fields[key] && !['kind','label'].includes(key)) fields[key].value=value;
+    }
+    if(sample.color)fields.color.value=sample.color;
+    if(sample.fullText)fields.fullText.value=sample.fullText;
+    fields.authorized.checked=false;
+    render();syncQuickFields();
+    if(stampRoot){
+      stampRoot.dataset.quickAdvanced='false';
+      stampRoot.dataset.quickEditing=source==='quick'?'true':'false';
+      stampRoot.dataset.countryEditing=source==='country'?'true':'false';
+    }
+    if(stampLayout)stampLayout.hidden=false;
+    quickEditor.hidden=false;setQuickAdvanced(false);
+    quickEditor.querySelector('[data-quick-edit-title]').textContent='Editing: '+title;
+    stampLayout?.scrollIntoView({behavior:'smooth',block:'start'});
+    toast('Template opened below. Edit it here and watch the live preview on the right.');
+  }
+
   // Sample gallery: the original Nepali Stamp editor remains fully available.
   const samplePresets = [
     {label:'Company Double Ring',kind:'double',name:'SAMPLE BUSINESS PVT. LTD.',address:'Kathmandu, Nepal',center:'COMPANY',registration:'REG. NO. 12345',ringStyle:'double',languageMode:'english',nepaliPlace:'hidden',addressPlace:'bottom',estbPlace:'hidden'},
@@ -364,28 +394,9 @@ export function initDigitalStamp({toast=()=>{}}={}) {
       const action=document.createElement('span');action.textContent='Customize sample →';action.style.cssText='font-size:12px;color:#1767c0;font-weight:600';
       button.append(image,title,action);
       button.addEventListener('click',()=>{
-        template=sample.kind;
-        logoData=null;fields.logo.value='';clearLogo.disabled=true;
-        // Reset optional fields so samples never inherit unrelated previous content.
-        for(const [key,value] of Object.entries(defaults)){
-          if(fields[key] && fields[key].type==='checkbox') fields[key].checked=Boolean(value);
-          else if(fields[key] && key!=='logo') fields[key].value=value;
-        }
-        for(const [key,value] of Object.entries(sample)){
-          if(fields[key] && key!=='kind' && key!=='label') fields[key].value=value;
-        }
-        fields.authorized.checked=false;
-        render();
-        syncQuickFields();
-        if(stampRoot){stampRoot.dataset.quickEditing='true';stampRoot.dataset.quickAdvanced='false';}
-        if(stampLayout)stampLayout.hidden=false;
-        if(templatePanel)templatePanel.hidden=true;
-        quickEditor.hidden=false;setQuickAdvanced(false);
-        quickEditor.querySelector('[data-quick-edit-title]').textContent='Editing: '+sample.label;
+        openEditableSample(sample,{source:'quick',title:sample.label});
         document.querySelectorAll('.stamp-sample-card').forEach(el=>el.style.borderColor='#dedfd7');
         button.style.borderColor='#1767c0';
-        stampLayout?.scrollIntoView({behavior:'smooth',block:'start'});
-        toast('Sample opened below. Edit it here and watch the live preview on the right.');
       });
       cards.append(button);
     });
@@ -393,7 +404,17 @@ export function initDigitalStamp({toast=()=>{}}={}) {
     templatePanel.parentNode.insertBefore(gallery,templatePanel);
   }
 
-  initStampStudio({root:$('stampTool'),toast});
+  const studioApi=initStampStudio({root:$('stampTool'),toast});
+  initCountryStamps({
+    root:stampRoot,
+    toast,
+    switchMode:mode=>studioApi?.switchMode?.(mode),
+    onChoose:templateData=>{
+      openEditableSample(templateData.sample,{source:'country',title:templateData.name});
+      studioApi?.switchMode?.('country');
+    }
+  });
+  if(stampRoot)stampRoot.dataset.countrySystem=JSON.stringify(COUNTRY_STAMP_COUNTS);
 
   document.querySelectorAll('.stamp-template,.stamp-mini').forEach(btn=>btn.addEventListener('click',()=>chooseTemplate(btn.dataset.template)));
   form.addEventListener('input',render);form.addEventListener('change',render);
