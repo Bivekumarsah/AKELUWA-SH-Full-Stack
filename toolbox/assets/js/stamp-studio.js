@@ -286,11 +286,11 @@ export function initStampStudio({root,toast=()=>{}}={}){
     if(gallery)gallery.hidden=mode!=='quick';
     if(countrySection)countrySection.hidden=mode!=='country';
     if(mode==='studio'){
-      if(templatePanel)templatePanel.hidden=true;if(layout)layout.hidden=true;if(quickEditor)quickEditor.hidden=true;studio.hidden=false;studio.dataset.countryDesign='false';
+      if(templatePanel)templatePanel.hidden=true;if(layout)layout.hidden=true;if(quickEditor)quickEditor.hidden=true;studio.hidden=false;studio.dataset.countryDesign='false';studio.querySelector('[data-country-design-bar]').hidden=true;
     }else if(mode==='nepali'){
       if(templatePanel)templatePanel.hidden=false;if(layout)layout.hidden=false;if(quickEditor)quickEditor.hidden=true;quickSections.forEach(section=>section.hidden=false);studio.hidden=true;
     }else if(mode==='country'){
-      if(templatePanel)templatePanel.hidden=true;if(layout)layout.hidden=true;if(quickEditor)quickEditor.hidden=true;studio.hidden=root.dataset.countryStudio!=='true';studio.dataset.countryDesign=studio.hidden?'false':'true';
+      if(templatePanel)templatePanel.hidden=true;if(layout)layout.hidden=true;if(quickEditor)quickEditor.hidden=true;studio.hidden=root.dataset.countryStudio!=='true';studio.dataset.countryDesign=studio.hidden?'false':'true';studio.querySelector('[data-country-design-bar]').hidden=studio.hidden;
     }else{
       if(templatePanel)templatePanel.hidden=true;if(layout)layout.hidden=!quickEditing;if(quickEditor)quickEditor.hidden=!quickEditing;quickSections.forEach(section=>section.hidden=quickEditing&&!quickAdvanced);studio.hidden=true;
     }
@@ -314,6 +314,17 @@ export function initStampStudio({root,toast=()=>{}}={}){
   studio.querySelector('[data-new-blank]').onclick=()=>{if(state.items.length&&!confirm('Start a blank stamp? Your current design will be replaced.'))return;applyChange(()=>{state.items=[];state.selected=null;state.activePreset='Blank';state.widthMm=42;state.heightMm=42})};
 
   studio.querySelector('[data-quick-apply]').onclick=()=>{
+    if(state.countryTemplate){
+      const vals={
+        name:clean(studio.querySelector('[data-quick-name]').value,100),
+        address:clean(studio.querySelector('[data-quick-address]').value,100),
+        center:clean(studio.querySelector('[data-quick-center]').value,100)
+      };
+      applyChange(()=>state.items.forEach(item=>{
+        if(item.role&&Object.hasOwn(vals,item.role)&&typeof item.text==='string')item.text=vals[item.role];
+      }));
+      toast('Your stamp details are updated.');return;
+    }
     const name=clean(studio.querySelector('[data-quick-name]').value||'YOUR BUSINESS NAME'),address=clean(studio.querySelector('[data-quick-address]').value||'YOUR LOCATION'),center=clean(studio.querySelector('[data-quick-center]').value||'AUTHORIZED');
     applyChange(()=>{
       const texts=state.items.filter(i=>i.type==='text'||i.type==='arcText');
