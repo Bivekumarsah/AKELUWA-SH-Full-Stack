@@ -38,6 +38,8 @@ const defaults = {
   fullSpacing: 10,
   innerGap: 24,
   innerStroke: 3,
+  outerSize: 205,
+  outerStroke: 6,
 };
 
 const templateDefaults = {
@@ -153,7 +155,9 @@ function innerText(state, y=285) {
 }
 function circularSeal(state, kind='round') {
   const c=safeColor(state.color), f=fontFamily(state.font), b=Number(state.border), fs=Number(state.fontSize);
-  const rx = kind==='oval' ? 218 : 205, ry = kind==='oval' ? 160 : 205;
+  const baseOuter = Math.max(150, Math.min(235, Number(state.outerSize || 205)));
+  const rx = kind==='oval' ? Math.min(235, baseOuter + 13) : baseOuter;
+  const ry = kind==='oval' ? Math.max(120, baseOuter * .78) : baseOuter;
   const radius = Math.max(120,Math.min(195,Number(state.curve)));
   const textRx = kind==='oval' ? Math.min(190,radius+20) : radius;
   const textRy = kind==='oval' ? Math.min(128,radius*.75) : radius;
@@ -190,7 +194,7 @@ function circularSeal(state, kind='round') {
   return `
     <defs>${textureDef(state.texture)}${paths}</defs>
     <g ${state.texture?'filter="url(#stampTexture)"':''}>
-      <ellipse cx="250" cy="250" rx="${rx}" ry="${ry}" fill="none" stroke="${c}" stroke-width="${b}"/>
+      <ellipse cx="250" cy="250" rx="${rx}" ry="${ry}" fill="none" stroke="${c}" stroke-width="${Math.max(1,Number(state.outerStroke||b))}"/>
       ${showInner ? `<ellipse cx="250" cy="250" rx="${Math.max(40,rx-Number(state.innerGap||24))}" ry="${Math.max(40,ry-Number(state.innerGap||24))}" fill="none" stroke="${c}" stroke-width="${Math.max(1,Number(state.innerStroke||3))}"/>` : ''}
       ${ringText}
       ${dots}
@@ -255,7 +259,7 @@ export function initDigitalStamp({toast=()=>{}}={}) {
     englishRotate:$('stampEnglishRotate'),nepaliRotate:$('stampNepaliRotate'),addressRotate:$('stampAddressRotate'),estbRotate:$('stampEstbRotate'),
     ringStyle:$('stampRingStyle'),textLayout:$('stampTextLayout'),dots:$('stampDots'),autoFit:$('stampAutoFit'),
     fullText:$('stampFullText'),fullRotate:$('stampFullRotate'),fullSpacing:$('stampFullSpacing'),
-    innerGap:$('stampInnerGap'),innerStroke:$('stampInnerStroke')
+    innerGap:$('stampInnerGap'),innerStroke:$('stampInnerStroke'),outerSize:$('stampOuterSize'),outerStroke:$('stampOuterStroke')
   };
   const preview=$('stampPreview'),status=$('stampStatus'),clearLogo=$('clearStampLogo');
   let template='round',logoData=null,zoom=1;
@@ -269,7 +273,7 @@ export function initDigitalStamp({toast=()=>{}}={}) {
     englishRotate:fields.englishRotate.value,nepaliRotate:fields.nepaliRotate.value,addressRotate:fields.addressRotate.value,estbRotate:fields.estbRotate.value,
     ringStyle:fields.ringStyle.value,textLayout:fields.textLayout.value,dots:fields.dots.checked,autoFit:fields.autoFit.checked,
     fullText:fields.fullText.value,fullRotate:fields.fullRotate.value,fullSpacing:fields.fullSpacing.value,
-    innerGap:fields.innerGap.value,innerStroke:fields.innerStroke.value
+    innerGap:fields.innerGap.value,innerStroke:fields.innerStroke.value,outerSize:fields.outerSize.value,outerStroke:fields.outerStroke.value
   }}
   function ready(){const hasLanguage=fields.languageMode.value==='nepali'?clean(fields.nepali.value):fields.languageMode.value==='english'?clean(fields.name.value):(clean(fields.name.value)||clean(fields.nepali.value));return Boolean(fields.authorized.checked && hasLanguage)}
   function outputs(){
@@ -279,6 +283,7 @@ export function initDigitalStamp({toast=()=>{}}={}) {
     $('stampAddressRotateOut').textContent=fields.addressRotate.value+'°';$('stampEstbRotateOut').textContent=fields.estbRotate.value+'°';
     $('stampFullRotateOut').textContent=fields.fullRotate.value+'°';$('stampFullSpacingOut').textContent=(Number(fields.fullSpacing.value)/10).toFixed(1);
     $('stampInnerGapOut').textContent=fields.innerGap.value;$('stampInnerStrokeOut').textContent=fields.innerStroke.value;
+    $('stampOuterSizeOut').textContent=fields.outerSize.value;$('stampOuterStrokeOut').textContent=fields.outerStroke.value;
     $('stampInnerRingControls').classList.toggle('stamp-double-hidden',fields.ringStyle.value!=='double');
   }
   function render(){
@@ -312,7 +317,7 @@ export function initDigitalStamp({toast=()=>{}}={}) {
     fields.englishRotate.value=defaults.englishRotate;fields.nepaliRotate.value=defaults.nepaliRotate;fields.addressRotate.value=defaults.addressRotate;fields.estbRotate.value=defaults.estbRotate;
     fields.ringStyle.value=defaults.ringStyle;fields.textLayout.value=defaults.textLayout;fields.dots.checked=defaults.dots;fields.autoFit.checked=defaults.autoFit;
     fields.fullText.value=defaults.fullText;fields.fullRotate.value=defaults.fullRotate;fields.fullSpacing.value=defaults.fullSpacing;
-    fields.innerGap.value=defaults.innerGap;fields.innerStroke.value=defaults.innerStroke;
+    fields.innerGap.value=defaults.innerGap;fields.innerStroke.value=defaults.innerStroke;fields.outerSize.value=defaults.outerSize;fields.outerStroke.value=defaults.outerStroke;
     fields.authorized.checked=false;fields.logo.value='';clearLogo.disabled=true;render()
   });
   async function exportPng(forceTransparent=null){
