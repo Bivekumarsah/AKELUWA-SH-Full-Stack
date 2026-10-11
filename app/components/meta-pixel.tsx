@@ -78,7 +78,7 @@ export default function MetaPixel() {
         We use optional Meta Pixel tracking to understand visits and measure Facebook and Instagram ads. You can decline without affecting the website. See our <a href="/privacy-policy" style={{ color: "#9cd7ff", textDecoration: "underline" }}>privacy policy</a>.
       </p>
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-        <button type="button" onClick={() => choose("accepted")} style={{ background: "#1584ee", color: "white", padding: "9px 16px", borderRadius: 7, cursor: "pointer" }}>Accept optional tracking</button>
+        <button type="button" onClick={() => choose("accepted")} style={{ background: "#0865bf", color: "white", padding: "9px 16px", borderRadius: 7, cursor: "pointer" }}>Accept optional tracking</button>
         <button type="button" onClick={() => choose("declined")} style={{ background: "#e8eef6", color: "#101d37", padding: "9px 16px", borderRadius: 7, cursor: "pointer" }}>Decline</button>
       </div>
     </aside>
