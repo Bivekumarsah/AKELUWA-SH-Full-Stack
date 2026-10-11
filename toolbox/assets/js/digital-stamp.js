@@ -20,6 +20,15 @@ const defaults = {
   outerRing: true,
   transparent: true,
   texture: false,
+  languageMode: 'both',
+  englishPlace: 'top',
+  nepaliPlace: 'bottom',
+  addressPlace: 'hidden',
+  estbPlace: 'center',
+  englishRotate: 0,
+  nepaliRotate: 0,
+  addressRotate: 0,
+  estbRotate: 0,
 };
 
 const templateDefaults = {
@@ -71,9 +80,24 @@ function downloadBlob(blob, name) {
   const a = document.createElement('a'); a.href = url; a.download = name; a.click();
   setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
-function arcText(id, text, color, font, size, weight=700, offset='50%', letter=1) {
+function arcText(id, text, color, font, size, weight=700, rotation=0, letter=1) {
   if (!clean(text)) return '';
-  return `<text fill="${color}" font-family="${esc(font)}" font-size="${size}" font-weight="${weight}" letter-spacing="${letter}" text-anchor="middle"><textPath href="#${id}" startOffset="${offset}">${esc(clean(text,90))}</textPath></text>`;
+  const start = Math.max(0, Math.min(100, 50 + Number(rotation) / 3.6));
+  return `<text fill="${color}" font-family="${esc(font)}" font-size="${size}" font-weight="${weight}" letter-spacing="${letter}" text-anchor="middle"><textPath href="#${id}" startOffset="${start}%">${esc(clean(text,90))}</textPath></text>`;
+}
+function blockVisible(state, key) {
+  if (key === 'english' && state.languageMode === 'nepali') return false;
+  if (key === 'nepali' && state.languageMode === 'english') return false;
+  return true;
+}
+function textBlock(state, key) {
+  const map = {
+    english: { text: state.name, place: state.englishPlace, rotation: state.englishRotate },
+    nepali: { text: state.nepali, place: state.nepaliPlace, rotation: state.nepaliRotate },
+    address: { text: state.address, place: state.addressPlace, rotation: state.addressRotate },
+    estb: { text: state.estb, place: state.estbPlace, rotation: state.estbRotate },
+  };
+  return map[key];
 }
 function textureDef(enabled) {
   if (!enabled) return '';
@@ -91,42 +115,51 @@ function innerText(state, y=285) {
   const c = safeColor(state.color);
   const f = fontFamily(state.font);
   const size = Number(state.fontSize);
-  const center = clean(state.center,30).toUpperCase();
-  const estb = clean(state.estb,28).toUpperCase();
-  const reg = clean(state.registration,46).toUpperCase();
+  const centerLines = [];
+  for (const key of ['english','nepali','address','estb']) {
+    const block = textBlock(state,key);
+    if (blockVisible(state,key) && block.place === 'center' && clean(block.text)) centerLines.push(clean(block.text,80));
+  }
+  if (clean(state.center)) centerLines.push(clean(state.center,30).toUpperCase());
+  if (clean(state.registration)) centerLines.push(clean(state.registration,46).toUpperCase());
   const date = dateLabel(state.date).toUpperCase();
-  return `
-    ${center ? `<text x="250" y="${y}" text-anchor="middle" fill="${c}" font-family="${esc(f)}" font-size="${size}" font-weight="900" letter-spacing="1.4">${esc(center)}</text>` : ''}
-    ${estb ? `<text x="250" y="${y+32}" text-anchor="middle" fill="${c}" font-family="${esc(f)}" font-size="${Math.max(14,size-10)}" font-weight="800">${esc(estb)}</text>` : ''}
-    ${reg ? `<text x="250" y="${y+58}" text-anchor="middle" fill="${c}" font-family="${esc(f)}" font-size="13" font-weight="700">${esc(reg)}</text>` : ''}
-    ${date ? `<text x="250" y="${y+82}" text-anchor="middle" fill="${c}" font-family="${esc(f)}" font-size="13" font-weight="700">${esc(date)}</text>` : ''}
-  `;
+  if (date) centerLines.push(date);
+  const lineGap = Math.max(24, size + 2);
+  const startY = y - ((centerLines.length - 1) * lineGap) / 2;
+  return centerLines.map((line,index)=>`<text x="250" y="${startY + index*lineGap}" text-anchor="middle" fill="${c}" font-family="${esc(f)}" font-size="${index===0?size:Math.max(14,size-7)}" font-weight="${index===0?900:700}" letter-spacing=".7">${esc(line)}</text>`).join('');
 }
 function circularSeal(state, kind='round') {
   const c=safeColor(state.color), f=fontFamily(state.font), b=Number(state.border), fs=Number(state.fontSize);
   const rx = kind==='oval' ? 218 : 205, ry = kind==='oval' ? 160 : 205;
   const double = kind==='double';
-  const topRy = ry-23, bottomRy = ry-23;
-  const topStart = 250-rx+34, topEnd=250+rx-34;
-  const logo = logoMarkup(state,250,230);
-  const curveAdjust = (Number(state.curve)-50)*0.4;
-  const topPathY = 250 + curveAdjust;
-  const bottomPathY = 250 - curveAdjust;
+  const radius = Math.max(120,Math.min(195,Number(state.curve)));
+  const topRx = kind==='oval' ? Math.min(190,radius+20) : radius;
+  const topRy = kind==='oval' ? Math.min(128,radius*.75) : radius;
+  const left=250-topRx,right=250+topRx;
   const paths = `
-    <path id="topArc" d="M ${topStart} ${topPathY} A ${rx-34} ${topRy} 0 0 1 ${topEnd} ${topPathY}" fill="none"/>
-    <path id="bottomArc" d="M ${topEnd} ${bottomPathY} A ${rx-34} ${bottomRy} 0 0 1 ${topStart} ${bottomPathY}" fill="none"/>
+    <path id="topArc" d="M ${left} 250 A ${topRx} ${topRy} 0 0 1 ${right} 250" fill="none"/>
+    <path id="bottomArc" d="M ${right} 250 A ${topRx} ${topRy} 0 0 1 ${left} 250" fill="none"/>
   `;
+  const topBlocks=[], bottomBlocks=[];
+  for (const key of ['english','nepali','address','estb']) {
+    const block=textBlock(state,key);
+    if (!blockVisible(state,key) || !clean(block.text)) continue;
+    if (block.place==='top') topBlocks.push({key,...block});
+    if (block.place==='bottom') bottomBlocks.push({key,...block});
+  }
+  const topMarkup=topBlocks.map((block,index)=>arcText('topArc',block.text,c,f,Math.max(16,fs-index*3),index?700:800,block.rotation,1)).join('');
+  const bottomMarkup=bottomBlocks.map((block,index)=>arcText('bottomArc',block.text,c,f,Math.max(16,fs-3-index*3),700,block.rotation,.6)).join('');
   return `
     <defs>${textureDef(state.texture)}${paths}</defs>
     <g ${state.texture?'filter="url(#stampTexture)"':''}>
       ${state.outerRing ? `<ellipse cx="250" cy="250" rx="${rx}" ry="${ry}" fill="none" stroke="${c}" stroke-width="${b}"/>` : ''}
       ${state.innerRing ? `<ellipse cx="250" cy="250" rx="${rx-20}" ry="${ry-20}" fill="none" stroke="${c}" stroke-width="${Math.max(2,b*.55)}"/>` : ''}
       ${double ? `<ellipse cx="250" cy="250" rx="${rx-34}" ry="${ry-34}" fill="none" stroke="${c}" stroke-width="${Math.max(2,b*.5)}"/>` : ''}
-      ${arcText('topArc',state.name.toUpperCase(),c,f,fs+2,800,'50%',1.1)}
-      ${arcText('bottomArc',(state.nepali||state.address),c,f,Math.max(17,fs-3),700,'50%',.6)}
+      ${topMarkup}
+      ${bottomMarkup}
       <circle cx="${250-rx+28}" cy="250" r="5" fill="${c}"/><circle cx="${250+rx-28}" cy="250" r="5" fill="${c}"/>
-      ${logo}
-      ${innerText(state,state.logoData?298:270)}
+      ${logoMarkup(state,250,230)}
+      ${innerText(state,state.logoData?305:270)}
     </g>`;
 }
 function rectangleSeal(state, mode='rect') {
@@ -181,7 +214,9 @@ export function initDigitalStamp({toast=()=>{}}={}) {
     center:$('stampCenterText'),estb:$('stampEstb'),date:$('stampDate'),color:$('stampColor'),font:$('stampFont'),
     border:$('stampBorder'),fontSize:$('stampFontSize'),curve:$('stampCurve'),logoSize:$('stampLogoSize'),logoY:$('stampLogoY'),
     innerRing:$('stampInnerRing'),outerRing:$('stampOuterRing'),transparent:$('stampTransparent'),texture:$('stampTexture'),
-    logo:$('stampLogo'),authorized:$('stampAuthorized')
+    logo:$('stampLogo'),authorized:$('stampAuthorized'),languageMode:$('stampLanguageMode'),
+    englishPlace:$('stampEnglishPlace'),nepaliPlace:$('stampNepaliPlace'),addressPlace:$('stampAddressPlace'),estbPlace:$('stampEstbPlace'),
+    englishRotate:$('stampEnglishRotate'),nepaliRotate:$('stampNepaliRotate'),addressRotate:$('stampAddressRotate'),estbRotate:$('stampEstbRotate')
   };
   const preview=$('stampPreview'),status=$('stampStatus'),clearLogo=$('clearStampLogo');
   let template='round',logoData=null,zoom=1;
@@ -190,12 +225,16 @@ export function initDigitalStamp({toast=()=>{}}={}) {
     name:fields.name.value,address:fields.address.value,nepali:fields.nepali.value,registration:fields.registration.value,
     center:fields.center.value,estb:fields.estb.value,date:fields.date.value,template,color:fields.color.value,font:fields.font.value,
     border:fields.border.value,fontSize:fields.fontSize.value,curve:fields.curve.value,logoSize:fields.logoSize.value,logoY:fields.logoY.value,
-    innerRing:fields.innerRing.checked,outerRing:fields.outerRing.checked,transparent:fields.transparent.checked,texture:fields.texture.checked,logoData
+    innerRing:fields.innerRing.checked,outerRing:fields.outerRing.checked,transparent:fields.transparent.checked,texture:fields.texture.checked,logoData,
+    languageMode:fields.languageMode.value,englishPlace:fields.englishPlace.value,nepaliPlace:fields.nepaliPlace.value,addressPlace:fields.addressPlace.value,estbPlace:fields.estbPlace.value,
+    englishRotate:fields.englishRotate.value,nepaliRotate:fields.nepaliRotate.value,addressRotate:fields.addressRotate.value,estbRotate:fields.estbRotate.value
   }}
   function ready(){return Boolean(fields.authorized.checked && clean(fields.name.value) && clean(fields.address.value))}
   function outputs(){
     $('stampBorderOut').textContent=fields.border.value;$('stampFontOut').textContent=fields.fontSize.value;
     $('stampCurveOut').textContent=fields.curve.value;$('stampLogoOut').textContent=fields.logoSize.value;$('stampLogoYOut').textContent=fields.logoY.value;
+    $('stampEnglishRotateOut').textContent=fields.englishRotate.value+'°';$('stampNepaliRotateOut').textContent=fields.nepaliRotate.value+'°';
+    $('stampAddressRotateOut').textContent=fields.addressRotate.value+'°';$('stampEstbRotateOut').textContent=fields.estbRotate.value+'°';
   }
   function render(){
     outputs();preview.innerHTML=buildSvg(state());
@@ -222,7 +261,10 @@ export function initDigitalStamp({toast=()=>{}}={}) {
   $('stampReset').addEventListener('click',()=>{
     template=defaults.template;logoData=null;zoom=1;
     Object.entries({name:'name',address:'address',nepali:'nepali',registration:'registration',center:'center',estb:'estb',date:'date',color:'color',font:'font',border:'border',fontSize:'fontSize',curve:'curve',logoSize:'logoSize',logoY:'logoY'}).forEach(([key,id])=>fields[id].value=defaults[key]);
-    fields.innerRing.checked=defaults.innerRing;fields.outerRing.checked=defaults.outerRing;fields.transparent.checked=defaults.transparent;fields.texture.checked=defaults.texture;fields.authorized.checked=false;fields.logo.value='';clearLogo.disabled=true;render()
+    fields.innerRing.checked=defaults.innerRing;fields.outerRing.checked=defaults.outerRing;fields.transparent.checked=defaults.transparent;fields.texture.checked=defaults.texture;
+    fields.languageMode.value=defaults.languageMode;fields.englishPlace.value=defaults.englishPlace;fields.nepaliPlace.value=defaults.nepaliPlace;fields.addressPlace.value=defaults.addressPlace;fields.estbPlace.value=defaults.estbPlace;
+    fields.englishRotate.value=defaults.englishRotate;fields.nepaliRotate.value=defaults.nepaliRotate;fields.addressRotate.value=defaults.addressRotate;fields.estbRotate.value=defaults.estbRotate;
+    fields.authorized.checked=false;fields.logo.value='';clearLogo.disabled=true;render()
   });
   async function exportPng(forceTransparent=null){
     if(!ready()) return toast('Please confirm you are authorized to create this stamp.');
