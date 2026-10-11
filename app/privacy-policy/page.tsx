@@ -19,7 +19,7 @@ const sections = [
   },
   {
     title: "Cookies",
-    text: "We do not use tracking cookies. Account authentication uses a necessary secure session cookie so signed-in users can access protected areas.",
+    text: "Account authentication uses a necessary secure session cookie. With your permission, we also use Meta Pixel (ID 891396932267293) to measure page visits and the effectiveness of Facebook and Instagram advertising. Meta may process browsing information and set or read cookies under its own policies. The optional Pixel does not load until you select Accept optional tracking; selecting Decline leaves it disabled. Your choice is stored in this browser. To change your choice, clear this site\u0027s local storage and reload the page.",
   },
   {
     title: "Data care",
