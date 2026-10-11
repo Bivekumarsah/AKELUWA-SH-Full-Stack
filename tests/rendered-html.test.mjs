@@ -39,7 +39,7 @@ test("renders the public homepage and its critical content", async () => {
   const worker = await loadWorker();
   const html = await renderPath(worker, "/");
 
-  assert.match(html, /<title>AKELUWA SH - Software Hub<\/title>/);
+  assert.match(html, /<title>AKELUWA Softwarehub \| Software Development &amp; IT Services<\/title>/);
   assert.match(html, /aria-label="Primary navigation"/);
   assert.match(html, /Sign in/);
   assert.match(html, /Software built for/);
