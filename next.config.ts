@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import toolboxRoutes from "./toolbox/routes.json";
+import extraTools from "./toolbox/extra-tools/catalog.json";
 
 const toolboxBase = "/akeluwatoolbox";
 
@@ -32,6 +33,10 @@ const nextConfig: NextConfig = {
         ...toolboxRoutes.map(route => ({
           source: toolboxBase + route.path,
           destination: toolboxBase + route.path + "index.html",
+        })),
+        ...["/extra-tools/", ...extraTools.map(tool => "/extra-tools/" + tool.slug + "/")].map(path => ({
+          source: toolboxBase + path,
+          destination: toolboxBase + path + "index.html",
         })),
       ],
       afterFiles: [],

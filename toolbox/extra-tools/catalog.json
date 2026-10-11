@@ -1,0 +1,52 @@
+[
+  {
+    "slug": "photo-signature-resizer",
+    "name": "Photo & Signature Resizer",
+    "description": "Crop passport-style photos or resize signatures to exact pixel dimensions and target KB. Custom photo presets, browser-only downloads."
+  },
+  {
+    "slug": "pdf-to-word",
+    "name": "PDF to Editable Word (DOCX)",
+    "description": "Extract selectable text from a PDF into an editable Word DOCX file without an account. Scanned pages require OCR."
+  },
+  {
+    "slug": "pdf-esign-watermark",
+    "name": "PDF eSign & Watermark",
+    "description": "Draw a visible signature or add a watermark to an existing PDF locally in your browser."
+  },
+  {
+    "slug": "ocr-text-extractor",
+    "name": "OCR Text Extractor",
+    "description": "Recognize printed English or Nepali text in photos or scanned PDF pages, then download editable text."
+  },
+  {
+    "slug": "unicode-preeti",
+    "name": "Nepali Unicode / Preeti Converter",
+    "description": "Convert common Nepali legacy Preeti glyph sequences to Unicode or convert basic Unicode characters to Preeti codes."
+  },
+  {
+    "slug": "resume-builder",
+    "name": "Free Resume / CV Builder",
+    "description": "Make a professional resume with profile, experience, education and skills. Free PDF printing with no watermark or login."
+  },
+  {
+    "slug": "image-format-converter",
+    "name": "JPG / PNG / WebP Image Converter",
+    "description": "Convert JPG, PNG, WebP and browser-supported AVIF images locally, with optional downscaling."
+  },
+  {
+    "slug": "qr-code-generator",
+    "name": "Free QR Code Generator",
+    "description": "Generate a scannable PNG QR code for a website link, contact information or short text."
+  },
+  {
+    "slug": "pdf-page-numbers",
+    "name": "Add PDF Page Numbers",
+    "description": "Add page numbers or Page X of Y labels to an existing PDF. Choose position and starting number."
+  },
+  {
+    "slug": "bulk-image-compressor",
+    "name": "Bulk Image Compressor",
+    "description": "Compress up to twenty JPG, PNG or WebP photos in one batch and download a ZIP archive."
+  }
+]

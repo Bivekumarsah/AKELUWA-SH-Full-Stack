@@ -34,8 +34,20 @@ export async function buildStatic(outputUrl = new URL('../dist/', import.meta.ur
   // Keep Google's ownership file available at its exact URL in every build.
   await cp(join(source, 'googlefb3975d72926d897.html'), join(output, 'googlefb3975d72926d897.html'));
   await cp(join(source, 'assets'), join(output, 'assets'), { recursive: true });
+  // Additive tools have independent static pages and never overwrite the stamp studio.
+  const extraCatalog = JSON.parse(await readFile(join(source, 'extra-tools', 'catalog.json'), 'utf8'));
+  const extraPaths = ['/extra-tools/', ...extraCatalog.map(item => '/extra-tools/' + item.slug + '/')];
+  await cp(join(source, 'extra-tools'), join(output, 'extra-tools'), { recursive: true });
+  for (const path of extraPaths) {
+    const entry = join(output, path.slice(1), 'index.html');
+    const original = await readFile(entry, 'utf8');
+    // Build-time canonical is always the correct host/base path. The HTML uses
+    // relative asset URLs so it works under the standalone or company route.
+    await writeFile(entry, original.replaceAll('__TOOLBOX_PUBLIC_ROOT__', origin + basePath)
+      .replace('<meta name="robots" content="index,follow">', '<meta name="robots" content="' + (noindex ? 'noindex,follow' : 'index,follow') + '">'));
+  }
   await writeFile(join(output, 'robots.txt'), `User-agent: *\n${noindex ? 'Disallow: /' : 'Allow: /'}\n\nSitemap: ${origin}${sitePath('/sitemap.xml', basePath)}\n`);
-  await writeFile(join(output, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${pages.map(page => `  <url><loc>${escapeHtml(origin + sitePath(page.path, basePath))}</loc></url>`).join('\n')}\n</urlset>\n`);
+  await writeFile(join(output, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${[...pages.map(page => page.path), ...extraPaths].map(path => `  <url><loc>${escapeHtml(origin + sitePath(path, basePath))}</loc></url>`).join('\n')}\n</urlset>\n`);
   await writeFile(join(output, '404.html'), `<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex"><title>Page not found | Akeluwa ToolBox</title><link rel="stylesheet" href="${sitePath('/assets/css/design.css', basePath)}"></head><body><main class="seo-guide"><h1>Page not found</h1><p>Choose a PDF or photo tool from the homepage.</p><a href="${sitePath('/', basePath)}">Open Akeluwa ToolBox</a></main></body></html>`);
   console.log(`Static website built in ${output}: ${(await readdir(output)).join(', ')}`);
 }

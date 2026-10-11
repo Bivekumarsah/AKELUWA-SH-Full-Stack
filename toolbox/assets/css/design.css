@@ -266,3 +266,18 @@ aside,.bg-side { background:var(--panel2); }
 .related-tools { display:flex; flex-wrap:wrap; gap:10px 20px; margin-top:28px; }
 .related-tools a { color:var(--green); font-size:13px; text-underline-offset:3px; }
 .related-tools a:focus-visible,.tool-tab:focus-visible { outline:3px solid var(--blue); outline-offset:4px; }
+
+/* Ten additional standalone browser tools. Only shown on Toolbox home. */
+.extra-home-panel{margin:26px auto 32px;padding:26px 0;max-width:1200px}
+.extra-home-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;margin:19px 0}
+.extra-home-card{display:flex;flex-direction:column;gap:9px;padding:19px 21px;border-radius:13px;background:var(--panel,#fff);border:1px solid var(--line,#e1e9e3);text-decoration:none;min-width:0}
+.extra-home-card:hover{border-color:var(--green,#207954);box-shadow:0 10px 22px #0a46311c}
+.extra-home-card strong{color:var(--text,#173d30);font-size:16px}
+.extra-home-card span{color:var(--muted,#6e8077);font-size:13px;line-height:1.5;flex:1}
+.extra-home-card em{font-style:normal;color:var(--green,#137958);font-weight:800;font-size:13px}
+.extra-home-all{display:inline-flex;color:var(--green,#137958);font-size:14px;font-weight:790;padding:10px 0}
+.extra-nav-tab{display:inline-flex;align-items:center;color:var(--green,#137958);font-weight:750;font-size:13px;padding:10px 12px;min-height:43px;border-radius:11px;text-decoration:none;background:#e7f4ed}
+.extra-nav-tab:focus-visible,.extra-home-card:focus-visible{outline:3px solid #2789ba;outline-offset:3px}
+@media(min-width:1060px){.extra-home-grid{grid-template-columns:repeat(5,minmax(0,1fr))}}
+@media(max-width:620px){.extra-home-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.extra-home-card{padding:13px}.extra-home-card strong{font-size:14px}.extra-home-card span{font-size:12px}}
+@media(max-width:390px){.extra-home-grid{grid-template-columns:1fr}}

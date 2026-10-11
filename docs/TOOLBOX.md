@@ -4,6 +4,14 @@ The company application owns `/`, authentication, customer/admin pages and its G
 
 The toolbox card is present in server-rendered homepage and case-study HTML. It does not require a database seed or administrator account. The list helper suppresses API records that duplicate its title, slug or local URL. Other published projects retain their original behavior, including external links opening in a new tab.
 
+## Additional standalone browser tools (October 2026)
+
+The 10 free extra browser tools live under `toolbox/extra-tools/`. They were copied **additively** from `AkeluwaToolBox/website/extra-tools/`; never run the legacy full `scripts/sync-company-toolbox.mjs` over the newer Company Digital Stamp Maker. The Company keeps its own `country-stamps.js`, `stamp-studio.js`, and country-based designs unchanged.
+
+The Company static build copies `extra-tools/` into `public/akeluwatoolbox/extra-tools/`, rewrites canonical URLs for the Company domain and adds 11 sitemap URLs. Next.js handles the extra slash-terminated routes by rewriting to the generated HTML. They are separate source pages and do not interfere with the existing 11 Toolbox routes.
+
+To update these: copy only `website/extra-tools/` into `toolbox/extra-tools/` with a reviewed Git change. Do not replace Company `toolbox/index.html` or the entire `toolbox/assets/` folder from the older standalone source.
+
 ## Source and builds
 
 - Edit standalone browser source in the parent `website/` directory, then run `node scripts/sync-company-toolbox.mjs` from the parent workspace.
