@@ -147,6 +147,39 @@
     .number-input { width:100%; padding:10px 11px; color:var(--ink); background:#0d1727; border:1px solid #3a4b64; border-radius:9px; }
     @media (max-width:980px) { .tool-grid,.home-stats,.info-grid,.feature-list,.quality-grid,.privacy-flow { grid-template-columns:1fr; } .converter-layout { grid-template-columns:1fr; } .workspace { grid-template-columns:230px minmax(320px,1fr); } .right { grid-column:1/-1; border-left:0; border-top:1px solid var(--line); display:grid; grid-template-columns:1fr 1fr; gap:14px; } .bg-layout { grid-template-columns:230px minmax(360px,1fr); } .bg-side:last-child { grid-column:1/-1; border-left:0; border-top:1px solid var(--line); } }
     @media (max-width:700px) { header { padding:9px 14px; flex-wrap:wrap; } .privacy { display:none; } .tool-tabs { order:3; width:100%; } .tool-tab { flex:1; } .home { padding:28px 14px; } .tool-card { min-height:210px; } .converter-layout { padding:18px 12px; } .converter-row { grid-template-columns:1fr; } .workspace { display:block; } aside { border:0 !important; } .left { padding-bottom:12px; } .pages { grid-template-columns:repeat(4,1fr); max-height:100px; } main { min-height:68vh; } .stage-wrap { padding:22px 14px; } .right { display:block; } .toolbar { align-items:flex-start; } .bg-layout { display:block; } .bg-center { padding:18px 12px; } .compare { grid-template-columns:1fr; min-height:380px; } .compare-pane { min-height:310px; } .compare-pane + .compare-pane { border-left:0; border-top:1px solid var(--line); } }
+
+    .stamp-tool { width:min(1160px,100%); margin:0 auto; padding:40px 28px 60px; }
+    .stamp-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:24px; margin-bottom:28px; }
+    .stamp-heading .eyebrow { margin:0 0 10px; }
+    .stamp-heading h1 { margin:0 0 10px; font:400 42px/1.12 Georgia,serif; letter-spacing:-.04em; }
+    .stamp-heading > div > p:last-child { max-width:670px; margin:0; color:var(--muted); font-size:14px; }
+    .stamp-local { display:flex; align-items:center; gap:7px; color:var(--green); background:#eaf2ed; border:1px solid #d1e1d7; border-radius:5px; padding:8px 11px; font-size:11px; white-space:nowrap; }
+    .stamp-local .icon { width:15px; height:15px; }
+    .stamp-layout { display:grid; grid-template-columns:minmax(320px,.85fr) minmax(420px,1.15fr); gap:28px; align-items:start; }
+    .stamp-controls,.stamp-preview-panel { background:#fff; border:1px solid var(--line); border-radius:8px; padding:24px; }
+    .stamp-section + .stamp-section { border-top:1px solid var(--line); margin-top:22px; padding-top:22px; }
+    .stamp-section h2 { margin:0 0 14px; color:var(--ink); font-size:12px; letter-spacing:.08em; }
+    .stamp-field { display:block; margin-top:13px; color:#4b5c4b; font-size:12px; }
+    .stamp-field > span { display:block; margin-bottom:6px; font-weight:600; }
+    .stamp-field small { color:var(--muted); font-weight:400; }
+    .stamp-field input[type="text"],.stamp-field input[type="date"],.stamp-field input[type="file"],.stamp-field select { width:100%; min-height:42px; padding:9px 10px; color:var(--ink); background:#fafcfb; border:1px solid #cdd3c8; border-radius:5px; }
+    .stamp-field input[type="color"] { width:100%; height:42px; padding:4px; background:#fafcfb; border:1px solid #cdd3c8; border-radius:5px; }
+    .stamp-two { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .stamp-legal { padding:16px; border:1px solid #eadab2 !important; border-radius:6px; background:#fffaf0; }
+    .stamp-legal p { color:#6f644a; font-size:11px; line-height:1.65; }
+    .stamp-confirm { display:flex; gap:9px; align-items:flex-start; margin-top:12px; font-size:12px; font-weight:600; }
+    .stamp-confirm input { margin-top:3px; accent-color:var(--green); }
+    .stamp-preview-head { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:16px; }
+    .stamp-preview-head span { display:block; font-weight:700; font-size:13px; }
+    .stamp-preview-head small { display:block; margin-top:2px; color:var(--muted); font-size:10px; }
+    .stamp-preview-stage { min-height:440px; display:grid; place-items:center; padding:32px; overflow:auto; border:1px solid var(--line); border-radius:8px; background-color:#fff; background-image:linear-gradient(45deg,#edf0ee 25%,transparent 25%),linear-gradient(-45deg,#edf0ee 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#edf0ee 75%),linear-gradient(-45deg,transparent 75%,#edf0ee 75%); background-size:22px 22px; background-position:0 0,0 11px,11px -11px,-11px 0; }
+    #stampPreview { width:min(100%,430px); }
+    #stampPreview svg { display:block; width:100%; height:auto; filter:drop-shadow(0 6px 12px rgba(20,39,28,.08)); }
+    .stamp-actions { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:16px; }
+    .stamp-actions .btn { min-height:44px; }
+    .stamp-status { margin:12px 0 0; color:var(--muted); font-size:11px; line-height:1.6; }
+    @media(max-width:800px){ .stamp-tool{padding:26px 16px 40px}.stamp-heading{display:block}.stamp-heading h1{font-size:35px}.stamp-local{display:inline-flex;margin-top:14px}.stamp-layout{grid-template-columns:1fr}.stamp-preview-stage{min-height:340px;padding:18px} }
+    @media(max-width:430px){ .stamp-two,.stamp-actions{grid-template-columns:1fr} }
   </style>
   <link rel="stylesheet" href="/assets/css/design.css" />
   <meta name="theme-color" content="#195443" />
@@ -158,7 +191,7 @@
 </head>
 <body data-seo-path="/" data-seo-noindex="false">
   <a class="skip-link" href="#tools">Skip to tools</a>
-  <svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true"><symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6"/></symbol><symbol id="i-shield" viewBox="0 0 24 24"><path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6l8-3Z"/><path d="m8 12 3 3 5-6"/></symbol><symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol><symbol id="i-edit" viewBox="0 0 24 24"><path d="M13 4H5v16h14v-8M10 14l1-4 7-7 3 3-7 7-4 1Z"/></symbol><symbol id="i-convert" viewBox="0 0 24 24"><path d="M4 7h15m-4-4 4 4-4 4M20 17H5m4-4-4 4 4 4"/></symbol><symbol id="i-cutout" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" stroke-dasharray="2 3"/><path d="m7 16 4-5 3 3 3-4"/><circle cx="8" cy="8" r="1"/></symbol><symbol id="i-merge" viewBox="0 0 24 24"><path d="M7 3H3v14h10v-4M11 7h10v14H11zM7 3l6 6M9 9h4V5"/></symbol><symbol id="i-pages" viewBox="0 0 24 24"><path d="M9 4h11v16H9zM5 7H3v10h2M12 8h5M12 12h5M12 16h3"/></symbol><symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8" cy="9" r="2"/><path d="m3 17 5-4 4 3 5-6 4 5"/></symbol><symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"/></symbol><symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol><symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12m-5-5 5 5 5-5M5 17v4h14v-4"/></symbol></svg>
+  <svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true"><symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6"/></symbol><symbol id="i-shield" viewBox="0 0 24 24"><path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6l8-3Z"/><path d="m8 12 3 3 5-6"/></symbol><symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol><symbol id="i-edit" viewBox="0 0 24 24"><path d="M13 4H5v16h14v-8M10 14l1-4 7-7 3 3-7 7-4 1Z"/></symbol><symbol id="i-convert" viewBox="0 0 24 24"><path d="M4 7h15m-4-4 4 4-4 4M20 17H5m4-4-4 4 4 4"/></symbol><symbol id="i-cutout" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" stroke-dasharray="2 3"/><path d="m7 16 4-5 3 3 3-4"/><circle cx="8" cy="8" r="1"/></symbol><symbol id="i-merge" viewBox="0 0 24 24"><path d="M7 3H3v14h10v-4M11 7h10v14H11zM7 3l6 6M9 9h4V5"/></symbol><symbol id="i-pages" viewBox="0 0 24 24"><path d="M9 4h11v16H9zM5 7H3v10h2M12 8h5M12 12h5M12 16h3"/></symbol><symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8" cy="9" r="2"/><path d="m3 17 5-4 4 3 5-6 4 5"/></symbol><symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"/></symbol><symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol><symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12m-5-5 5 5 5-5M5 17v4h14v-4"/></symbol><symbol id="i-stamp" viewBox="0 0 24 24"><path d="M7 5a5 5 0 0 1 10 0v2c0 2 1 3 3 4v3H4v-3c2-1 3-2 3-4V5Z"/><path d="M5 18h14v3H5z"/></symbol></svg>
   <div class="app">
     <header>
       <a class="brand" href="/" data-launch-tool="home" aria-label="Akeluwa ToolBox home"><span class="brand-logo-wrap"><img class="brand-logo" src="/assets/images/logo.png" alt="Akeluwa ToolBox" width="2172" height="724" fetchpriority="high" /></span><small>Everyday work, made lighter</small></a>
@@ -226,6 +259,10 @@
             <a class="tool-card" href="/compress-photo/" data-launch-tool="photo">
               <div><div class="tool-card-head"><span class="tool-card-icon"><svg class="icon " aria-hidden="true"><use href="#i-image"></use></svg></span><span class="tool-category">Images</span></div><h3>Photo size reducer</h3><p>Get your photo ready for sharing or an upload. Choose a target size, adjust quality, and compare the result.</p></div>
               <span class="tool-card-action">Reduce a photo<svg class="icon " aria-hidden="true"><use href="#i-arrow"></use></svg></span>
+            </a>
+            <a class="tool-card" href="/digital-stamp-maker/" data-launch-tool="stamp">
+              <div><div class="tool-card-head"><span class="tool-card-icon"><svg class="icon " aria-hidden="true"><use href="#i-stamp"></use></svg></span><span class="tool-category">Business</span></div><h3>Digital stamp maker</h3><p>Create a round, oval, or rectangular business stamp with your own details and logo. Export a transparent PNG or SVG.</p></div>
+              <span class="tool-card-action">Create a stamp<svg class="icon " aria-hidden="true"><use href="#i-arrow"></use></svg></span>
             </a>
           </div>
         </section>
@@ -381,6 +418,47 @@
         </section>
       </div>
     </section>
+    <section class="stamp-tool hidden" id="stampTool">
+      <div class="stamp-heading">
+        <div><p class="eyebrow">Business utility</p><h1>Digital Stamp Maker</h1><p>Create a stamp for a business or organization you are authorized to represent. Everything is generated in your browser.</p></div>
+        <span class="stamp-local"><svg class="icon" aria-hidden="true"><use href="#i-shield"></use></svg> Local processing</span>
+      </div>
+      <div class="stamp-layout">
+        <form class="stamp-controls" id="stampForm">
+          <div class="stamp-section">
+            <h2>Stamp details</h2>
+            <label class="stamp-field"><span>Business / organization name</span><input id="stampName" type="text" maxlength="60" value="AKELUWA Softwarehub" autocomplete="organization" /></label>
+            <label class="stamp-field"><span>Address or location</span><input id="stampAddress" type="text" maxlength="70" value="Kathmandu, Nepal" autocomplete="street-address" /></label>
+            <label class="stamp-field"><span>Registration / PAN <small>optional</small></span><input id="stampRegistration" type="text" maxlength="45" placeholder="Reg. No. / PAN" /></label>
+            <label class="stamp-field"><span>Center text <small>optional</small></span><input id="stampCenterText" type="text" maxlength="28" value="AUTHORIZED" placeholder="AUTHORIZED / PAID / RECEIVED" /></label>
+            <label class="stamp-field"><span>Date <small>optional</small></span><input id="stampDate" type="date" /></label>
+          </div>
+          <div class="stamp-section">
+            <h2>Style</h2>
+            <div class="stamp-two">
+              <label class="stamp-field"><span>Shape</span><select id="stampShape"><option value="round">Round</option><option value="oval">Oval</option><option value="rect">Rectangular</option></select></label>
+              <label class="stamp-field"><span>Color</span><input id="stampColor" type="color" value="#0b4ea2" /></label>
+            </div>
+            <label class="stamp-field"><span>Logo <small>optional, PNG/JPG/WebP/SVG</small></span><input id="stampLogo" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml,.png,.jpg,.jpeg,.webp,.svg" /></label>
+            <button class="btn" id="clearStampLogo" type="button" disabled>Remove logo</button>
+          </div>
+          <div class="stamp-section stamp-legal">
+            <h2>Authorized use</h2>
+            <p>This tool is for stamps you are authorized to create. Do not imitate government departments, courts, police, banks, notaries, or other official seals.</p>
+            <label class="stamp-confirm"><input id="stampAuthorized" type="checkbox" /> <span>I confirm I am authorized to create and use this stamp.</span></label>
+          </div>
+        </form>
+        <div class="stamp-preview-panel">
+          <div class="stamp-preview-head"><div><span>Live preview</span><small>Transparent background</small></div><button class="btn" id="stampReset" type="button">Reset</button></div>
+          <div class="stamp-preview-stage"><div id="stampPreview" aria-label="Digital stamp preview"></div></div>
+          <div class="stamp-actions">
+            <button class="btn primary" id="downloadStampPng" type="button">Download PNG</button>
+            <button class="btn" id="downloadStampSvg" type="button">Download SVG</button>
+          </div>
+          <p class="stamp-status" id="stampStatus" role="status" aria-live="polite">Complete your stamp details, confirm authorization, then download.</p>
+        </div>
+      </div>
+    </section>
     <section class="bg-tool hidden" id="backgroundTool">
       <div class="bg-bar"><div><h1>AI Background Remover</h1><p>High-quality subject cutout with transparent PNG export</p></div><div class="toolbar-group"><button class="btn" id="bgReset" disabled>Start over</button><button class="btn primary" id="bgDownload" disabled>Download PNG</button></div></div>
       <div class="bg-layout">
@@ -415,6 +493,7 @@
     import * as pdfjsLib from '/assets/vendor/pdfjs/pdf.min.js';
     import { initPdfReducer } from '/assets/js/pdf-reducer.js';
     import { initPhotoReducer } from '/assets/js/photo-reducer.js';
+    import { initDigitalStamp } from '/assets/js/digital-stamp.js';
     import { pages as seoPages, pageFor, pageFromLocation, updateSeo, escapeHtml } from '/assets/js/seo.js';
     pdfjsLib.GlobalWorkerOptions.workerSrc = '/assets/vendor/pdfjs/pdf.worker.min.js';
 
@@ -788,7 +867,7 @@ async function openPdf(file) {
 
     const bgState={file:null,originalUrl:null,resultUrl:null,resultBlob:null,busy:false}; let bgRemoverFunction=null;
     function activateTool(name, page=pageFor(name), navigate=true){
-      if(!['home','pdf','reducer','photo','converter','background'].includes(name)) name='home';
+      if(!['home','pdf','reducer','photo','converter','background','stamp'].includes(name)) name='home';
       document.querySelectorAll('.tool-tab').forEach(t=>t.classList.toggle('active',t.dataset.tool===name));
       $('homeTool').classList.toggle('hidden',name!=='home');
       $('pdfTool').classList.toggle('hidden',name!=='pdf');
@@ -796,6 +875,7 @@ async function openPdf(file) {
       $('photoTool').classList.toggle('hidden',name!=='photo');
       $('converterTool').classList.toggle('hidden',name!=='converter');
       $('backgroundTool').classList.toggle('hidden',name!=='background');
+      $('stampTool').classList.toggle('hidden',name!=='stamp');
       document.querySelectorAll('.converter-panel').forEach(panel=>panel.classList.toggle('hidden',Boolean(page.panel && panel.id!==page.panel)));
       updateSeo(page, navigate);
       document.querySelectorAll('.tool-tab').forEach(tab=>{if(tab.dataset.tool===name)tab.setAttribute('aria-current','page');else tab.removeAttribute('aria-current')});
@@ -816,6 +896,7 @@ async function openPdf(file) {
     $('openBgTool').onclick=()=>activateTool('background');
     initPdfReducer({pdfjsLib, PDFLib: window.PDFLib});
     initPhotoReducer();
+    initDigitalStamp({ toast });
     const initialPage=pageFromLocation();
     activateTool(initialPage.tool, initialPage, false);
     window.addEventListener('popstate',()=>{const page=pageFromLocation();activateTool(page.tool,page,false)});
