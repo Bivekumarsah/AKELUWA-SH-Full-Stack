@@ -303,6 +303,65 @@ export function initDigitalStamp({toast=()=>{}}={}) {
     if(template==='double') fields.ringStyle.value='double';
     render();
   }
+
+  // Sample gallery: the original Nepali Stamp editor remains fully available.
+  const samplePresets = [
+    {label:'Company Double Ring',kind:'double',name:'SAMPLE BUSINESS PVT. LTD.',address:'Kathmandu, Nepal',center:'COMPANY',registration:'REG. NO. 12345',ringStyle:'double',languageMode:'english',nepaliPlace:'hidden',addressPlace:'bottom',estbPlace:'hidden'},
+    {label:'Nepali Organization',kind:'round',name:'SAMPLE ORGANIZATION',nepali:'नमुना संस्था',center:'',languageMode:'both',ringStyle:'double',nepaliPlace:'bottom',addressPlace:'hidden',estbPlace:'hidden'},
+    {label:'Oval Business',kind:'oval',name:'SAMPLE TRADING HOUSE',address:'Kathmandu, Nepal',center:'OFFICE',languageMode:'english',nepaliPlace:'hidden',addressPlace:'center',estbPlace:'hidden'},
+    {label:'Rectangle Address',kind:'rect',name:'SAMPLE ENTERPRISE',address:'Kathmandu, Nepal',center:'CONTACT OFFICE',languageMode:'english',nepaliPlace:'hidden',addressPlace:'center',estbPlace:'hidden'},
+    {label:'Received',kind:'received',name:'SAMPLE BUSINESS',center:'RECEIVED',languageMode:'english',nepaliPlace:'hidden',estbPlace:'hidden'},
+    {label:'Paid',kind:'paid',name:'SAMPLE BUSINESS',center:'PAID',languageMode:'english',nepaliPlace:'hidden',estbPlace:'hidden'},
+    {label:'Authorized',kind:'authorized',name:'SAMPLE BUSINESS',center:'AUTHORIZED',languageMode:'english',nepaliPlace:'hidden',estbPlace:'hidden'},
+    {label:'Date & Records',kind:'date',name:'SAMPLE OFFICE',center:'DATE',date:'2026-10-11',languageMode:'english',nepaliPlace:'hidden',estbPlace:'hidden'}
+  ];
+  const templatePanel=document.querySelector('.stamp-template-panel');
+  if(templatePanel){
+    const heading=templatePanel.querySelector('.stamp-panel-title strong');
+    if(heading) heading.textContent='Nepali Stamp — original editor';
+    const gallery=document.createElement('section');
+    gallery.className='stamp-sample-gallery';
+    gallery.setAttribute('aria-label','Ready-made editable stamp samples');
+    gallery.innerHTML='<h3 style="margin:0 0 6px">Stamp types & ready-made samples</h3><p style="margin:0 0 14px;color:#66716a">Select a sample to load editable text, rings and colors in the Nepali Stamp editor below. Every template and export is free.</p><div class="stamp-sample-cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px"></div>';
+    const cards=gallery.querySelector('.stamp-sample-cards');
+    samplePresets.forEach((sample,index)=>{
+      const button=document.createElement('button');
+      button.type='button';
+      button.className='stamp-sample-card';
+      button.style.cssText='display:flex;flex-direction:column;align-items:stretch;gap:8px;background:#fff;border:1px solid #dedfd7;border-radius:10px;padding:12px;text-align:center;cursor:pointer';
+      const sampleState={...defaults,...sample,template:sample.kind,logoData:null,authorized:false};
+      const image=document.createElement('div');
+      image.style.cssText='height:130px;display:grid;place-items:center;background:#f7f8fa;border-radius:8px;overflow:hidden';
+      image.innerHTML=buildSvg(sampleState);
+      const svg=image.querySelector('svg');
+      if(svg){svg.style.width='125px';svg.style.height='125px';svg.setAttribute('aria-hidden','true');}
+      const title=document.createElement('strong');title.textContent=sample.label;
+      const action=document.createElement('span');action.textContent='Customize sample →';action.style.cssText='font-size:12px;color:#1767c0;font-weight:600';
+      button.append(image,title,action);
+      button.addEventListener('click',()=>{
+        template=sample.kind;
+        logoData=null;fields.logo.value='';clearLogo.disabled=true;
+        // Reset optional fields so samples never inherit unrelated previous content.
+        for(const [key,value] of Object.entries(defaults)){
+          if(fields[key] && fields[key].type==='checkbox') fields[key].checked=Boolean(value);
+          else if(fields[key] && key!=='logo') fields[key].value=value;
+        }
+        for(const [key,value] of Object.entries(sample)){
+          if(fields[key] && key!=='kind' && key!=='label') fields[key].value=value;
+        }
+        fields.authorized.checked=false;
+        render();
+        document.querySelectorAll('.stamp-sample-card').forEach(el=>el.style.borderColor='#dedfd7');
+        button.style.borderColor='#1767c0';
+        form.scrollIntoView({behavior:'smooth',block:'start'});
+        toast('Sample loaded. Edit the details and confirm authorization before downloading.');
+      });
+      cards.append(button);
+    });
+    gallery.style.cssText='margin-bottom:20px;padding:20px;background:#fff;border:1px solid #dedfd7;border-radius:10px';
+    templatePanel.parentNode.insertBefore(gallery,templatePanel);
+  }
+
   document.querySelectorAll('.stamp-template,.stamp-mini').forEach(btn=>btn.addEventListener('click',()=>chooseTemplate(btn.dataset.template)));
   form.addEventListener('input',render);form.addEventListener('change',render);
   fields.logo.addEventListener('change',async()=>{
