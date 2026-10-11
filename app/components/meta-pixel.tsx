@@ -16,12 +16,11 @@ const PIXEL_ID = "891396932267293";
 export default function MetaPixel() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [consent, setConsent] = useState<"accepted" | "declined" | null>(null);
-
-  useEffect(() => {
+  const [consent, setConsent] = useState<"accepted" | "declined" | null>(() => {
+    if (typeof window === "undefined") return null;
     const stored = window.localStorage.getItem(CONSENT_KEY);
-    if (stored === "accepted" || stored === "declined") setConsent(stored);
-  }, []);
+    return stored === "accepted" || stored === "declined" ? stored : null;
+  });
 
   useEffect(() => {
     if (consent !== "accepted") return;
