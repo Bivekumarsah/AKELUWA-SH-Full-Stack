@@ -294,8 +294,8 @@ export function initStampStudio({root,toast=()=>{}}={}){
     svg.style.cssText='max-width:100%;height:auto;transform:scale('+state.zoom+');transform-origin:center;touch-action:none';
     studio.querySelector('[data-zoom-label]').textContent=Math.round(state.zoom*100)+'%';
     let drag=null;
-    svg.addEventListener('pointerdown',ev=>{const t=ev.target.closest('[data-element]');if(!t)return;const id=Number(t.dataset.element);state.selected=id;renderItems();renderProps();const rect=svg.getBoundingClientRect();drag={id,rect,start:copy()};svg.setPointerCapture(ev.pointerId)});
-    svg.addEventListener('pointermove',ev=>{if(!drag)return;const e=state.items.find(i=>i.id===drag.id);if(!e)return;const x=clamp((ev.clientX-drag.rect.left)*500/drag.rect.width,0,500),y=clamp((ev.clientY-drag.rect.top)*500/drag.rect.height,0,500),dx=x-e.x,dy=y-e.y;e.x=x;e.y=y;if(e.type==='line'){e.x2=clamp(e.x2+dx,0,500);e.y2=clamp(e.y2+dy,0,500)}preview.innerHTML=studioSvg(state);const next=preview.querySelector('svg');if(next){next.style.cssText='max-width:100%;height:auto;transform:scale('+state.zoom+');transform-origin:center;touch-action:none'}});
+    svg.addEventListener('pointerdown',ev=>{const t=ev.target.closest('[data-element]');if(!t)return;const id=Number(t.dataset.element),item=state.items.find(i=>i.id===id);if(!item)return;state.selected=id;renderItems();renderProps();const rect=svg.getBoundingClientRect();drag={id,rect,start:copy(),startX:item.x,startY:item.y,startX2:item.x2,startY2:item.y2,target:t};svg.setPointerCapture(ev.pointerId)});
+    svg.addEventListener('pointermove',ev=>{if(!drag)return;const e=state.items.find(i=>i.id===drag.id);if(!e)return;const x=clamp((ev.clientX-drag.rect.left)*500/drag.rect.width,0,500),y=clamp((ev.clientY-drag.rect.top)*500/drag.rect.height,0,500),dx=x-drag.startX,dy=y-drag.startY;e.x=x;e.y=y;if(e.type==='line'){e.x2=clamp((drag.startX2||e.x2)+dx,0,500);e.y2=clamp((drag.startY2||e.y2)+dy,0,500)}if(drag.target)drag.target.style.transform='translate('+dx+'px,'+dy+'px)'});
     svg.addEventListener('pointerup',()=>{if(drag){undo.push(drag.start);if(undo.length>40)undo.shift();redo=[];drag=null;renderAll()}});
   }
   function renderItems(){
@@ -317,15 +317,6 @@ export function initStampStudio({root,toast=()=>{}}={}){
     props.append(inputRow(label,input,help));
   }
   function renderProps(){
-    props.replaceChildren();const e=state.items.find(i=>i.id===state.selected);if(!e){props.innerHTML='<p style="color:#66716a">Click an item in the preview to edit it.</p>';return}
-    const head=document.createElement('div');head.style.cssText='display:flex;justify-content:space-between;align-items:center;gap:8px;margin:12px 0 8px';head.innerHTML='<strong>Edit '+nameFor(e)+'</strong>';
-    const del=document.createElement('button');del.type='button';del.textContent='Delete';del.onclick=()=>applyChange(()=>{state.items=state.items.filter(i=>i.id!==e.id);state.selected=state.items[0]?.id||null});head.append(del);props.append(head);
-    const grid=document.createElement('div');grid.style.cssText='display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:9px';props.append(grid);
-    const old=props;props=grid;
-  }
-  // renderProps is extended below so common controls remain easy to scan.
-  const baseRenderProps=renderProps;
-  renderProps=function(){
     props.replaceChildren();const e=state.items.find(i=>i.id===state.selected);if(!e){props.innerHTML='<p style="color:#66716a">Click an item in the preview or item list to edit it.</p>';return}
     const head=document.createElement('div');head.style.cssText='display:flex;justify-content:space-between;align-items:center;gap:8px;margin:12px 0 8px';
     const strong=document.createElement('strong');strong.textContent='Edit '+nameFor(e);const del=document.createElement('button');del.type='button';del.textContent='Delete item';del.onclick=()=>applyChange(()=>{state.items=state.items.filter(i=>i.id!==e.id);state.selected=state.items[0]?.id||null});head.append(strong,del);props.append(head);
