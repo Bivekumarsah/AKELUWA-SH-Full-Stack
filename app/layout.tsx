@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
+import MetaPixel from "@/app/components/meta-pixel";
 import { absoluteURL, siteURL } from "@/app/lib/site";
 import "./globals.css";
 
@@ -63,6 +65,9 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
         />
         {children}
+        <Suspense fallback={null}>
+          <MetaPixel />
+        </Suspense>
       </body>
     </html>
   );
