@@ -35,3 +35,28 @@ test('Company build publishes canonical links for every new utility',async()=>{
   assert.ok(sitemap.includes(canonical));
  }
 });
+
+test('ZIP writer produces standards-compliant local and central headers for DOCX/images',async()=>{
+ const { runInNewContext }=await import('node:vm');
+ const code=(await read('toolbox/extra-tools/app.js')).replace('  const tasks={"photo-signature-resizer"', '  window.__zipForTest=zipFiles;\n  const tasks={"photo-signature-resizer"');
+ assert.ok(code.includes('window.__zipForTest=zipFiles'));
+ const sandbox={document:{body:{dataset:{extraTool:'unit-test'}},getElementById(){return null;}},window:{},TextEncoder,Blob,Uint8Array,URL,console};
+ runInNewContext(code,sandbox,{timeout:1000});
+ const payload='Hello ZIP',filename='test.txt';
+ const archive=await sandbox.window.__zipForTest([{name:filename,data:payload}]);
+ const bytes=new Uint8Array(await archive.arrayBuffer());
+ const dv=new DataView(bytes.buffer);
+ const u16=(offset)=>dv.getUint16(offset,true),u32=(offset)=>dv.getUint32(offset,true);
+ assert.equal(u32(0),0x04034b50);
+ assert.equal(u16(8),0,'local compression method: store');
+ assert.equal(u32(18),payload.length);
+ assert.equal(u16(26),filename.length);
+ assert.equal(u16(28),0);
+ const central=30+filename.length+payload.length;
+ assert.equal(u32(central),0x02014b50);
+ assert.equal(u16(central+10),0,'central compression method: store');
+ assert.equal(u16(central+28),filename.length);
+ const end=central+46+filename.length;
+ assert.equal(u32(end),0x06054b50);
+ assert.equal(u32(end+16),central,'central directory starts at correct offset');
+});

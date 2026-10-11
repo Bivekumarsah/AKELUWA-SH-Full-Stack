@@ -76,7 +76,7 @@
   }
   const mimeFor = format => ({jpeg:"image/jpeg",png:"image/png",webp:"image/webp"})[format] || "image/jpeg";
   function asBlob(canvas,mime,quality) {
-    return new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error("This browser cannot export "+mime+". Try JPEG or PNG.")),mime,quality));
+    return new Promise((resolve,reject)=>canvas.toBlob(b=>b && b.type===mime ? resolve(b) : reject(new Error("This browser cannot export "+mime+". Try JPEG or PNG.")),mime,quality));
   }
   async function sizeTarget(canvas, mime, targetKB) {
     if(mime === "image/png" || !targetKB) return {blob:await asBlob(canvas,mime,0.92),targetMet:!targetKB};
@@ -120,8 +120,8 @@
       if(name.length>65535 || content.length>100000000)throw new Error("Export too large.");
       const crc=crc32(content);
       const common=concat([little(0,2),little(0,2),little(crc,4),little(content.length,4),little(content.length,4),little(name.length,2)]);
-      const local=concat([little(0x04034b50,4),little(20,2),little(0,2),common,little(0,2),name,content]);
-      const dir=concat([little(0x02014b50,4),little(20,2),little(20,2),little(0,2),common,little(0,2),little(0,2),little(0,2),little(0,4),little(offset,4),name]);
+      const local=concat([little(0x04034b50,4),little(20,2),little(0,2),little(0,2),common,little(0,2),name,content]);
+      const dir=concat([little(0x02014b50,4),little(20,2),little(20,2),little(0,2),little(0,2),common,little(0,2),little(0,2),little(0,2),little(0,4),little(offset,4),name]);
       parts.push(local);central.push(dir);offset+=local.length;
     }
     const body=concat(parts),directory=concat(central);
