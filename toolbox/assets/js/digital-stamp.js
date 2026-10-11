@@ -29,6 +29,13 @@ const defaults = {
   nepaliRotate: 0,
   addressRotate: 0,
   estbRotate: 0,
+  ringStyle: 'double',
+  textLayout: 'split',
+  dots: true,
+  autoFit: true,
+  fullText: 'AKELUWA SOFTWARE HUB · KATHMANDU, NEPAL',
+  fullRotate: 0,
+  fullSpacing: 10,
 };
 
 const templateDefaults = {
@@ -80,10 +87,24 @@ function downloadBlob(blob, name) {
   const a = document.createElement('a'); a.href = url; a.download = name; a.click();
   setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
-function arcText(id, text, color, font, size, weight=700, rotation=0, letter=1) {
-  if (!clean(text)) return '';
-  const start = Math.max(0, Math.min(100, 50 + Number(rotation) / 3.6));
-  return `<text fill="${color}" font-family="${esc(font)}" font-size="${size}" font-weight="${weight}" letter-spacing="${letter}" text-anchor="middle"><textPath href="#${id}" startOffset="${start}%">${esc(clean(text,90))}</textPath></text>`;
+function fittedSize(text, requested, available, autoFit) {
+  if (!autoFit) return requested;
+  const chars = Math.max(1, Array.from(clean(text,180)).length);
+  const estimated = available / (chars * .62);
+  return Math.max(12, Math.min(requested, estimated));
+}
+function arcText(id, text, color, font, size, weight=700, rotation=0, letter=1, available=500, autoFit=true) {
+  if (!clean(text,180)) return '';
+  const start = 50 + Number(rotation) / 3.6;
+  const resolvedSize = fittedSize(text, size, available, autoFit);
+  return `<text fill="${color}" font-family="${esc(font)}" font-size="${resolvedSize}" font-weight="${weight}" letter-spacing="${letter}" text-anchor="middle"><textPath href="#${id}" startOffset="${start}%">${esc(clean(text,180))}</textPath></text>`;
+}
+function fullCircleText(state, pathId, color, font, radius) {
+  const text = clean(state.fullText,180);
+  if (!text) return '';
+  const circumference = 2 * Math.PI * radius;
+  const spacing = Number(state.fullSpacing) / 10;
+  return arcText(pathId,text,color,font,Number(state.fontSize),800,state.fullRotate,spacing,circumference * .9,state.autoFit);
 }
 function blockVisible(state, key) {
   if (key === 'english' && state.languageMode === 'nepali') return false;
@@ -131,33 +152,46 @@ function innerText(state, y=285) {
 function circularSeal(state, kind='round') {
   const c=safeColor(state.color), f=fontFamily(state.font), b=Number(state.border), fs=Number(state.fontSize);
   const rx = kind==='oval' ? 218 : 205, ry = kind==='oval' ? 160 : 205;
-  const double = kind==='double';
   const radius = Math.max(120,Math.min(195,Number(state.curve)));
-  const topRx = kind==='oval' ? Math.min(190,radius+20) : radius;
-  const topRy = kind==='oval' ? Math.min(128,radius*.75) : radius;
-  const left=250-topRx,right=250+topRx;
+  const textRx = kind==='oval' ? Math.min(190,radius+20) : radius;
+  const textRy = kind==='oval' ? Math.min(128,radius*.75) : radius;
+  const left=250-textRx,right=250+textRx;
+  const ringStyle = state.ringStyle === 'single' ? 'single' : 'double';
+  const showInner = ringStyle === 'double';
   const paths = `
-    <path id="topArc" d="M ${left} 250 A ${topRx} ${topRy} 0 0 1 ${right} 250" fill="none"/>
-    <path id="bottomArc" d="M ${right} 250 A ${topRx} ${topRy} 0 0 1 ${left} 250" fill="none"/>
+    <path id="topArc" d="M ${left} 250 A ${textRx} ${textRy} 0 0 1 ${right} 250" fill="none"/>
+    <path id="bottomArc" d="M ${right} 250 A ${textRx} ${textRy} 0 0 1 ${left} 250" fill="none"/>
+    <path id="fullArc" d="M 250 ${250-textRy} A ${textRx} ${textRy} 0 1 1 249.9 ${250-textRy}" fill="none"/>
   `;
-  const topBlocks=[], bottomBlocks=[];
-  for (const key of ['english','nepali','address','estb']) {
-    const block=textBlock(state,key);
-    if (!blockVisible(state,key) || !clean(block.text)) continue;
-    if (block.place==='top') topBlocks.push({key,...block});
-    if (block.place==='bottom') bottomBlocks.push({key,...block});
+  let ringText='';
+  if (state.textLayout === 'full') {
+    ringText = fullCircleText(state,'fullArc',c,f,Math.min(textRx,textRy));
+  } else {
+    const topBlocks=[], bottomBlocks=[];
+    for (const key of ['english','nepali','address','estb']) {
+      const block=textBlock(state,key);
+      if (!blockVisible(state,key) || !clean(block.text)) continue;
+      const place = state.textLayout === 'split'
+        ? (key === 'english' ? 'top' : key === 'nepali' ? 'bottom' : block.place)
+        : block.place;
+      if (place==='top') topBlocks.push({key,...block});
+      if (place==='bottom') bottomBlocks.push({key,...block});
+    }
+    const halfLength = Math.PI * Math.sqrt((textRx*textRx + textRy*textRy)/2) * .82;
+    const topMarkup=topBlocks.map((block,index)=>arcText('topArc',block.text,c,f,Math.max(16,fs-index*3),index?700:800,block.rotation,1,halfLength,state.autoFit)).join('');
+    const bottomMarkup=bottomBlocks.map((block,index)=>arcText('bottomArc',block.text,c,f,Math.max(16,fs-3-index*3),700,block.rotation,.6,halfLength,state.autoFit)).join('');
+    ringText = topMarkup + bottomMarkup;
   }
-  const topMarkup=topBlocks.map((block,index)=>arcText('topArc',block.text,c,f,Math.max(16,fs-index*3),index?700:800,block.rotation,1)).join('');
-  const bottomMarkup=bottomBlocks.map((block,index)=>arcText('bottomArc',block.text,c,f,Math.max(16,fs-3-index*3),700,block.rotation,.6)).join('');
+  const dots = state.dots && state.textLayout !== 'full'
+    ? `<circle cx="${250-rx+28}" cy="250" r="5" fill="${c}"/><circle cx="${250+rx-28}" cy="250" r="5" fill="${c}"/>`
+    : '';
   return `
     <defs>${textureDef(state.texture)}${paths}</defs>
     <g ${state.texture?'filter="url(#stampTexture)"':''}>
-      ${state.outerRing ? `<ellipse cx="250" cy="250" rx="${rx}" ry="${ry}" fill="none" stroke="${c}" stroke-width="${b}"/>` : ''}
-      ${state.innerRing ? `<ellipse cx="250" cy="250" rx="${rx-20}" ry="${ry-20}" fill="none" stroke="${c}" stroke-width="${Math.max(2,b*.55)}"/>` : ''}
-      ${double ? `<ellipse cx="250" cy="250" rx="${rx-34}" ry="${ry-34}" fill="none" stroke="${c}" stroke-width="${Math.max(2,b*.5)}"/>` : ''}
-      ${topMarkup}
-      ${bottomMarkup}
-      <circle cx="${250-rx+28}" cy="250" r="5" fill="${c}"/><circle cx="${250+rx-28}" cy="250" r="5" fill="${c}"/>
+      <ellipse cx="250" cy="250" rx="${rx}" ry="${ry}" fill="none" stroke="${c}" stroke-width="${b}"/>
+      ${showInner ? `<ellipse cx="250" cy="250" rx="${rx-24}" ry="${ry-24}" fill="none" stroke="${c}" stroke-width="${Math.max(2,b*.55)}"/>` : ''}
+      ${ringText}
+      ${dots}
       ${logoMarkup(state,250,230)}
       ${innerText(state,state.logoData?305:270)}
     </g>`;
@@ -216,7 +250,9 @@ export function initDigitalStamp({toast=()=>{}}={}) {
     innerRing:$('stampInnerRing'),outerRing:$('stampOuterRing'),transparent:$('stampTransparent'),texture:$('stampTexture'),
     logo:$('stampLogo'),authorized:$('stampAuthorized'),languageMode:$('stampLanguageMode'),
     englishPlace:$('stampEnglishPlace'),nepaliPlace:$('stampNepaliPlace'),addressPlace:$('stampAddressPlace'),estbPlace:$('stampEstbPlace'),
-    englishRotate:$('stampEnglishRotate'),nepaliRotate:$('stampNepaliRotate'),addressRotate:$('stampAddressRotate'),estbRotate:$('stampEstbRotate')
+    englishRotate:$('stampEnglishRotate'),nepaliRotate:$('stampNepaliRotate'),addressRotate:$('stampAddressRotate'),estbRotate:$('stampEstbRotate'),
+    ringStyle:$('stampRingStyle'),textLayout:$('stampTextLayout'),dots:$('stampDots'),autoFit:$('stampAutoFit'),
+    fullText:$('stampFullText'),fullRotate:$('stampFullRotate'),fullSpacing:$('stampFullSpacing')
   };
   const preview=$('stampPreview'),status=$('stampStatus'),clearLogo=$('clearStampLogo');
   let template='round',logoData=null,zoom=1;
@@ -227,7 +263,9 @@ export function initDigitalStamp({toast=()=>{}}={}) {
     border:fields.border.value,fontSize:fields.fontSize.value,curve:fields.curve.value,logoSize:fields.logoSize.value,logoY:fields.logoY.value,
     innerRing:fields.innerRing.checked,outerRing:fields.outerRing.checked,transparent:fields.transparent.checked,texture:fields.texture.checked,logoData,
     languageMode:fields.languageMode.value,englishPlace:fields.englishPlace.value,nepaliPlace:fields.nepaliPlace.value,addressPlace:fields.addressPlace.value,estbPlace:fields.estbPlace.value,
-    englishRotate:fields.englishRotate.value,nepaliRotate:fields.nepaliRotate.value,addressRotate:fields.addressRotate.value,estbRotate:fields.estbRotate.value
+    englishRotate:fields.englishRotate.value,nepaliRotate:fields.nepaliRotate.value,addressRotate:fields.addressRotate.value,estbRotate:fields.estbRotate.value,
+    ringStyle:fields.ringStyle.value,textLayout:fields.textLayout.value,dots:fields.dots.checked,autoFit:fields.autoFit.checked,
+    fullText:fields.fullText.value,fullRotate:fields.fullRotate.value,fullSpacing:fields.fullSpacing.value
   }}
   function ready(){const hasLanguage=fields.languageMode.value==='nepali'?clean(fields.nepali.value):fields.languageMode.value==='english'?clean(fields.name.value):(clean(fields.name.value)||clean(fields.nepali.value));return Boolean(fields.authorized.checked && hasLanguage)}
   function outputs(){
@@ -235,6 +273,7 @@ export function initDigitalStamp({toast=()=>{}}={}) {
     $('stampCurveOut').textContent=fields.curve.value;$('stampLogoOut').textContent=fields.logoSize.value;$('stampLogoYOut').textContent=fields.logoY.value;
     $('stampEnglishRotateOut').textContent=fields.englishRotate.value+'°';$('stampNepaliRotateOut').textContent=fields.nepaliRotate.value+'°';
     $('stampAddressRotateOut').textContent=fields.addressRotate.value+'°';$('stampEstbRotateOut').textContent=fields.estbRotate.value+'°';
+    $('stampFullRotateOut').textContent=fields.fullRotate.value+'°';$('stampFullSpacingOut').textContent=(Number(fields.fullSpacing.value)/10).toFixed(1);
   }
   function render(){
     outputs();preview.innerHTML=buildSvg(state());
@@ -247,6 +286,7 @@ export function initDigitalStamp({toast=()=>{}}={}) {
     template=next in templateDefaults?next:'round';
     const def=templateDefaults[template];
     if(def?.center) fields.center.value=def.center;
+    if(template==='double') fields.ringStyle.value='double';
     render();
   }
   document.querySelectorAll('.stamp-template,.stamp-mini').forEach(btn=>btn.addEventListener('click',()=>chooseTemplate(btn.dataset.template)));
@@ -264,6 +304,8 @@ export function initDigitalStamp({toast=()=>{}}={}) {
     fields.innerRing.checked=defaults.innerRing;fields.outerRing.checked=defaults.outerRing;fields.transparent.checked=defaults.transparent;fields.texture.checked=defaults.texture;
     fields.languageMode.value=defaults.languageMode;fields.englishPlace.value=defaults.englishPlace;fields.nepaliPlace.value=defaults.nepaliPlace;fields.addressPlace.value=defaults.addressPlace;fields.estbPlace.value=defaults.estbPlace;
     fields.englishRotate.value=defaults.englishRotate;fields.nepaliRotate.value=defaults.nepaliRotate;fields.addressRotate.value=defaults.addressRotate;fields.estbRotate.value=defaults.estbRotate;
+    fields.ringStyle.value=defaults.ringStyle;fields.textLayout.value=defaults.textLayout;fields.dots.checked=defaults.dots;fields.autoFit.checked=defaults.autoFit;
+    fields.fullText.value=defaults.fullText;fields.fullRotate.value=defaults.fullRotate;fields.fullSpacing.value=defaults.fullSpacing;
     fields.authorized.checked=false;fields.logo.value='';clearLogo.disabled=true;render()
   });
   async function exportPng(forceTransparent=null){
