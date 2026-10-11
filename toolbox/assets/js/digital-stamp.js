@@ -304,6 +304,127 @@ export function initDigitalStamp({toast=()=>{}}={}) {
     render();
   }
 
+
+  // Advanced Studio uses independent SVG elements without altering the Nepali Stamp controls.
+  const studio=document.createElement('section');
+  studio.className='stamp-advanced-studio';
+  studio.style.cssText='margin:18px 0;padding:20px;border:1px solid #dedfd7;border-radius:12px;background:white';
+  studio.innerHTML=`<h2 style="margin:0 0 8px">Advanced Stamp Editor</h2>
+    <p style="margin:0 0 14px;color:#66716a">Create your own editable text and ring layers. Your Nepali Stamp editor remains unchanged.</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+      <button type="button" data-studio-add="text">+ Add Text</button>
+      <button type="button" data-studio-add="ring">+ Add Ring</button>
+      <button type="button" data-studio-save>Save Project</button>
+      <button type="button" data-studio-load>Load Project</button>
+      <button type="button" data-studio-png>PNG</button>
+      <button type="button" data-studio-svg>SVG</button>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px">
+      <div><strong>Layers</strong><div data-studio-layers style="display:grid;gap:7px;margin:10px 0"></div>
+      <div data-studio-properties></div></div>
+      <div><strong>Live Preview</strong><div data-studio-preview style="background:#f5f6f8;border-radius:10px;overflow:hidden;margin-top:10px"></div>
+      <p style="font-size:12px;color:#66716a">Drag text or rings to reposition. Confirm authorization below before downloading.</p>
+      <label style="display:flex;gap:8px;font-size:13px"><input type="checkbox" data-studio-authorized> I am authorized to create and use this business stamp.</label></div>
+    </div>`;
+  const toolRoot=$('stampTool');
+  if(toolRoot)toolRoot.append(studio);
+  const studioLayers=studio.querySelector('[data-studio-layers]');
+  const studioProps=studio.querySelector('[data-studio-properties]');
+  const studioPreview=studio.querySelector('[data-studio-preview]');
+  let elements=[
+    {id:1,type:'ring',x:250,y:250,radius:190,thickness:5,color:'#0b4ea2',visible:true},
+    {id:2,type:'ring',x:250,y:250,radius:145,thickness:3,color:'#0b4ea2',visible:true},
+    {id:3,type:'text',text:'SAMPLE BUSINESS',x:250,y:85,size:25,rotation:0,color:'#0b4ea2',font:'Arial',spacing:1,visible:true}
+  ];
+  let selected=3,nextId=4;
+  const clamp=(v,min,max)=>Math.min(max,Math.max(min,Number(v)||0));
+  const studioEscape=value=>esc(String(value??''));
+  function studioSvg(){
+    const body=elements.filter(e=>e.visible).map(e=>e.type==='ring'
+      ? `<circle data-element="${e.id}" cx="${e.x}" cy="${e.y}" r="${e.radius}" fill="none" stroke="${safeColor(e.color)}" stroke-width="${e.thickness}"/>`
+      : `<text data-element="${e.id}" x="${e.x}" y="${e.y}" text-anchor="middle" font-family="${studioEscape(fontFamily(e.font))}" font-size="${e.size}" letter-spacing="${e.spacing}" transform="rotate(${e.rotation} ${e.x} ${e.y})" fill="${safeColor(e.color)}">${studioEscape(clean(e.text,180))}</text>`).join('');
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" role="img" aria-label="Advanced stamp preview">${body}</svg>`;
+  }
+  function studioRender(){
+    studioPreview.innerHTML=studioSvg();
+    studioLayers.replaceChildren();
+    elements.forEach(e=>{
+      const row=document.createElement('div');row.style.cssText='display:flex;align-items:center;gap:5px';
+      const select=document.createElement('button');select.type='button';select.textContent=(e.type==='ring'?'◯ Ring ':'T Text ')+e.id;
+      select.style.cssText='flex:1;text-align:left;padding:8px;border:1px solid '+(selected===e.id?'#1767c0':'#dedfd7')+';border-radius:6px';
+      select.onclick=()=>{selected=e.id;studioRender()};
+      const duplicate=document.createElement('button');duplicate.type='button';duplicate.textContent='⧉';duplicate.title='Duplicate';duplicate.onclick=()=>{elements.push({...e,id:nextId++,x:clamp(e.x+12,0,500),y:clamp(e.y+12,0,500)});selected=nextId-1;studioRender()};
+      const remove=document.createElement('button');remove.type='button';remove.textContent='×';remove.title='Delete';remove.onclick=()=>{elements=elements.filter(v=>v.id!==e.id);if(selected===e.id)selected=elements[0]?.id??null;studioRender()};
+      row.append(select,duplicate,remove);studioLayers.append(row);
+    });
+    studioProps.replaceChildren();
+    const e=elements.find(v=>v.id===selected);if(!e)return;
+    const controls=e.type==='ring'?[['radius','Radius',35,235],['thickness','Thickness',1,25],['x','X position',0,500],['y','Y position',0,500]]:[['text','Text'],['size','Font size',8,90],['rotation','Rotation',0,360],['spacing','Letter spacing',0,15],['x','X position',0,500],['y','Y position',0,500]];
+    controls.push(['color','Color'],['visible','Visible']);
+    if(e.type==='text')controls.push(['font','Font']);
+    controls.forEach(([key,label,min,max])=>{
+      const wrap=document.createElement('label');wrap.style.cssText='display:grid;gap:3px;margin:8px 0;font-size:13px';wrap.textContent=label;
+      let input;
+      if(key==='font'){input=document.createElement('select');['Arial','Georgia','Verdana','Trebuchet MS','Times New Roman'].forEach(font=>{const option=document.createElement('option');option.value=font;option.textContent=font;input.append(option)});input.value=e.font}
+      else{input=document.createElement('input');input.type=key==='visible'?'checkbox':key==='color'?'color':min!==undefined?'number':'text';if(min!==undefined){input.min=min;input.max=max;}if(key==='visible')input.checked=e.visible;else input.value=e[key]}
+      input.oninput=()=>{e[key]=key==='visible'?input.checked:min!==undefined?clamp(input.value,min,max):input.value;studioPreview.innerHTML=studioSvg()};
+      wrap.append(input);studioProps.append(wrap);
+    });
+    let dragging=null;
+    const svg=studioPreview.querySelector('svg');
+    svg.addEventListener('pointerdown',event=>{
+      const target=event.target.closest('[data-element]');if(!target)return;
+      selected=Number(target.getAttribute('data-element'));
+      const rect=svg.getBoundingClientRect();dragging={id:selected,rect};
+      svg.setPointerCapture(event.pointerId);
+    });
+    svg.addEventListener('pointermove',event=>{
+      if(!dragging)return;
+      const element=elements.find(v=>v.id===dragging.id);if(!element)return;
+      element.x=clamp((event.clientX-dragging.rect.left)*500/dragging.rect.width,0,500);
+      element.y=clamp((event.clientY-dragging.rect.top)*500/dragging.rect.height,0,500);
+      const rendered=svg.querySelector('[data-element="'+element.id+'"]');
+      if(rendered){if(element.type==='ring'){rendered.setAttribute('cx',element.x);rendered.setAttribute('cy',element.y)}else{rendered.setAttribute('x',element.x);rendered.setAttribute('y',element.y);rendered.setAttribute('transform','rotate('+element.rotation+' '+element.x+' '+element.y+')')}}
+    });
+    svg.addEventListener('pointerup',()=>{if(dragging){dragging=null;studioRender()}});
+    svg.addEventListener('pointercancel',()=>{dragging=null;studioRender()});
+  }
+  studio.querySelectorAll('[data-studio-add]').forEach(button=>button.onclick=()=>{
+    const type=button.dataset.studioAdd;
+    const e=type==='ring'?{id:nextId++,type,x:250,y:250,radius:110,thickness:3,color:'#0b4ea2',visible:true}:{id:nextId++,type,text:'YOUR TEXT',x:250,y:250,size:24,rotation:0,color:'#0b4ea2',font:'Arial',spacing:1,visible:true};
+    elements.push(e);selected=e.id;studioRender();
+  });
+  studio.querySelector('[data-studio-save]').onclick=()=>downloadBlob(new Blob([JSON.stringify({version:1,elements},null,2)],{type:'application/json'}),'akeluwastamp-project.json');
+  const loader=document.createElement('input');loader.type='file';loader.accept='.json,application/json';loader.hidden=true;studio.append(loader);
+  studio.querySelector('[data-studio-load]').onclick=()=>loader.click();
+  loader.onchange=async()=>{
+    try{
+      const data=JSON.parse(await loader.files[0].text());
+      if(data.version!==1||!Array.isArray(data.elements)||data.elements.length>200)throw Error('Invalid project');
+      elements=data.elements.map((v,i)=>({
+        id:i+1,type:v.type==='ring'?'ring':'text',x:clamp(v.x,0,500),y:clamp(v.y,0,500),
+        radius:clamp(v.radius,35,235),thickness:clamp(v.thickness,1,25),size:clamp(v.size,8,90),
+        rotation:clamp(v.rotation,0,360),spacing:clamp(v.spacing,0,15),
+        color:safeColor(v.color),font:fontFamily(v.font),text:clean(v.text,180),visible:v.visible!==false
+      }));
+      nextId=elements.length+1;selected=elements[0]?.id??null;studioRender();toast('Project loaded.');
+    }catch(error){toast('Could not load this project file.')}finally{loader.value=''}
+  };
+  function studioAllowed(){if(studio.querySelector('[data-studio-authorized]').checked)return true;toast('Confirm authorization before exporting.');return false}
+  studio.querySelector('[data-studio-svg]').onclick=()=>{if(studioAllowed())downloadBlob(new Blob([studioSvg()],{type:'image/svg+xml'}),'akeluwastamp-advanced.svg')};
+  studio.querySelector('[data-studio-png]').onclick=async()=>{
+    if(!studioAllowed())return;
+    const url=URL.createObjectURL(new Blob([studioSvg()],{type:'image/svg+xml'}));
+    try{
+      const img=new Image();await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=reject;img.src=url});
+      const canvas=document.createElement('canvas');canvas.width=1200;canvas.height=1200;
+      canvas.getContext('2d').drawImage(img,0,0,1200,1200);
+      const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
+      if(!blob)throw Error('PNG failed');downloadBlob(blob,'akeluwastamp-advanced.png');
+    }catch(error){toast('Could not export PNG. Try SVG.')}finally{URL.revokeObjectURL(url)}
+  };
+  studioRender();
+
   // Sample gallery: the original Nepali Stamp editor remains fully available.
   const samplePresets = [
     {label:'Company Double Ring',kind:'double',name:'SAMPLE BUSINESS PVT. LTD.',address:'Kathmandu, Nepal',center:'COMPANY',registration:'REG. NO. 12345',ringStyle:'double',languageMode:'english',nepaliPlace:'hidden',addressPlace:'bottom',estbPlace:'hidden'},
