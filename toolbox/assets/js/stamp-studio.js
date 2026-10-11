@@ -271,10 +271,16 @@ export function initStampStudio({root,toast=()=>{}}={}){
   nav.innerHTML='<button type="button" data-mode="quick">Quick Templates</button><button type="button" data-mode="nepali">Nepali Stamp</button><button type="button" data-mode="studio">Stamp Studio</button>';
   const heading=root.querySelector('.stamp-heading');if(heading)heading.after(nav);
   const switchMode=mode=>{
-    const gallery=root.querySelector('.stamp-sample-gallery'),legacy=[root.querySelector('.stamp-template-panel'),root.querySelector('.stamp-layout')].filter(Boolean);
+    const gallery=root.querySelector('.stamp-sample-gallery'),templatePanel=root.querySelector('.stamp-template-panel'),layout=root.querySelector('.stamp-layout'),quickEditor=root.querySelector('[data-quick-editor-bar]'),quickSections=[...root.querySelectorAll('[data-quick-original-section]')];
+    const quickEditing=root.dataset.quickEditing==='true',quickAdvanced=root.dataset.quickAdvanced==='true';
     if(gallery)gallery.hidden=mode!=='quick';
-    legacy.forEach(el=>el.hidden=mode==='studio'||(mode==='quick'&&el.classList.contains('stamp-layout')));
-    studio.hidden=mode!=='studio';
+    if(mode==='studio'){
+      if(templatePanel)templatePanel.hidden=true;if(layout)layout.hidden=true;if(quickEditor)quickEditor.hidden=true;studio.hidden=false;
+    }else if(mode==='nepali'){
+      if(templatePanel)templatePanel.hidden=false;if(layout)layout.hidden=false;if(quickEditor)quickEditor.hidden=true;quickSections.forEach(section=>section.hidden=false);studio.hidden=true;
+    }else{
+      if(templatePanel)templatePanel.hidden=true;if(layout)layout.hidden=!quickEditing;if(quickEditor)quickEditor.hidden=!quickEditing;quickSections.forEach(section=>section.hidden=quickEditing&&!quickAdvanced);studio.hidden=true;
+    }
     nav.querySelectorAll('button').forEach(btn=>{
       const active=btn.dataset.mode===mode;btn.setAttribute('aria-pressed',String(active));
       btn.style.cssText='padding:10px 15px;border-radius:9px;border:1px solid '+(active?'#1767c0':'#d6dce5')+';background:'+(active?'#eaf3ff':'#fff')+';font-weight:700;cursor:pointer';
