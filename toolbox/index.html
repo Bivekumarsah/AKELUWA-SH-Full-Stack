@@ -477,7 +477,7 @@
             <label class="stamp-field"><span>Language mode</span><select id="stampLanguageMode"><option value="both">English + Nepali</option><option value="english">English only</option><option value="nepali">Nepali only</option></select></label>
             <label class="stamp-field"><span>English company text</span><input id="stampName" type="text" maxlength="70" value="AKELUWA Softwarehub" autocomplete="organization" /></label>
             <label class="stamp-field"><span>Nepali company text <small>optional</small></span><input id="stampNepali" type="text" maxlength="80" value="अकेलुवा सफ्टवेयर हब" lang="ne" /></label>
-            <label class="stamp-field"><span>Location / extra text</span><input id="stampAddress" type="text" maxlength="80" value="Kathmandu, Nepal" /></label>
+            <label class="stamp-field"><span>Other / location text <small>any language</small></span><input id="stampAddress" type="text" maxlength="80" value="Kathmandu, Nepal" /></label>
             <div class="stamp-two">
               <label class="stamp-field"><span>Center text</span><input id="stampCenterText" type="text" maxlength="30" value="AUTHORIZED" /></label>
               <label class="stamp-field"><span>ESTD / custom date</span><input id="stampEstb" type="text" maxlength="30" value="ESTB 2082-08-02" /></label>
@@ -492,10 +492,10 @@
                 <label class="stamp-range"><span>Full-circle spacing <output id="stampFullSpacingOut">1.0</output></span><input id="stampFullSpacing" type="range" min="0" max="30" value="10" /></label>
               </div>
               <div class="stamp-placement-grid">
-                <label><span>English text</span><select id="stampEnglishPlace"><option value="top">Top ring</option><option value="bottom">Bottom ring</option><option value="center">Center</option><option value="hidden">Hidden</option></select></label>
-                <label><span>Nepali text</span><select id="stampNepaliPlace"><option value="bottom">Bottom ring</option><option value="top">Top ring</option><option value="center">Center</option><option value="hidden">Hidden</option></select></label>
-                <label><span>Location text</span><select id="stampAddressPlace"><option value="hidden">Hidden</option><option value="top">Top ring</option><option value="bottom">Bottom ring</option><option value="center">Center</option></select></label>
-                <label><span>ESTD / date text</span><select id="stampEstbPlace"><option value="center">Center</option><option value="top">Top ring</option><option value="bottom">Bottom ring</option><option value="hidden">Hidden</option></select></label>
+                <label><span>English text</span><select id="stampEnglishPlace"><option value="top">Top ring</option><option value="bottom">Bottom ring</option><option value="ring">Full ring (360°)</option><option value="center">Center</option><option value="hidden">Hidden</option></select></label>
+                <label><span>Nepali text</span><select id="stampNepaliPlace"><option value="bottom">Bottom ring</option><option value="top">Top ring</option><option value="ring">Full ring (360°)</option><option value="center">Center</option><option value="hidden">Hidden</option></select></label>
+                <label><span>Location text</span><select id="stampAddressPlace"><option value="hidden">Hidden</option><option value="top">Top ring</option><option value="bottom">Bottom ring</option><option value="ring">Full ring (360°)</option><option value="center">Center</option></select></label>
+                <label><span>ESTD / date text</span><select id="stampEstbPlace"><option value="center">Center</option><option value="top">Top ring</option><option value="bottom">Bottom ring</option><option value="ring">Full ring (360°)</option><option value="hidden">Hidden</option></select></label>
               </div>
               <div class="stamp-two">
                 <label class="stamp-range"><span>English rotation <output id="stampEnglishRotateOut">0°</output></span><input id="stampEnglishRotate" type="range" min="-180" max="180" value="0" /></label>
@@ -530,15 +530,15 @@
             <label class="stamp-range"><span>Font size <output id="stampFontOut">28</output></span><input id="stampFontSize" type="range" min="18" max="38" value="28" /></label>
             <label class="stamp-range"><span>Ring text radius <output id="stampCurveOut">165</output></span><input id="stampCurve" type="range" min="135" max="185" value="165" /></label>
             <div class="stamp-two">
-              <label class="stamp-range"><span>Outer ring size <output id="stampOuterSizeOut">205</output></span><input id="stampOuterSize" type="range" min="170" max="225" value="205" /></label>
-              <label class="stamp-range"><span>Outer ring thickness <output id="stampOuterStrokeOut">6</output></span><input id="stampOuterStroke" type="range" min="2" max="16" value="6" /></label>
+              <label class="stamp-range"><span>Outer ring size <output id="stampOuterSizeOut">199</output></span><input id="stampOuterSize" type="range" min="170" max="225" value="199" /></label>
+              <label class="stamp-range"><span>Outer ring thickness <output id="stampOuterStrokeOut">5</output></span><input id="stampOuterStroke" type="range" min="2" max="16" value="5" /></label>
             </div>
             <div id="stampInnerRingControls" class="stamp-two">
-              <label class="stamp-range"><span>Inner ring gap <output id="stampInnerGapOut">24</output></span><input id="stampInnerGap" type="range" min="8" max="60" value="24" /></label>
+              <label class="stamp-range"><span>Inner ring gap <output id="stampInnerGapOut">45</output></span><input id="stampInnerGap" type="range" min="8" max="60" value="45" /></label>
               <label class="stamp-range"><span>Inner ring thickness <output id="stampInnerStrokeOut">3</output></span><input id="stampInnerStroke" type="range" min="1" max="10" value="3" /></label>
             </div>
-            <label class="stamp-range"><span>Logo size <output id="stampLogoOut">70</output></span><input id="stampLogoSize" type="range" min="35" max="110" value="70" /></label>
-            <label class="stamp-range"><span>Logo vertical position <output id="stampLogoYOut">0</output></span><input id="stampLogoY" type="range" min="-45" max="45" value="0" /></label>
+            <label class="stamp-range"><span>Logo size <output id="stampLogoOut">94</output></span><input id="stampLogoSize" type="range" min="35" max="110" value="94" /></label>
+            <label class="stamp-range"><span>Logo vertical position <output id="stampLogoYOut">-38</output></span><input id="stampLogoY" type="range" min="-45" max="45" value="-38" /></label>
             <div class="stamp-toggle-grid">
               <label class="stamp-toggle"><input id="stampInnerRing" type="checkbox" checked /><span>Inner ring</span></label>
               <label class="stamp-toggle"><input id="stampOuterRing" type="checkbox" checked /><span>Outer ring</span></label>
