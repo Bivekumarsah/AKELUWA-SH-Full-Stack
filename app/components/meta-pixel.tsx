@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 
 declare global {
@@ -12,15 +12,34 @@ declare global {
 
 const CONSENT_KEY = "akeluwa-meta-pixel-consent";
 const PIXEL_ID = "891396932267293";
+const CONSENT_EVENT = "akeluwa-meta-pixel-consent-change";
+
+type Consent = "accepted" | "declined" | null;
+
+function readConsent(): Consent {
+  if (typeof window === "undefined") return null;
+  const stored = window.localStorage.getItem(CONSENT_KEY);
+  return stored === "accepted" || stored === "declined" ? stored : null;
+}
+
+function subscribeToConsent(onStoreChange: () => void) {
+  const handler = () => onStoreChange();
+  window.addEventListener("storage", handler);
+  window.addEventListener(CONSENT_EVENT, handler);
+  return () => {
+    window.removeEventListener("storage", handler);
+    window.removeEventListener(CONSENT_EVENT, handler);
+  };
+}
 
 export default function MetaPixel() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [consent, setConsent] = useState<"accepted" | "declined" | null>(() => {
-    if (typeof window === "undefined") return null;
-    const stored = window.localStorage.getItem(CONSENT_KEY);
-    return stored === "accepted" || stored === "declined" ? stored : null;
-  });
+  const consent = useSyncExternalStore(
+    subscribeToConsent,
+    readConsent,
+    () => null,
+  );
 
   useEffect(() => {
     if (consent !== "accepted") return;
@@ -62,7 +81,7 @@ export default function MetaPixel() {
 
   function choose(value: "accepted" | "declined") {
     window.localStorage.setItem(CONSENT_KEY, value);
-    setConsent(value);
+    window.dispatchEvent(new Event(CONSENT_EVENT));
   }
 
   if (consent !== null) return null;
