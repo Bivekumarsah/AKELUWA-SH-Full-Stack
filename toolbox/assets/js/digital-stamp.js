@@ -266,6 +266,29 @@ export function initDigitalStamp({toast=()=>{}}={}) {
     innerGap:$('stampInnerGap'),innerStroke:$('stampInnerStroke'),outerSize:$('stampOuterSize'),outerStroke:$('stampOuterStroke')
   };
   const preview=$('stampPreview'),status=$('stampStatus'),clearLogo=$('clearStampLogo');
+  const stampRoot=$('stampTool'),stampLayout=form.closest('.stamp-layout');
+  const formSections=[...form.querySelectorAll('.stamp-section')];
+  const contentSection=formSections.find(section=>section.querySelector('h2')?.textContent.includes('Stamp content'));
+  const designSection=formSections.find(section=>section.querySelector('h2')?.textContent.includes('Design controls'));
+  [contentSection,designSection].filter(Boolean).forEach(section=>section.dataset.quickOriginalSection='1');
+
+  const quickEditor=document.createElement('section');
+  quickEditor.dataset.quickEditorBar='1';quickEditor.hidden=true;
+  quickEditor.style.cssText='margin:0 0 14px;padding:16px;border:1px solid #cfe0f5;border-radius:12px;background:#f7fbff';
+  quickEditor.innerHTML='<div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap"><div><strong data-quick-edit-title>Quick edit</strong><div style="margin-top:3px;color:#66716a;font-size:12px">Change the main details here. The live preview updates on the same page.</div></div><div style="display:flex;gap:6px;flex-wrap:wrap"><button type="button" data-quick-advanced>Advanced settings</button><button type="button" data-quick-back>Change sample</button></div></div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-top:14px"><label class="stamp-field"><span>Business / organization</span><input type="text" data-quick-name></label><label class="stamp-field"><span>Address / location</span><input type="text" data-quick-address></label><label class="stamp-field"><span>Center text</span><input type="text" data-quick-center></label><label class="stamp-field"><span>Font</span><select data-quick-font><option value="Arial">Arial</option><option value="Georgia">Georgia</option><option value="Trebuchet MS">Trebuchet</option><option value="Verdana">Verdana</option><option value="Times New Roman">Times New Roman</option></select></label><label class="stamp-field"><span>Stamp color</span><input type="color" data-quick-color></label><div class="stamp-field"><span>Logo / image</span><button type="button" data-quick-logo style="width:100%">Choose logo</button></div></div>';
+  if(contentSection)form.insertBefore(quickEditor,contentSection);else form.prepend(quickEditor);
+
+  const quickName=quickEditor.querySelector('[data-quick-name]'),quickAddress=quickEditor.querySelector('[data-quick-address]'),quickCenter=quickEditor.querySelector('[data-quick-center]'),quickFont=quickEditor.querySelector('[data-quick-font]'),quickColor=quickEditor.querySelector('[data-quick-color]');
+  const syncQuickFields=()=>{quickName.value=fields.name.value;quickAddress.value=fields.address.value;quickCenter.value=fields.center.value;quickFont.value=fields.font.value;quickColor.value=fields.color.value};
+  const setQuickAdvanced=open=>{if(stampRoot)stampRoot.dataset.quickAdvanced=open?'true':'false';[contentSection,designSection].filter(Boolean).forEach(section=>section.hidden=!open);quickEditor.querySelector('[data-quick-advanced]').textContent=open?'Hide advanced settings':'Advanced settings'};
+  quickName.addEventListener('input',()=>{fields.name.value=quickName.value;render()});
+  quickAddress.addEventListener('input',()=>{fields.address.value=quickAddress.value;render()});
+  quickCenter.addEventListener('input',()=>{fields.center.value=quickCenter.value;render()});
+  quickFont.addEventListener('change',()=>{fields.font.value=quickFont.value;render()});
+  quickColor.addEventListener('input',()=>{fields.color.value=quickColor.value;render()});
+  quickEditor.querySelector('[data-quick-logo]').addEventListener('click',()=>fields.logo.click());
+  quickEditor.querySelector('[data-quick-advanced]').addEventListener('click',()=>setQuickAdvanced(stampRoot?.dataset.quickAdvanced!=='true'));
+  quickEditor.querySelector('[data-quick-back]').addEventListener('click',()=>document.querySelector('.stamp-sample-gallery')?.scrollIntoView({behavior:'smooth',block:'start'}));
   let template='round',logoData=null,zoom=1;
 
   function state(){return{
@@ -324,7 +347,7 @@ export function initDigitalStamp({toast=()=>{}}={}) {
     const gallery=document.createElement('section');
     gallery.className='stamp-sample-gallery';
     gallery.setAttribute('aria-label','Ready-made editable stamp samples');
-    gallery.innerHTML='<h3 style="margin:0 0 6px">Stamp types & ready-made samples</h3><p style="margin:0 0 14px;color:#66716a">Select a sample to load editable text, rings and colors in the Nepali Stamp editor below. Every template and export is free.</p><div class="stamp-sample-cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px"></div>';
+    gallery.innerHTML='<h3 style="margin:0 0 6px">Stamp types & ready-made samples</h3><p style="margin:0 0 14px;color:#66716a">Choose a sample. It opens an easy editor directly below on this same page with a live preview. Every template and export is free.</p><div class="stamp-sample-cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px"></div>';
     const cards=gallery.querySelector('.stamp-sample-cards');
     samplePresets.forEach((sample,index)=>{
       const button=document.createElement('button');
@@ -353,10 +376,16 @@ export function initDigitalStamp({toast=()=>{}}={}) {
         }
         fields.authorized.checked=false;
         render();
+        syncQuickFields();
+        if(stampRoot){stampRoot.dataset.quickEditing='true';stampRoot.dataset.quickAdvanced='false';}
+        if(stampLayout)stampLayout.hidden=false;
+        if(templatePanel)templatePanel.hidden=true;
+        quickEditor.hidden=false;setQuickAdvanced(false);
+        quickEditor.querySelector('[data-quick-edit-title]').textContent='Editing: '+sample.label;
         document.querySelectorAll('.stamp-sample-card').forEach(el=>el.style.borderColor='#dedfd7');
         button.style.borderColor='#1767c0';
-        form.scrollIntoView({behavior:'smooth',block:'start'});
-        toast('Sample loaded. Edit the details and confirm authorization before downloading.');
+        stampLayout?.scrollIntoView({behavior:'smooth',block:'start'});
+        toast('Sample opened below. Edit it here and watch the live preview on the right.');
       });
       cards.append(button);
     });
