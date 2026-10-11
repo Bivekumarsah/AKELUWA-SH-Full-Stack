@@ -258,6 +258,7 @@ export function initStampStudio({root,toast=()=>{}}={}){
   '[data-ak-studio] .ak-template-thumb svg{max-width:82px;max-height:76px;width:auto;height:auto}'+
   '[data-ak-studio] .ak-sticky-download{position:sticky;bottom:0;z-index:5;padding:9px 0;background:linear-gradient(transparent,#fff 25%)}'+
   '[data-ak-studio][data-country-design="true"] [data-step="1"]{display:none}'+
+  '[data-ak-studio]:not([data-country-design="true"]) [data-country-quick-style]{display:none}'+
   '[data-ak-studio][data-country-design="true"]:not([data-country-advanced="true"]) [data-step="3"]{display:none}'+
   '@media(max-width:980px){[data-ak-studio] .ak-studio-toolbar{top:8px}[data-ak-studio] .ak-studio-workspace{grid-template-columns:1fr}[data-ak-studio] .ak-studio-controls{max-height:none;overflow:visible;padding-right:0}[data-ak-studio] .ak-studio-preview-pane{position:relative;top:0;order:-1}[data-ak-studio] .ak-preview-canvas{min-height:320px}}'+
   '</style>'+
@@ -267,7 +268,7 @@ export function initStampStudio({root,toast=()=>{}}={}){
     '<div class="ak-studio-controls" data-controls>'+
       '<div data-country-design-bar hidden style="padding:12px;margin-bottom:12px;border-radius:10px;border:1px solid #cfe0f5;background:#f2f7ff"><strong data-country-design-name>Country stamp</strong><p style="font-size:12px;color:#526172;margin:5px 0 10px">The preview matches your selected editable artwork. Edit details below.</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" data-country-advanced-toggle>Show advanced settings</button><button type="button" data-change-country-template>Choose another template</button></div></div>'+
       '<details class="ak-step" data-step="1" open><summary>1. Choose a starting design</summary><div class="ak-step-body"><p style="color:#66716a">Pick the closest sample. Every part can still be changed.</p><div data-presets style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px"></div><div style="margin-top:10px"><button type="button" data-new-blank>Start blank instead</button></div></div></details>'+
-      '<details class="ak-step" data-step="2"><summary>2. Enter your details</summary><div class="ak-step-body"><p style="color:#66716a">Change the main words without touching advanced settings.</p><div style="display:grid;gap:10px"><label>Business / organization<input data-quick-name type="text" placeholder="Your business name"></label><label>Address / location<input data-quick-address type="text" placeholder="Kathmandu, Nepal"></label><label>Center text<input data-quick-center type="text" placeholder="AUTHORIZED"></label></div><button type="button" data-quick-apply style="margin-top:10px">Apply these details</button></div></details>'+
+      '<details class="ak-step" data-step="2"><summary>2. Enter your details</summary><div class="ak-step-body"><p style="color:#66716a">Change the main words without touching advanced settings.</p><div style="display:grid;gap:10px"><label>Business / organization<input data-quick-name type="text" placeholder="Your business name"></label><label>Address / location<input data-quick-address type="text" placeholder="Kathmandu, Nepal"></label><label>Center text<input data-quick-center type="text" placeholder="AUTHORIZED"></label></div><button type="button" data-quick-apply style="margin-top:10px">Apply these details</button><div data-country-quick-style style="margin-top:16px;padding-top:12px;border-top:1px solid #dbe3ec"><strong>Easy design controls</strong><p style="margin:5px 0 10px;color:#66716a;font-size:12px">Change font, stamp color or add your logo. More tools are optional.</p><div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px"><label>Font<select data-country-font></select></label><label>Stamp color<input type="color" data-country-color></label><button type="button" data-country-logo style="grid-column:1/-1">+ Add logo / image</button></div></div></div></details>'+
       '<details class="ak-step" data-step="3"><summary>3. Text, logo, rings & shapes</summary><div class="ak-step-body"><p style="color:#66716a">Add what you need. Click any item on the preview to adjust it.</p><div data-add-buttons style="display:flex;flex-wrap:wrap;gap:7px"></div><details style="margin-top:12px"><summary style="cursor:pointer;font-weight:700">All design items</summary><div data-items style="display:grid;gap:6px;margin-top:10px"></div></details><div data-properties style="margin-top:12px"></div></div></details>'+
       '<details class="ak-step" data-step="4"><summary>4. Size, colors, effects & download</summary><div class="ak-step-body"><div data-sheet style="display:grid;gap:12px;margin-top:8px"></div><label style="display:flex;gap:8px;align-items:flex-start;margin:12px 0"><input data-authorized type="checkbox"> <span>I am authorized to create and use this business or organization stamp.</span></label><div data-export style="display:flex;flex-wrap:wrap;gap:8px"></div></div></details>'+
       '<div class="ak-sticky-download"><button type="button" data-go-download-bottom style="width:100%;padding:10px;font-weight:800">Download or save stamp ↓</button></div>'+
@@ -338,9 +339,14 @@ export function initStampStudio({root,toast=()=>{}}={}){
   [['text','Text'],['arcText','Curved text'],['ring','Circle / ring'],['ellipse','Oval'],['rect','Rectangle'],['frame','Decorative frame'],['triangle','Triangle'],['line','Line']].forEach(([type,label])=>{
     const b=document.createElement('button');b.type='button';b.textContent='+ '+label;b.onclick=()=>applyChange(()=>{const e=baseItem(type);state.items.push(e);state.selected=e.id});addBox.append(b);
   });
+  const easyCountryFont=studio.querySelector('[data-country-font]'),easyCountryColor=studio.querySelector('[data-country-color]');
+  FONTS.forEach(name=>{const opt=document.createElement('option');opt.value=name;opt.textContent=name;easyCountryFont.append(opt)});
+  easyCountryFont.onchange=()=>applyChange(()=>state.items.filter(e=>e.type==='text'||e.type==='arcText').forEach(e=>{e.font=easyCountryFont.value}));
+  easyCountryColor.oninput=()=>applyChange(()=>state.items.filter(e=>e.type!=='image').forEach(e=>{e.ink=color(easyCountryColor.value)}));
   const imageBtn=document.createElement('button');imageBtn.type='button';imageBtn.textContent='+ Logo / image';addBox.append(imageBtn);
   const imageInput=document.createElement('input');imageInput.type='file';imageInput.accept='image/png,image/jpeg,image/webp,image/svg+xml';imageInput.hidden=true;studio.append(imageInput);
   imageBtn.onclick=()=>imageInput.click();
+  studio.querySelector('[data-country-logo]').onclick=()=>imageInput.click();
   imageInput.onchange=async()=>{try{const src=await readImage(imageInput.files?.[0]);applyChange(()=>{const e={...baseItem('image'),src};state.items.push(e);state.selected=e.id});toast('Image added. Drag it on the preview.')}catch(e){toast(e.message||'Could not add image.')}finally{imageInput.value=''}};
 
   const symbolWrap=document.createElement('select');symbolWrap.innerHTML='<option value="">+ Built-in symbol</option>';
@@ -515,6 +521,10 @@ export function initStampStudio({root,toast=()=>{}}={}){
       if(input&&document.activeElement!==input)input.value=item?.text||'';
     }
     studio.querySelector('[data-country-design-name]').textContent=state.countryTemplate.name||'Country stamp';
+    const firstText=state.items.find(e=>e.type==='text'||e.type==='arcText');
+    const firstInk=state.items.find(e=>e.type!=='image'&&e.ink);
+    if(document.activeElement!==easyCountryFont)easyCountryFont.value=firstText?.font||'Arial';
+    if(document.activeElement!==easyCountryColor)easyCountryColor.value=color(firstInk?.ink||DEFAULT_INK);
   }
   for(const [role,input] of Object.entries(roleInputs)){
     input.addEventListener('input',()=>{
