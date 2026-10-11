@@ -207,6 +207,9 @@
     .stamp-placement-grid select{width:100%;min-height:36px;padding:7px 8px;border:1px solid #cdd3c8;border-radius:5px;background:#fff;color:var(--ink)}
     @media(max-width:980px){.stamp-preview-panel{position:static}.stamp-placement-grid{grid-template-columns:1fr 1fr}}
     @media(max-width:520px){.stamp-placement-grid{grid-template-columns:1fr}}
+
+    .stamp-toggle-grid + .stamp-toggle-grid{margin-top:10px}
+    .stamp-field input#stampFullText{letter-spacing:.01em}
   </style>
   <link rel="stylesheet" href="/assets/css/design.css" />
   <meta name="theme-color" content="#195443" />
@@ -480,6 +483,12 @@
             <div class="stamp-placement-box">
               <strong>Text placement</strong>
               <small>Choose exactly where each text line appears. Ring text stays centered on the selected ring and can be rotated.</small>
+
+              <label class="stamp-field"><span>Full-circle text <small>used when Text layout = Full circle</small></span><input id="stampFullText" type="text" maxlength="180" value="AKELUWA SOFTWARE HUB · KATHMANDU, NEPAL" /></label>
+              <div class="stamp-two">
+                <label class="stamp-range"><span>Full-circle rotation <output id="stampFullRotateOut">0°</output></span><input id="stampFullRotate" type="range" min="-180" max="180" value="0" /></label>
+                <label class="stamp-range"><span>Full-circle spacing <output id="stampFullSpacingOut">1.0</output></span><input id="stampFullSpacing" type="range" min="0" max="30" value="10" /></label>
+              </div>
               <div class="stamp-placement-grid">
                 <label><span>English text</span><select id="stampEnglishPlace"><option value="top">Top ring</option><option value="bottom">Bottom ring</option><option value="center">Center</option><option value="hidden">Hidden</option></select></label>
                 <label><span>Nepali text</span><select id="stampNepaliPlace"><option value="bottom">Bottom ring</option><option value="top">Top ring</option><option value="center">Center</option><option value="hidden">Hidden</option></select></label>
@@ -506,6 +515,14 @@
             <div class="stamp-two">
               <label class="stamp-field"><span>Stamp color</span><input id="stampColor" type="color" value="#0b4ea2" /></label>
               <label class="stamp-field"><span>Font style</span><select id="stampFont"><option value="Arial">Arial</option><option value="Georgia">Georgia</option><option value="Trebuchet MS">Trebuchet</option><option value="Verdana">Verdana</option><option value="Times New Roman">Times New Roman</option></select></label>
+            </div>
+            <div class="stamp-two">
+              <label class="stamp-field"><span>Ring style</span><select id="stampRingStyle"><option value="double">Double ring</option><option value="single">Single ring</option></select></label>
+              <label class="stamp-field"><span>Text layout</span><select id="stampTextLayout"><option value="split">Top + bottom arcs</option><option value="full">Full circle text</option><option value="custom">Custom placement</option></select></label>
+            </div>
+            <div class="stamp-toggle-grid">
+              <label class="stamp-toggle"><input id="stampDots" type="checkbox" checked /><span>Separator dots</span></label>
+              <label class="stamp-toggle"><input id="stampAutoFit" type="checkbox" checked /><span>Auto-fit long ring text</span></label>
             </div>
             <label class="stamp-range"><span>Border thickness <output id="stampBorderOut">6</output></span><input id="stampBorder" type="range" min="2" max="14" value="6" /></label>
             <label class="stamp-range"><span>Font size <output id="stampFontOut">28</output></span><input id="stampFontSize" type="range" min="18" max="38" value="28" /></label>
