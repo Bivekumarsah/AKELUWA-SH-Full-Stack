@@ -152,6 +152,13 @@ function studioSvg(state,forExport=false){
     '<defs>'+defs.join('')+fx+texture+'</defs>'+background+'<g'+filters+'>'+body+'</g></svg>';
 }
 
+// Shared SVG renderer: template cards and downloadable artwork use the same primitives.
+export function renderStampPreview(project,options={}){
+  const safe={items:Array.isArray(project?.items)?project.items:[],widthMm:project?.widthMm||42,heightMm:project?.heightMm||42,
+    transparent:options.transparent!==false,texture:false,saturation:100,brightness:100};
+  return studioSvg(safe,true);
+}
+
 function inputRow(label,input,help=''){
   const wrap=document.createElement('label');wrap.style.cssText='display:grid;gap:5px;font-size:13px';
   const title=document.createElement('span');title.textContent=label;title.style.fontWeight='600';wrap.append(title,input);
