@@ -14,8 +14,8 @@ const defaults = {
   border: 6,
   fontSize: 28,
   curve: 165,
-  logoSize: 70,
-  logoY: 0,
+  logoSize: 94,
+  logoY: -38,
   innerRing: true,
   outerRing: true,
   transparent: true,
@@ -36,10 +36,10 @@ const defaults = {
   fullText: 'AKELUWA SOFTWARE HUB · KATHMANDU, NEPAL',
   fullRotate: 0,
   fullSpacing: 10,
-  innerGap: 24,
+  innerGap: 45,
   innerStroke: 3,
-  outerSize: 205,
-  outerStroke: 6,
+  outerSize: 199,
+  outerStroke: 5,
 };
 
 const templateDefaults = {
@@ -173,20 +173,23 @@ function circularSeal(state, kind='round') {
   if (state.textLayout === 'full') {
     ringText = fullCircleText(state,'fullArc',c,f,Math.min(textRx,textRy));
   } else {
-    const topBlocks=[], bottomBlocks=[];
+    const topBlocks=[], bottomBlocks=[], fullRingBlocks=[];
     for (const key of ['english','nepali','address','estb']) {
-      const block=textBlock(state,key);
-      if (!blockVisible(state,key) || !clean(block.text)) continue;
-      const place = state.textLayout === 'split'
-        ? (key === 'english' ? 'top' : key === 'nepali' ? 'bottom' : block.place)
-        : block.place;
-      if (place==='top') topBlocks.push({key,...block});
-      if (place==='bottom') bottomBlocks.push({key,...block});
+      const item=textBlock(state,key);
+      if (!blockVisible(state,key) || !clean(item.text)) continue;
+      const place = state.textLayout === 'split' && item.place !== 'ring'
+        ? (key === 'english' ? 'top' : key === 'nepali' ? 'bottom' : item.place)
+        : item.place;
+      if (place==='top') topBlocks.push({key,...item});
+      if (place==='bottom') bottomBlocks.push({key,...item});
+      if (place==='ring') fullRingBlocks.push({key,...item});
     }
     const halfLength = Math.PI * Math.sqrt((textRx*textRx + textRy*textRy)/2) * .82;
-    const topMarkup=topBlocks.map((block,index)=>arcText('topArc',block.text,c,f,Math.max(16,fs-index*3),index?700:800,block.rotation,1,halfLength,state.autoFit)).join('');
-    const bottomMarkup=bottomBlocks.map((block,index)=>arcText('bottomArc',block.text,c,f,Math.max(16,fs-3-index*3),700,block.rotation,.6,halfLength,state.autoFit)).join('');
-    ringText = topMarkup + bottomMarkup;
+    const circumference = 2 * Math.PI * Math.sqrt((textRx*textRx + textRy*textRy)/2);
+    const topMarkup=topBlocks.map((item,index)=>arcText('topArc',item.text,c,f,Math.max(16,fs-index*3),index?700:800,item.rotation,1,halfLength,state.autoFit)).join('');
+    const bottomMarkup=bottomBlocks.map((item,index)=>arcText('bottomArc',item.text,c,f,Math.max(16,fs-3-index*3),700,item.rotation,.6,halfLength,state.autoFit)).join('');
+    const ringMarkup=fullRingBlocks.map((item,index)=>arcText('fullArc',item.text,c,f,Math.max(14,fs-index*2),index?700:800,item.rotation,.8,circumference*.92,state.autoFit)).join('');
+    ringText = topMarkup + bottomMarkup + ringMarkup;
   }
   const dots = state.dots && state.textLayout !== 'full'
     ? `<circle cx="${250-rx+28}" cy="250" r="5" fill="${c}"/><circle cx="${250+rx-28}" cy="250" r="5" fill="${c}"/>`
@@ -196,8 +199,8 @@ function circularSeal(state, kind='round') {
     <g ${state.texture?'filter="url(#stampTexture)"':''}>
       <ellipse cx="250" cy="250" rx="${rx}" ry="${ry}" fill="none" stroke="${c}" stroke-width="${Math.max(1,Number(state.outerStroke||b))}"/>
       ${showInner ? `<ellipse cx="250" cy="250" rx="${Math.max(40,rx-Number(state.innerGap||24))}" ry="${Math.max(40,ry-Number(state.innerGap||24))}" fill="none" stroke="${c}" stroke-width="${Math.max(1,Number(state.innerStroke||3))}"/>` : ''}
-      ${ringText}
       ${dots}
+      ${ringText}
       ${logoMarkup(state,250,230)}
       ${innerText(state,state.logoData?305:270)}
     </g>`;
