@@ -60,3 +60,11 @@ test('ZIP writer produces standards-compliant local and central headers for DOCX
  assert.equal(u32(end),0x06054b50);
  assert.equal(u32(end+16),central,'central directory starts at correct offset');
 });
+
+test('Resume print CSS keeps preview visible and PNG reports accurate target sizes',async()=>{
+ const [css,js]=await Promise.all(['toolbox/extra-tools/style.css','toolbox/extra-tools/app.js'].map(read));
+ assert.ok(css.includes('body[data-extra-tool="resume-builder"] .extra-panel > .extra-fields{display:block!important}'));
+ assert.ok(css.includes('#cvForm{display:none!important}'));
+ assert.ok(js.includes('blob.size<=targetKB*1024'));
+ assert.ok(js.includes('drawImageTo(img,img.naturalWidth,img.naturalHeight'));
+});

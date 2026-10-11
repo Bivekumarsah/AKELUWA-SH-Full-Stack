@@ -59,3 +59,11 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 @media(max-width:780px){.extra-hub-grid{grid-template-columns:1fr}.extra-related-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:560px){.extra-container{padding-left:15px;padding-right:15px}.extra-header .extra-container{min-height:66px}.extra-brand{font-size:15px}.extra-brand img{width:47px;height:34px}.extra-links{gap:2px}.extra-links a{font-size:12px;padding:6px}.extra-hero{padding:35px 0 54px}.extra-fields{grid-template-columns:1fr}.extra-related-grid{grid-template-columns:1fr}.extra-panel{border-radius:13px}.extra-hub-link{padding:18px}}
 @media print{body{background:#fff!important}.extra-header,.extra-hero,.extra-panel> :not(.extra-output),.extra-footer,.extra-related,.extra-sources,.extra-note,#toolStatus{display:none!important}.extra-main{margin:0;padding:0}.extra-container{max-width:none;padding:0}.extra-panel{border:0;padding:0;box-shadow:none}.extra-output{margin:0}.cv-paper{border:0;box-shadow:none;max-width:none;padding:0}@page{margin:16mm}}
+
+/* CV builder keeps only the actual resume visible while printing. */
+@media print{
+ body[data-extra-tool="resume-builder"] .extra-panel > .extra-fields{display:block!important}
+ body[data-extra-tool="resume-builder"] #cvForm{display:none!important}
+ body[data-extra-tool="resume-builder"] .extra-panel > .extra-fields > div > h3{display:none!important}
+ body[data-extra-tool="resume-builder"] #resumePreview{display:block!important;margin:0!important}
+}

@@ -79,7 +79,7 @@
     return new Promise((resolve,reject)=>canvas.toBlob(b=>b && b.type===mime ? resolve(b) : reject(new Error("This browser cannot export "+mime+". Try JPEG or PNG.")),mime,quality));
   }
   async function sizeTarget(canvas, mime, targetKB) {
-    if(mime === "image/png" || !targetKB) return {blob:await asBlob(canvas,mime,0.92),targetMet:!targetKB};
+    if(mime === "image/png" || !targetKB) { const blob=await asBlob(canvas,mime,0.92);return {blob,targetMet:!targetKB || blob.size<=targetKB*1024}; }
     let lo=0.08,hi=0.96,best=null;
     for(let i=0;i<10;i++){
       const q=(lo+hi)/2,blob=await asBlob(canvas,mime,q);
@@ -225,7 +225,7 @@
     onSubmit("ocrForm",async()=>{
       const file=requireFile("ocrInput",25),lang=byId("ocrLang").value;
       const engine=await inject("https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js","Tesseract");
-      const sources=/\.pdf$/i.test(file.name)||file.type==="application/pdf" ? await pdfOCRCanvases(file) : [await openImage(file)];
+      const sources=/\.pdf$/i.test(file.name)||file.type==="application/pdf" ? await pdfOCRCanvases(file) : await (async()=>{const img=await openImage(file);return [drawImageTo(img,img.naturalWidth,img.naturalHeight,"contain","transparent")];})();
       const texts=[];
       for(let i=0;i<sources.length;i++){
         say("Recognizing text — page "+(i+1)+" of "+sources.length+". Language data may take time to download…");
