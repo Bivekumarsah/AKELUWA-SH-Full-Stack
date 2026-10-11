@@ -491,6 +491,67 @@ export function initStampStudio({root,toast=()=>{}}={}){
     state.zoom=clamp(available/baseWidth,.6,1.35);updatePreview();preview.scrollTo({top:0,left:0,behavior:'smooth'});
   };
 
+
+  const roleInputs={
+    name:studio.querySelector('[data-quick-name]'),
+    address:studio.querySelector('[data-quick-address]'),
+    center:studio.querySelector('[data-quick-center]')
+  };
+  function updateCountryQuickFields(){
+    if(!state.countryTemplate)return;
+    for(const [role,input] of Object.entries(roleInputs)){
+      const item=state.items.find(e=>e.role===role&&typeof e.text==='string');
+      if(input&&document.activeElement!==input)input.value=item?.text||'';
+    }
+    studio.querySelector('[data-country-design-name]').textContent=state.countryTemplate.name||'Country stamp';
+  }
+  for(const [role,input] of Object.entries(roleInputs)){
+    input.addEventListener('input',()=>{
+      if(!state.countryTemplate||root.dataset.countryStudio!=='true')return;
+      const value=clean(input.value,100);
+      applyChange(()=>{
+        state.items.filter(e=>e.role===role&&typeof e.text==='string').forEach(item=>{item.text=value});
+      });
+    });
+  }
+  studio.querySelector('[data-country-advanced-toggle]').onclick=()=>{
+    const open=studio.dataset.countryAdvanced!=='true';
+    studio.dataset.countryAdvanced=open?'true':'false';
+    studio.querySelector('[data-country-advanced-toggle]').textContent=open?'Hide advanced settings':'Show advanced settings';
+    if(open)studio.querySelector('[data-step="3"]').open=true;
+  };
+  studio.querySelector('[data-change-country-template]').onclick=()=>{
+    root.querySelector('[data-country-stamps]')?.scrollIntoView({behavior:'smooth',block:'start'});
+  };
+  function openCountryDesign(template){
+    if(!template?.project||!Array.isArray(template.project.items))return false;
+    if(countryDesignDirty&&state.countryTemplate&&!confirm('Switch to another stamp? Your current project was saved locally, but this editor will change.'))return false;
+    remember();
+    const source=template.project;
+    state={
+      ...state,
+      items:JSON.parse(JSON.stringify(source.items)),
+      widthMm:source.widthMm,heightMm:source.heightMm,
+      selected:source.items.find(e=>e.role==='name')?.id||source.items[0]?.id||null,
+      activePreset:template.id,
+      countryTemplate:{id:template.id,name:template.name},
+      countryTemplateBase:JSON.parse(JSON.stringify(source)),
+      zoom:1,transparent:true,texture:false,saturation:100,brightness:100
+    };
+    countryDesignDirty=false;redo=[];
+    root.dataset.countryStudio='true';root.dataset.countryEditing='true';
+    studio.dataset.countryAdvanced='false';
+    studio.querySelector('[data-country-advanced-toggle]').textContent='Show advanced settings';
+    studio.querySelector('[data-country-design-bar]').hidden=false;
+    studio.querySelector('[data-step="2"]').open=true;
+    studio.querySelector('[data-step="3"]').open=false;
+    studio.querySelector('[data-step="4"]').open=false;
+    studio.querySelector('[data-authorized]').checked=false;
+    renderAll();autoSave();switchMode('country');
+    studio.scrollIntoView({behavior:'smooth',block:'start'});
+    return true;
+  }
+
   const first=allPresets[0];
   let restored=false;
   try{
