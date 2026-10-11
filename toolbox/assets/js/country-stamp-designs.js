@@ -44,9 +44,9 @@ const text=(value,x,y,size,ink,extras={})=>{
   const safe=norm(value,90),{fitWidth,...rest}=extras;
   const available=fitWidth||((x>275&&x<410)?280:395);
   const fitted=Math.max(13,Math.min(size,Math.floor(available/(Math.max(1,[...safe].length)*.56))));
-  return base('text',{text:safe,x,y,size:fitted,ink,font:'Arial',weight:700,spacing:0,rotation:0,align:'middle',...rest});
+  return base('text',{text:safe,x,y,size:fitted,ink,font:'Arial',weight:700,spacing:0,rotation:0,align:'middle',autoFit:true,maxTextWidth:available,...rest});
 };
-const arc=(value,r,start,sweep,size,ink,extras={})=>base('arcText',{text:norm(value,90),x:250,y:250,radius:r,start,sweep,size,ink,font:'Arial',weight:700,spacing:1,direction:'forward',...extras});
+const arc=(value,r,start,sweep,size,ink,extras={})=>base('arcText',{text:norm(value,90),x:250,y:250,radius:r,start,sweep,size,ink,font:'Arial',weight:700,spacing:1,direction:'forward',autoFit:true,...extras});
 const iconSvg=(name,ink)=>{
   const stroke='fill="none" stroke="'+ink+'" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"';
   const paths={
@@ -94,6 +94,34 @@ const keywordStatus=sub=>{
   const best=Object.entries(STATUS_WORDS).sort((a,b)=>b[0].length-a[0].length).find(([k])=>lower===k||lower.includes(k));
   return best?.[1]||null;
 };
+
+// Crop unused white workspace and preserve the artwork's physical aspect ratio.
+// This prevents text and logos being stretched or squashed in SVG, PNG and PDF.
+function designBounds(items){
+  let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+  const include=(x1,y1,x2,y2)=>{
+    minX=Math.min(minX,x1);minY=Math.min(minY,y1);
+    maxX=Math.max(maxX,x2);maxY=Math.max(maxY,y2);
+  };
+  for(const e of items){
+    const x=e.x,y=e.y;
+    if(e.type==='ring')include(x-e.radius,y-e.radius,x+e.radius,y+e.radius);
+    else if(e.type==='arcText')include(x-e.radius-e.size,y-e.radius-e.size,x+e.radius+e.size,y+e.radius+e.size);
+    else if(e.type==='ellipse')include(x-e.rx,y-e.ry,x+e.rx,y+e.ry);
+    else if(e.type==='rect'||e.type==='frame'||e.type==='triangle'||e.type==='image')
+      include(x-e.w/2,y-e.h/2,x+e.w/2,y+e.h/2);
+    else if(e.type==='line')include(Math.min(x,e.x2),Math.min(y,e.y2),Math.max(x,e.x2),Math.max(y,e.y2));
+    else if(e.type==='text'){
+      const width=Math.max(20,[...e.text].length*e.size*.58);
+      include(x-width/2,y-e.size*.8,x+width/2,y+e.size*.8);
+    }
+  }
+  if(!Number.isFinite(minX))return [0,0,500,500];
+  const margin=16;
+  const bx=Math.floor(minX-margin),by=Math.floor(minY-margin);
+  const bw=Math.ceil(maxX-minX+margin*2),bh=Math.ceil(maxY-minY+margin*2);
+  return [bx,by,Math.max(30,bw),Math.max(30,bh)];
+}
 
 // Each profession has a distinct layout family. Variations change composition,
 // geometry, decorations and hierarchy rather than only the heading.
@@ -224,7 +252,7 @@ function buildDesign(country,category,subcategory,variant){
     case 'legal':
       widthMm=55;heightMm=32;shape='Rectangle';
       add(rect(437,305,6,ink,{rx:8}),line(51,151,449,151,3,ink),
-        mark(250,221,85),business(250,316,26),main(250,369,22),place(250,411,16));
+        mark(250,221,85),business(250,316,26),main(250,369,22),place(250,385,16));
       break;
     case 'accounting':
       widthMm=58;heightMm=27;shape='Rectangle';
@@ -254,7 +282,7 @@ function buildDesign(country,category,subcategory,variant){
       add(rect(447,252,5,ink),line(31,184,469,184,3,ink),line(31,309,469,309,3,ink),
         mark(90,245,70),line(149,191,149,300,3,ink),
         main(307,223,31),text('____ / ____ / ______',307,272,28,ink),
-        business(250,349,17),place(250,381,13));
+        business(250,349,17),place(250,355,13));
       break;
     case 'logistics':
       widthMm=58;heightMm=27;shape='Rectangle';
@@ -272,7 +300,7 @@ function buildDesign(country,category,subcategory,variant){
       widthMm=57;heightMm=34;shape='Rectangle';
       add(rect(456,313,6,ink,{rx:9}),mark(250,201,122),
         line(70,285,430,285,4,ink),main(250,335,29),
-        business(250,388,23),place(250,429,16));
+        business(250,388,23),place(250,395,16));
       break;
     case 'ngo':
       shape='Double ring';add(ring(212,6,ink),ring(172,2,ink),
@@ -314,7 +342,9 @@ function buildDesign(country,category,subcategory,variant){
   }
   if(regulated)items=items.filter(e=>e.type!=='image'); // no insignia-like motifs
   // A profession-specific status heading remains editable in all variants.
-  return {items,widthMm,heightMm,shape,regulated,ink,layout:(layouts[cat]||layouts.company)[variant],purpose:(
+  const viewBox=designBounds(items);
+  heightMm=Math.round(Math.max(16,Math.min(65,widthMm*viewBox[3]/viewBox[2])));
+  return {items,widthMm,heightMm,viewBox,shape,regulated,ink,layout:(layouts[cat]||layouts.company)[variant],purpose:(
     ['company','ngo','logistics','retail','hospitality','construction'].includes(cat)?'Business':
     ['government','office','date','banking'].includes(cat)?'Administrative':
     ['personal','community','creative'].includes(cat)?'Personal':
@@ -339,7 +369,7 @@ export function makeCountryStampDesign(country,category,subcategory,variant=0){
     regulated:design.regulated,
     layout:design.layout,
     dimensions:design.widthMm+' × '+design.heightMm+' mm',
-    project:{items:design.items,widthMm:design.widthMm,heightMm:design.heightMm},
+    project:{items:design.items,widthMm:design.widthMm,heightMm:design.heightMm,viewBox:design.viewBox},
     sample:{label:safeSub+' — '+design.layout,kind:design.shape,name:'SAMPLE BUSINESS',address:country.location,center:safeSub,color:design.ink},
     defaultFont:'Arial'
   };
