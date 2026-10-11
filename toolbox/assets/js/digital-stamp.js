@@ -425,6 +425,59 @@ export function initDigitalStamp({toast=()=>{}}={}) {
   };
   studioRender();
 
+  // Quick start navigation and ready-to-edit advanced presets.
+  const nav=document.createElement('nav');
+  nav.setAttribute('aria-label','Stamp editor modes');
+  nav.style.cssText='display:flex;flex-wrap:wrap;gap:10px;margin:18px 0';
+  nav.innerHTML='<button type="button" data-stamp-mode="quick">Quick Templates</button><button type="button" data-stamp-mode="nepali">Nepali Stamp</button><button type="button" data-stamp-mode="advanced">Advanced Editor</button>';
+  const heading=$('stampTool')?.querySelector('.stamp-heading');
+  if(heading)heading.after(nav);
+  const gallerySection=()=>document.querySelector('.stamp-sample-gallery');
+  const legacySections=()=>[document.querySelector('.stamp-template-panel'),document.querySelector('.stamp-layout')].filter(Boolean);
+  const switchMode=mode=>{
+    const gallery=gallerySection();
+    if(gallery)gallery.hidden=mode==='advanced'||mode==='nepali';
+    legacySections().forEach(el=>el.hidden=mode==='advanced');
+    studio.hidden=mode!=='advanced';
+    nav.querySelectorAll('button').forEach(btn=>{
+      const active=btn.dataset.stampMode===mode;
+      btn.setAttribute('aria-pressed',String(active));
+      btn.style.cssText='padding:10px 16px;border-radius:8px;border:1px solid '+(active?'#1767c0':'#d6dce5')+';background:'+(active?'#eaf3ff':'#fff')+';font-weight:600;cursor:pointer';
+    });
+  };
+  nav.querySelectorAll('button').forEach(btn=>btn.onclick=()=>switchMode(btn.dataset.stampMode));
+  const studioPresets=[
+    {title:'Business Seal',items:[
+      {type:'ring',x:250,y:250,radius:190,thickness:5,color:'#0b4ea2',visible:true},
+      {type:'ring',x:250,y:250,radius:147,thickness:3,color:'#0b4ea2',visible:true},
+      {type:'text',text:'SAMPLE COMPANY',x:250,y:95,size:27,rotation:0,color:'#0b4ea2',font:'Arial',spacing:1,visible:true},
+      {type:'text',text:'KATHMANDU · NEPAL',x:250,y:330,size:19,rotation:0,color:'#0b4ea2',font:'Arial',spacing:1,visible:true}
+    ]},
+    {title:'Office Received',items:[
+      {type:'text',text:'RECEIVED',x:250,y:200,size:48,rotation:0,color:'#a42424',font:'Arial',spacing:2,visible:true},
+      {type:'text',text:'DATE: __________',x:250,y:280,size:25,rotation:0,color:'#a42424',font:'Arial',spacing:1,visible:true}
+    ]},
+    {title:'Nepali Business',items:[
+      {type:'ring',x:250,y:250,radius:190,thickness:5,color:'#0b4ea2',visible:true},
+      {type:'text',text:'नमुना व्यवसाय',x:250,y:180,size:35,rotation:0,color:'#0b4ea2',font:'Arial',spacing:0,visible:true},
+      {type:'text',text:'काठमाडौं, नेपाल',x:250,y:295,size:26,rotation:0,color:'#0b4ea2',font:'Arial',spacing:0,visible:true}
+    ]}
+  ];
+  const presetPanel=document.createElement('div');
+  presetPanel.style.cssText='margin:14px 0;display:flex;gap:8px;flex-wrap:wrap';
+  studio.querySelector('p')?.after(presetPanel);
+  studioPresets.forEach(preset=>{
+    const btn=document.createElement('button');btn.type='button';btn.textContent='Use '+preset.title;
+    btn.style.cssText='padding:9px 12px;border:1px solid #cbd5e1;border-radius:7px;background:#f8fafc;cursor:pointer';
+    btn.onclick=()=>{
+      elements=preset.items.map((item,i)=>({...item,id:i+1}));
+      nextId=elements.length+1;selected=elements[0]?.id??null;studioRender();
+      toast('Editable '+preset.title+' sample loaded.');
+    };
+    presetPanel.append(btn);
+  });
+  switchMode('quick');
+
   // Sample gallery: the original Nepali Stamp editor remains fully available.
   const samplePresets = [
     {label:'Company Double Ring',kind:'double',name:'SAMPLE BUSINESS PVT. LTD.',address:'Kathmandu, Nepal',center:'COMPANY',registration:'REG. NO. 12345',ringStyle:'double',languageMode:'english',nepaliPlace:'hidden',addressPlace:'bottom',estbPlace:'hidden'},
