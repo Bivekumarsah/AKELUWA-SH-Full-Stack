@@ -409,10 +409,7 @@ export function initDigitalStamp({toast=()=>{}}={}) {
     root:stampRoot,
     toast,
     switchMode:mode=>studioApi?.switchMode?.(mode),
-    onChoose:templateData=>{
-      openEditableSample(templateData.sample,{source:'country',title:templateData.name});
-      studioApi?.switchMode?.('country');
-    }
+    onChoose:templateData=>studioApi?.openCountryDesign?.(templateData)===true
   });
   if(stampRoot)stampRoot.dataset.countrySystem=JSON.stringify(COUNTRY_STAMP_COUNTS);
 
