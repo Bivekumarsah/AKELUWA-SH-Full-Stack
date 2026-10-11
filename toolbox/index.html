@@ -198,6 +198,15 @@
     .stamp-preview-stage{transition:.15s}.stamp-preview-stage #stampPreview{transform-origin:center;transition:transform .15s}
     @media(max-width:980px){.stamp-template-grid{grid-template-columns:repeat(4,1fr)}.stamp-v2{grid-template-columns:1fr}}
     @media(max-width:600px){.stamp-template-grid{grid-template-columns:repeat(2,1fr)}.stamp-samples{grid-template-columns:1fr}.stamp-toggle-grid{grid-template-columns:1fr}}
+
+    .stamp-preview-panel{position:sticky;top:88px}
+    .stamp-placement-box{margin-top:18px;padding:14px;border:1px solid #d8e1e8;border-radius:7px;background:#f8fbff}
+    .stamp-placement-box>strong{display:block;font-size:12px}.stamp-placement-box>small{display:block;margin:3px 0 10px;color:var(--muted);font-size:10px;line-height:1.5}
+    .stamp-placement-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+    .stamp-placement-grid label{font-size:10px;color:#4b5c4b}.stamp-placement-grid span{display:block;margin-bottom:4px;font-weight:700}
+    .stamp-placement-grid select{width:100%;min-height:36px;padding:7px 8px;border:1px solid #cdd3c8;border-radius:5px;background:#fff;color:var(--ink)}
+    @media(max-width:980px){.stamp-preview-panel{position:static}.stamp-placement-grid{grid-template-columns:1fr 1fr}}
+    @media(max-width:520px){.stamp-placement-grid{grid-template-columns:1fr}}
   </style>
   <link rel="stylesheet" href="/assets/css/design.css" />
   <meta name="theme-color" content="#195443" />
@@ -460,12 +469,31 @@
         <form class="stamp-controls" id="stampForm">
           <div class="stamp-section">
             <h2>2 · Stamp content</h2>
-            <label class="stamp-field"><span>Company / organization name</span><input id="stampName" type="text" maxlength="70" value="AKELUWA Softwarehub" autocomplete="organization" /></label>
-            <label class="stamp-field"><span>Bottom text / location</span><input id="stampAddress" type="text" maxlength="80" value="Kathmandu, Nepal" /></label>
-            <label class="stamp-field"><span>Nepali text <small>optional</small></span><input id="stampNepali" type="text" maxlength="80" value="अकेलुवा सफ्टवेयर हब" lang="ne" /></label>
+            <label class="stamp-field"><span>Language mode</span><select id="stampLanguageMode"><option value="both">English + Nepali</option><option value="english">English only</option><option value="nepali">Nepali only</option></select></label>
+            <label class="stamp-field"><span>English company text</span><input id="stampName" type="text" maxlength="70" value="AKELUWA Softwarehub" autocomplete="organization" /></label>
+            <label class="stamp-field"><span>Nepali company text <small>optional</small></span><input id="stampNepali" type="text" maxlength="80" value="अकेलुवा सफ्टवेयर हब" lang="ne" /></label>
+            <label class="stamp-field"><span>Location / extra text</span><input id="stampAddress" type="text" maxlength="80" value="Kathmandu, Nepal" /></label>
             <div class="stamp-two">
               <label class="stamp-field"><span>Center text</span><input id="stampCenterText" type="text" maxlength="30" value="AUTHORIZED" /></label>
-              <label class="stamp-field"><span>ESTD / custom date</span><input id="stampEstb" type="text" maxlength="24" value="ESTB 2082-08-02" /></label>
+              <label class="stamp-field"><span>ESTD / custom date</span><input id="stampEstb" type="text" maxlength="30" value="ESTB 2082-08-02" /></label>
+            </div>
+            <div class="stamp-placement-box">
+              <strong>Text placement</strong>
+              <small>Choose exactly where each text line appears. Ring text stays centered on the selected ring and can be rotated.</small>
+              <div class="stamp-placement-grid">
+                <label><span>English text</span><select id="stampEnglishPlace"><option value="top">Top ring</option><option value="bottom">Bottom ring</option><option value="center">Center</option><option value="hidden">Hidden</option></select></label>
+                <label><span>Nepali text</span><select id="stampNepaliPlace"><option value="bottom">Bottom ring</option><option value="top">Top ring</option><option value="center">Center</option><option value="hidden">Hidden</option></select></label>
+                <label><span>Location text</span><select id="stampAddressPlace"><option value="hidden">Hidden</option><option value="top">Top ring</option><option value="bottom">Bottom ring</option><option value="center">Center</option></select></label>
+                <label><span>ESTD / date text</span><select id="stampEstbPlace"><option value="center">Center</option><option value="top">Top ring</option><option value="bottom">Bottom ring</option><option value="hidden">Hidden</option></select></label>
+              </div>
+              <div class="stamp-two">
+                <label class="stamp-range"><span>English rotation <output id="stampEnglishRotateOut">0°</output></span><input id="stampEnglishRotate" type="range" min="-180" max="180" value="0" /></label>
+                <label class="stamp-range"><span>Nepali rotation <output id="stampNepaliRotateOut">0°</output></span><input id="stampNepaliRotate" type="range" min="-180" max="180" value="0" /></label>
+              </div>
+              <div class="stamp-two">
+                <label class="stamp-range"><span>Location rotation <output id="stampAddressRotateOut">0°</output></span><input id="stampAddressRotate" type="range" min="-180" max="180" value="0" /></label>
+                <label class="stamp-range"><span>ESTD rotation <output id="stampEstbRotateOut">0°</output></span><input id="stampEstbRotate" type="range" min="-180" max="180" value="0" /></label>
+              </div>
             </div>
             <label class="stamp-field"><span>Registration / PAN <small>optional</small></span><input id="stampRegistration" type="text" maxlength="50" placeholder="Reg. No. / PAN" /></label>
             <label class="stamp-field"><span>Date <small>optional</small></span><input id="stampDate" type="date" /></label>
@@ -481,7 +509,7 @@
             </div>
             <label class="stamp-range"><span>Border thickness <output id="stampBorderOut">6</output></span><input id="stampBorder" type="range" min="2" max="14" value="6" /></label>
             <label class="stamp-range"><span>Font size <output id="stampFontOut">28</output></span><input id="stampFontSize" type="range" min="18" max="38" value="28" /></label>
-            <label class="stamp-range"><span>Text curve / spacing <output id="stampCurveOut">50</output></span><input id="stampCurve" type="range" min="20" max="85" value="50" /></label>
+            <label class="stamp-range"><span>Ring text radius <output id="stampCurveOut">165</output></span><input id="stampCurve" type="range" min="135" max="185" value="165" /></label>
             <label class="stamp-range"><span>Logo size <output id="stampLogoOut">70</output></span><input id="stampLogoSize" type="range" min="35" max="110" value="70" /></label>
             <label class="stamp-range"><span>Logo vertical position <output id="stampLogoYOut">0</output></span><input id="stampLogoY" type="range" min="-45" max="45" value="0" /></label>
             <div class="stamp-toggle-grid">
