@@ -121,7 +121,7 @@
       const crc=crc32(content);
       const common=concat([little(0,2),little(0,2),little(crc,4),little(content.length,4),little(content.length,4),little(name.length,2)]);
       const local=concat([little(0x04034b50,4),little(20,2),little(0,2),little(0,2),common,little(0,2),name,content]);
-      const dir=concat([little(0x02014b50,4),little(20,2),little(20,2),little(0,2),little(0,2),common,little(0,2),little(0,2),little(0,2),little(0,4),little(offset,4),name]);
+      const dir=concat([little(0x02014b50,4),little(20,2),little(20,2),little(0,2),little(0,2),common,little(0,2),little(0,2),little(0,2),little(0,2),little(0,4),little(offset,4),name]);
       parts.push(local);central.push(dir);offset+=local.length;
     }
     const body=concat(parts),directory=concat(central);
