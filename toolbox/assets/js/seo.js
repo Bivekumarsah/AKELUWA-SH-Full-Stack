@@ -98,6 +98,16 @@ const pageDefinitions = [
     faq: [['Can I extract one page?', 'Yes. Enter a single page number, such as 4.'], ['Can I choose a range?', 'Yes. Use a range such as 3-5, or combine ranges with individual pages separated by commas.']],
   },
   {
+    path: '/digital-stamp-maker/', tool: 'stamp', label: 'Digital Stamp Maker',
+    title: 'Free Digital Stamp Maker Online | Akeluwa ToolBox',
+    description: 'Create a custom round, oval, or rectangular business stamp online. Add your organization details and logo, preview instantly, and download transparent PNG or SVG.',
+    heading: 'How to create a digital business stamp',
+    intro: 'Design a business or organization stamp you are authorized to use. Enter your details, choose a shape and color, optionally add your logo, and download a transparent file directly from your browser.',
+    steps: ['Enter the business or organization name, location, and optional registration or PAN details.', 'Choose a round, oval, or rectangular layout, select a color, and optionally add your own logo.', 'Confirm that you are authorized to create the stamp, then download a transparent PNG or editable SVG.'],
+    notes: ['The tool runs in your browser and does not upload the stamp details or logo to a server.', 'Only create stamps for businesses or organizations you are authorized to represent. Do not imitate government, court, police, bank, notary, or other official seals.'],
+    faq: [['Can I add my company logo?', 'Yes. You can add a PNG, JPG, WebP, or SVG logo up to 4 MB. The logo is read locally in your browser.'], ['What formats can I download?', 'You can download a high-resolution transparent PNG for everyday use or an SVG for scalable design workflows.'], ['Can I make a government or official seal?', 'No. The tool is intended for authorized business and organization stamps, not for imitating government departments, courts, police, banks, notaries, or other official seals.']],
+  },
+  {
     path: '/remove-background/', tool: 'background', label: 'Remove background',
     title: 'Free Image Background Remover Online | Akeluwa ToolBox',
     description: 'Remove a photo background with browser AI and download a transparent PNG. Preview the cutout without an account.',
