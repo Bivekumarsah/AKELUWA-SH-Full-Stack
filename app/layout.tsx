@@ -7,32 +7,32 @@ import "./globals.css";
 export const metadata: Metadata = {
   metadataBase: new URL(siteURL),
   title: {
-    default: "AKELUWA SH - Software Hub",
-    template: "%s | AKELUWA SH",
+    default: "AKELUWA Softwarehub | Software Development & IT Services",
+    template: "%s | AKELUWA Softwarehub",
   },
   description:
-    "A modern software hub for product engineering, cloud systems, cybersecurity and AI.",
+    "AKELUWA Softwarehub is a Nepal-based software development and IT services company offering custom software, web applications, cloud solutions, cybersecurity and AI automation.",
   alternates: {
     canonical: "/",
   },
   openGraph: {
-    title: "AKELUWA SH - Software Hub",
+    title: "AKELUWA Softwarehub | Software Development & IT Services",
     description: "Software development, cloud infrastructure, security and automation from Nepal.",
     type: "website",
     url: siteURL,
-    siteName: "AKELUWA SH",
+    siteName: "AKELUWA Softwarehub",
     images: [
       {
         url: "/og.png",
         width: 1200,
         height: 630,
-        alt: "AKELUWA SH - We engineer the invisible edge.",
+        alt: "AKELUWA Softwarehub - Building Smart Digital Solutions.",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "AKELUWA SH - Software Hub",
+    title: "AKELUWA Softwarehub | Software Development & IT Services",
     description: "Software development, cloud infrastructure, security and automation from Nepal.",
     images: ["/og.png"],
   },
@@ -46,7 +46,7 @@ export default function RootLayout({
   const organizationSchema = {
     "@context": "https://schema.org",
     "@type": "Organization",
-    name: "AKELUWA SH",
+    name: "AKELUWA Softwarehub",
     url: siteURL,
     logo: absoluteURL("/company-logo.png"),
     email: "akeluwasoftwarehub@gmail.com",
