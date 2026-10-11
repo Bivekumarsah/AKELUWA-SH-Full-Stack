@@ -13,7 +13,7 @@ const defaults = {
   font: 'Arial',
   border: 6,
   fontSize: 28,
-  curve: 50,
+  curve: 165,
   logoSize: 70,
   logoY: 0,
   innerRing: true,
@@ -229,7 +229,7 @@ export function initDigitalStamp({toast=()=>{}}={}) {
     languageMode:fields.languageMode.value,englishPlace:fields.englishPlace.value,nepaliPlace:fields.nepaliPlace.value,addressPlace:fields.addressPlace.value,estbPlace:fields.estbPlace.value,
     englishRotate:fields.englishRotate.value,nepaliRotate:fields.nepaliRotate.value,addressRotate:fields.addressRotate.value,estbRotate:fields.estbRotate.value
   }}
-  function ready(){return Boolean(fields.authorized.checked && clean(fields.name.value) && clean(fields.address.value))}
+  function ready(){const hasLanguage=fields.languageMode.value==='nepali'?clean(fields.nepali.value):fields.languageMode.value==='english'?clean(fields.name.value):(clean(fields.name.value)||clean(fields.nepali.value));return Boolean(fields.authorized.checked && hasLanguage)}
   function outputs(){
     $('stampBorderOut').textContent=fields.border.value;$('stampFontOut').textContent=fields.fontSize.value;
     $('stampCurveOut').textContent=fields.curve.value;$('stampLogoOut').textContent=fields.logoSize.value;$('stampLogoYOut').textContent=fields.logoY.value;
@@ -241,7 +241,7 @@ export function initDigitalStamp({toast=()=>{}}={}) {
     preview.style.transform=`scale(${zoom})`;$('stampZoomLabel').textContent=Math.round(zoom*100)+'%';
     document.querySelectorAll('.stamp-template').forEach(btn=>btn.classList.toggle('active',btn.dataset.template===template));
     const ok=ready();['downloadStampPng','downloadStampTransparent','downloadStampSvg'].forEach(id=>$(id).disabled=!ok);
-    status.textContent=ok?'Ready to download. All export options are free.':'Enter a company name and location, then confirm you are authorized to create and use this stamp.';
+    status.textContent=ok?'Ready to download. All export options are free.':'Add the English or Nepali text you want, then confirm you are authorized to create and use this stamp.';
   }
   function chooseTemplate(next){
     template=next in templateDefaults?next:'round';
