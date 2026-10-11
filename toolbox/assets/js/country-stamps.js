@@ -77,7 +77,7 @@ export function initCountryStamps({root,toast=()=>{},onChoose=()=>{},switchMode=
   '<div><p style="margin:0;color:#1767c0;font-weight:800;font-size:12px">COUNTRY BASED STAMP</p><h2 style="margin:4px 0 6px">Find a country and professional stamp design</h2><p style="margin:0;color:#66716a">Browse professionally designed, editable stamp artwork for each work type. Previews match the design you customize. Country collection does not mean official approval.</p></div>'+
   '<div class="cs-step"><h3 style="margin:0 0 8px">Step 1 — Select Country</h3><div class="cs-country-grid" data-countries></div></div>'+
   '<div class="cs-step"><h3 style="margin:0 0 8px">Step 2 — Choose Work Category</h3><div class="cs-filters"><label>Category<select data-category></select></label><label>Subcategory<select data-subcategory></select></label></div></div>'+
-  '<div class="cs-step"><h3 style="margin:0 0 8px">Step 3 — Select Ready-Made Template</h3><div class="cs-filters"><label>Search<input type="search" data-search placeholder="Search stamp name or profession"></label><label>Shape<select data-shape></select></label><label>Language<select data-language></select></label><label>Purpose<select data-purpose></select></label></div><div data-regulated-note></div><div class="cs-template-grid" data-templates></div></div>'+
+  '<div class="cs-step"><h3 style="margin:0 0 8px">Step 3 — Select Ready-Made Template</h3><div class="cs-filters"><label>Search<input type="search" data-search placeholder="Search all professions, categories or styles"></label><label>Shape<select data-shape></select></label><label>Language<select data-language></select></label><label>Purpose<select data-purpose></select></label></div><div data-regulated-note></div><div class="cs-template-grid" data-templates></div></div>'+
   '<div class="cs-step"><h3 style="margin:0 0 6px">Step 4 — Customize Stamp</h3><p style="margin:0;color:#66716a">Select a design above to open that exact artwork in the same-page editor. Change the name, address, colors and individual design parts.</p></div>'+
   '<div class="cs-step"><h3 style="margin:0 0 6px">Step 5 — Preview and Download</h3><p style="margin:0;color:#66716a">Use the editor download controls for PNG, transparent PNG, SVG and PDF where available.</p></div>';
   const gallery=root.querySelector('.stamp-sample-gallery'),studio=root.querySelector('[data-ak-studio]');
@@ -101,16 +101,28 @@ export function initCountryStamps({root,toast=()=>{},onChoose=()=>{},switchMode=
   function renderLanguage(){language.replaceChildren();const all=document.createElement('option');all.value='';all.textContent='All languages';language.append(all);country.languages.forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;language.append(o)})}
   function renderTemplates(){
     const q=search.value.trim().toLowerCase(),shapeFilter=shape.value,lang=language.value,p=purpose.value;
-    let list=allTemplatesFor(country,category,subcategory);
-    list=list.filter(t=>(!q||(t.name+' '+t.subcategory+' '+t.categoryName).toLowerCase().includes(q))&&(!shapeFilter||t.shape===shapeFilter)&&(!lang||t.languages.includes(lang))&&(!p||t.purpose===p));
+    // Search across all categories and subcategories, not only the currently selected option.
+    let list=[];
+    if(q){
+      for(const c of CATEGORIES){
+        const categoryMatch=c.name.toLowerCase().includes(q);
+        const layoutMatch=(COUNTRY_DESIGN_LAYOUTS[c.id]||[]).some(x=>x.toLowerCase().includes(q));
+        for(const sub of c.subcategories){
+          if(categoryMatch||layoutMatch||sub.toLowerCase().includes(q)){
+            list.push(...allTemplatesFor(country,c,sub));
+          }
+        }
+      }
+    }else list=allTemplatesFor(country,category,subcategory);
+    list=list.filter(t=>(!shapeFilter||t.shape===shapeFilter)&&(!lang||t.languages.includes(lang))&&(!p||t.purpose===p));
     templatesBox.replaceChildren();
-    const regulated=REGULATED_CATEGORIES.has(category.id)||REGULATED_SUBCATEGORIES.has(subcategory);
+    const regulated=list.some(t=>t.regulated);
     note.innerHTML=regulated?'<div class="cs-warning">This area may involve regulated or official seals. AKELUWA provides only generic SAMPLE artwork here—no government emblem, protected mark, bank seal, or notarial seal. Verify local rules and use only when authorized.</div>':'';
     if(!list.length){templatesBox.innerHTML='<p style="color:#66716a">No template matches these filters. Clear a filter or choose another subcategory.</p>';return}
     list.forEach(t=>{
       const card=document.createElement('button');card.type='button';card.className='cs-template';
       card.innerHTML='<span class="cs-thumb">'+countryStampThumbnail(t)+'</span><strong>'+t.name+'</strong><span class="cs-meta">'+t.shape+' · '+t.dimensions+' · '+t.languages.join(', ')+'</span>'+(t.regulated?'<span class="cs-warning">Generic SAMPLE only</span>':'')+'<span style="color:#1767c0;font-weight:700">Customize this template →</span>';
-      card.onclick=()=>{onChoose(t);toast('Country template loaded. Customize it below on this page.')};
+      card.onclick=()=>{if(onChoose(t)!==false)toast('Professional sample opened below. Edit the matching artwork and download on this page.')};
       templatesBox.append(card);
     });
   }
