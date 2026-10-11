@@ -56,7 +56,7 @@ export default function MetaPixel() {
       script.async = true;
       script.src = "https://connect.facebook.net/en_US/fbevents.js";
       document.head.appendChild(script);
-      window.fbq("init", PIXEL_ID);
+      window.fbq?.("init", PIXEL_ID);
     }
     window.fbq?.("track", "PageView");
   }, [consent, pathname, searchParams]);
