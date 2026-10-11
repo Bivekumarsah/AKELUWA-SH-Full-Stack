@@ -36,6 +36,8 @@ const defaults = {
   fullText: 'AKELUWA SOFTWARE HUB · KATHMANDU, NEPAL',
   fullRotate: 0,
   fullSpacing: 10,
+  innerGap: 24,
+  innerStroke: 3,
 };
 
 const templateDefaults = {
@@ -189,7 +191,7 @@ function circularSeal(state, kind='round') {
     <defs>${textureDef(state.texture)}${paths}</defs>
     <g ${state.texture?'filter="url(#stampTexture)"':''}>
       <ellipse cx="250" cy="250" rx="${rx}" ry="${ry}" fill="none" stroke="${c}" stroke-width="${b}"/>
-      ${showInner ? `<ellipse cx="250" cy="250" rx="${rx-24}" ry="${ry-24}" fill="none" stroke="${c}" stroke-width="${Math.max(2,b*.55)}"/>` : ''}
+      ${showInner ? `<ellipse cx="250" cy="250" rx="${Math.max(40,rx-Number(state.innerGap||24))}" ry="${Math.max(40,ry-Number(state.innerGap||24))}" fill="none" stroke="${c}" stroke-width="${Math.max(1,Number(state.innerStroke||3))}"/>` : ''}
       ${ringText}
       ${dots}
       ${logoMarkup(state,250,230)}
@@ -252,7 +254,8 @@ export function initDigitalStamp({toast=()=>{}}={}) {
     englishPlace:$('stampEnglishPlace'),nepaliPlace:$('stampNepaliPlace'),addressPlace:$('stampAddressPlace'),estbPlace:$('stampEstbPlace'),
     englishRotate:$('stampEnglishRotate'),nepaliRotate:$('stampNepaliRotate'),addressRotate:$('stampAddressRotate'),estbRotate:$('stampEstbRotate'),
     ringStyle:$('stampRingStyle'),textLayout:$('stampTextLayout'),dots:$('stampDots'),autoFit:$('stampAutoFit'),
-    fullText:$('stampFullText'),fullRotate:$('stampFullRotate'),fullSpacing:$('stampFullSpacing')
+    fullText:$('stampFullText'),fullRotate:$('stampFullRotate'),fullSpacing:$('stampFullSpacing'),
+    innerGap:$('stampInnerGap'),innerStroke:$('stampInnerStroke')
   };
   const preview=$('stampPreview'),status=$('stampStatus'),clearLogo=$('clearStampLogo');
   let template='round',logoData=null,zoom=1;
@@ -265,7 +268,8 @@ export function initDigitalStamp({toast=()=>{}}={}) {
     languageMode:fields.languageMode.value,englishPlace:fields.englishPlace.value,nepaliPlace:fields.nepaliPlace.value,addressPlace:fields.addressPlace.value,estbPlace:fields.estbPlace.value,
     englishRotate:fields.englishRotate.value,nepaliRotate:fields.nepaliRotate.value,addressRotate:fields.addressRotate.value,estbRotate:fields.estbRotate.value,
     ringStyle:fields.ringStyle.value,textLayout:fields.textLayout.value,dots:fields.dots.checked,autoFit:fields.autoFit.checked,
-    fullText:fields.fullText.value,fullRotate:fields.fullRotate.value,fullSpacing:fields.fullSpacing.value
+    fullText:fields.fullText.value,fullRotate:fields.fullRotate.value,fullSpacing:fields.fullSpacing.value,
+    innerGap:fields.innerGap.value,innerStroke:fields.innerStroke.value
   }}
   function ready(){const hasLanguage=fields.languageMode.value==='nepali'?clean(fields.nepali.value):fields.languageMode.value==='english'?clean(fields.name.value):(clean(fields.name.value)||clean(fields.nepali.value));return Boolean(fields.authorized.checked && hasLanguage)}
   function outputs(){
@@ -274,6 +278,8 @@ export function initDigitalStamp({toast=()=>{}}={}) {
     $('stampEnglishRotateOut').textContent=fields.englishRotate.value+'°';$('stampNepaliRotateOut').textContent=fields.nepaliRotate.value+'°';
     $('stampAddressRotateOut').textContent=fields.addressRotate.value+'°';$('stampEstbRotateOut').textContent=fields.estbRotate.value+'°';
     $('stampFullRotateOut').textContent=fields.fullRotate.value+'°';$('stampFullSpacingOut').textContent=(Number(fields.fullSpacing.value)/10).toFixed(1);
+    $('stampInnerGapOut').textContent=fields.innerGap.value;$('stampInnerStrokeOut').textContent=fields.innerStroke.value;
+    $('stampInnerRingControls').classList.toggle('stamp-double-hidden',fields.ringStyle.value!=='double');
   }
   function render(){
     outputs();preview.innerHTML=buildSvg(state());
@@ -306,6 +312,7 @@ export function initDigitalStamp({toast=()=>{}}={}) {
     fields.englishRotate.value=defaults.englishRotate;fields.nepaliRotate.value=defaults.nepaliRotate;fields.addressRotate.value=defaults.addressRotate;fields.estbRotate.value=defaults.estbRotate;
     fields.ringStyle.value=defaults.ringStyle;fields.textLayout.value=defaults.textLayout;fields.dots.checked=defaults.dots;fields.autoFit.checked=defaults.autoFit;
     fields.fullText.value=defaults.fullText;fields.fullRotate.value=defaults.fullRotate;fields.fullSpacing.value=defaults.fullSpacing;
+    fields.innerGap.value=defaults.innerGap;fields.innerStroke.value=defaults.innerStroke;
     fields.authorized.checked=false;fields.logo.value='';clearLogo.disabled=true;render()
   });
   async function exportPng(forceTransparent=null){
