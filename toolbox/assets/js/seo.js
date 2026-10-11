@@ -200,7 +200,7 @@ export function renderPage(template, page, origin = site.origin, noindex = false
   html = html.replace(/<script id="structured-data" type="application\/ld\+json">[\s\S]*?<\/script>/, `<script id="structured-data" type="application/ld+json">${JSON.stringify(structuredData(page, origin, basePath)).replace(/</g, '\\u003c')}</script>`);
   html = html.replace(/<!-- seo-guide:start -->[\s\S]*?<!-- seo-guide:end -->/, `<!-- seo-guide:start -->${renderGuide(page, basePath)}<!-- seo-guide:end -->`);
   const visibleId = page.tool + 'Tool';
-  html = html.replace(/<(section|div) class="([^"]*)" id="(homeTool|pdfTool|reducerTool|photoTool|converterTool|backgroundTool)"/g, (_, tag, classes, id) => {
+  html = html.replace(/<(section|div) class="([^"]*)" id="(homeTool|pdfTool|reducerTool|photoTool|converterTool|backgroundTool|stampTool)"/g, (_, tag, classes, id) => {
     const names = classes.split(' ').filter(name => name !== 'hidden');
     if (id !== visibleId) names.push('hidden');
     return `<${tag} class="${names.join(' ')}" id="${id}"`;
