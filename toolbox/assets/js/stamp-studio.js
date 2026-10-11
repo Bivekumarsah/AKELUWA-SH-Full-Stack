@@ -228,13 +228,13 @@ async function epsBlob(state){
 export function initStampStudio({root,toast=()=>{}}={}){
   if(!root||root.querySelector('[data-ak-studio]'))return;
   let state={items:[],widthMm:42,heightMm:42,transparent:true,texture:false,saturation:100,brightness:100,zoom:1,selected:null,activePreset:'Round Business'};
-  let undo=[],redo=[];
+  let undo=[],redo=[],countryDesignDirty=false;
   const autosaveKey='akeluwastamp-autosave-v3';
   const copy=()=>JSON.parse(JSON.stringify(state));
   const autoSave=()=>{try{localStorage.setItem(autosaveKey,JSON.stringify({version:3,state}))}catch{}};
   const restore=s=>{state=JSON.parse(JSON.stringify(s));renderAll();autoSave()};
   const remember=()=>{undo.push(copy());if(undo.length>40)undo.shift();redo=[]};
-  const applyChange=fn=>{remember();fn();renderAll();autoSave()};
+  const applyChange=fn=>{remember();fn();if(state.countryTemplate)countryDesignDirty=true;renderAll();autoSave()};
   const studio=document.createElement('section');studio.dataset.akStudio='1';studio.hidden=true;
   studio.style.cssText='margin:18px 0;padding:18px;border:1px solid #dfe3e8;border-radius:14px;background:#fff';
   studio.innerHTML='<style>'+
@@ -257,12 +257,15 @@ export function initStampStudio({root,toast=()=>{}}={}){
   '[data-ak-studio] .ak-template-thumb{display:grid;place-items:center;background:#f8fafc;border-radius:7px;overflow:hidden}'+
   '[data-ak-studio] .ak-template-thumb svg{max-width:82px;max-height:76px;width:auto;height:auto}'+
   '[data-ak-studio] .ak-sticky-download{position:sticky;bottom:0;z-index:5;padding:9px 0;background:linear-gradient(transparent,#fff 25%)}'+
+  '[data-ak-studio][data-country-design="true"] [data-step="1"]{display:none}'+
+  '[data-ak-studio][data-country-design="true"]:not([data-country-advanced="true"]) [data-step="3"]{display:none}'+
   '@media(max-width:980px){[data-ak-studio] .ak-studio-toolbar{top:8px}[data-ak-studio] .ak-studio-workspace{grid-template-columns:1fr}[data-ak-studio] .ak-studio-controls{max-height:none;overflow:visible;padding-right:0}[data-ak-studio] .ak-studio-preview-pane{position:relative;top:0;order:-1}[data-ak-studio] .ak-preview-canvas{min-height:320px}}'+
   '</style>'+
   '<div><p style="margin:0;color:#1767c0;font-weight:800;font-size:12px">AKELUWA STAMP STUDIO</p><h2 style="margin:4px 0 6px">Create your stamp with the preview always visible</h2><p style="margin:0;color:#66716a">Edit on the left. Your live stamp stays locked on the right while you scroll.</p></div>'+
   '<div class="ak-studio-toolbar"><div class="ak-studio-toolbar-group"><button type="button" data-undo>↶ Undo</button><button type="button" data-redo>↷ Redo</button><button type="button" data-new-design>New design</button></div><div class="ak-studio-toolbar-group"><button type="button" data-reset-selected>Reset selected</button><button type="button" data-reset-all>Reset whole stamp</button><button type="button" data-go-download>Download ↓</button></div></div>'+
   '<div class="ak-studio-workspace">'+
     '<div class="ak-studio-controls" data-controls>'+
+      '<div data-country-design-bar hidden style="padding:12px;margin-bottom:12px;border-radius:10px;border:1px solid #cfe0f5;background:#f2f7ff"><strong data-country-design-name>Country stamp</strong><p style="font-size:12px;color:#526172;margin:5px 0 10px">The preview matches your selected editable artwork. Edit details below.</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" data-country-advanced-toggle>Show advanced settings</button><button type="button" data-change-country-template>Choose another template</button></div></div>'+
       '<details class="ak-step" data-step="1" open><summary>1. Choose a starting design</summary><div class="ak-step-body"><p style="color:#66716a">Pick the closest sample. Every part can still be changed.</p><div data-presets style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px"></div><div style="margin-top:10px"><button type="button" data-new-blank>Start blank instead</button></div></div></details>'+
       '<details class="ak-step" data-step="2"><summary>2. Enter your details</summary><div class="ak-step-body"><p style="color:#66716a">Change the main words without touching advanced settings.</p><div style="display:grid;gap:10px"><label>Business / organization<input data-quick-name type="text" placeholder="Your business name"></label><label>Address / location<input data-quick-address type="text" placeholder="Kathmandu, Nepal"></label><label>Center text<input data-quick-center type="text" placeholder="AUTHORIZED"></label></div><button type="button" data-quick-apply style="margin-top:10px">Apply these details</button></div></details>'+
       '<details class="ak-step" data-step="3"><summary>3. Text, logo, rings & shapes</summary><div class="ak-step-body"><p style="color:#66716a">Add what you need. Click any item on the preview to adjust it.</p><div data-add-buttons style="display:flex;flex-wrap:wrap;gap:7px"></div><details style="margin-top:12px"><summary style="cursor:pointer;font-weight:700">All design items</summary><div data-items style="display:grid;gap:6px;margin-top:10px"></div></details><div data-properties style="margin-top:12px"></div></div></details>'+
@@ -283,11 +286,11 @@ export function initStampStudio({root,toast=()=>{}}={}){
     if(gallery)gallery.hidden=mode!=='quick';
     if(countrySection)countrySection.hidden=mode!=='country';
     if(mode==='studio'){
-      if(templatePanel)templatePanel.hidden=true;if(layout)layout.hidden=true;if(quickEditor)quickEditor.hidden=true;studio.hidden=false;
+      if(templatePanel)templatePanel.hidden=true;if(layout)layout.hidden=true;if(quickEditor)quickEditor.hidden=true;studio.hidden=false;studio.dataset.countryDesign='false';
     }else if(mode==='nepali'){
       if(templatePanel)templatePanel.hidden=false;if(layout)layout.hidden=false;if(quickEditor)quickEditor.hidden=true;quickSections.forEach(section=>section.hidden=false);studio.hidden=true;
     }else if(mode==='country'){
-      if(templatePanel)templatePanel.hidden=true;if(layout)layout.hidden=!countryEditing;if(quickEditor)quickEditor.hidden=!countryEditing;quickSections.forEach(section=>section.hidden=countryEditing&&!quickAdvanced);studio.hidden=true;
+      if(templatePanel)templatePanel.hidden=true;if(layout)layout.hidden=true;if(quickEditor)quickEditor.hidden=true;studio.hidden=root.dataset.countryStudio!=='true';studio.dataset.countryDesign=studio.hidden?'false':'true';
     }else{
       if(templatePanel)templatePanel.hidden=true;if(layout)layout.hidden=!quickEditing;if(quickEditor)quickEditor.hidden=!quickEditing;quickSections.forEach(section=>section.hidden=quickEditing&&!quickAdvanced);studio.hidden=true;
     }
@@ -439,6 +442,7 @@ export function initStampStudio({root,toast=()=>{}}={}){
     updatePreview();renderItems();renderProps();renderSheet();renderExport();updatePresetSelection();
     studio.querySelector('[data-undo]').disabled=!undo.length;studio.querySelector('[data-redo]').disabled=!redo.length;
     studio.querySelector('[data-reset-selected]').disabled=!state.items.some(i=>i.id===state.selected);
+    updateCountryQuickFields();
   }
   function resetSelected(){
     const index=state.items.findIndex(i=>i.id===state.selected);if(index<0)return;
@@ -455,7 +459,8 @@ export function initStampStudio({root,toast=()=>{}}={}){
     if(!confirm('Reset the whole stamp to its starting design? Current changes will be replaced.'))return;
     applyChange(()=>{
       const p=allPresets.find(x=>x.name===state.activePreset);
-      if(p){state.items=JSON.parse(JSON.stringify(p.items));state.widthMm=p.w;state.heightMm=p.h;state.selected=state.items[0]?.id||null}
+      if(state.countryTemplateBase){const b=state.countryTemplateBase;state.items=JSON.parse(JSON.stringify(b.items));state.widthMm=b.widthMm;state.heightMm=b.heightMm;state.selected=state.items.find(e=>e.role==='name')?.id||state.items[0]?.id||null}
+      else if(p){state.items=JSON.parse(JSON.stringify(p.items));state.widthMm=p.w;state.heightMm=p.h;state.selected=state.items[0]?.id||null}
       else{state.items=[];state.selected=null;state.widthMm=42;state.heightMm=42}
       state.transparent=true;state.texture=false;state.saturation=100;state.brightness=100;state.zoom=1;
     });
@@ -463,7 +468,7 @@ export function initStampStudio({root,toast=()=>{}}={}){
   }
   function newDesign(){
     if(state.items.length&&!confirm('Create a new blank design? Your current design will be replaced.'))return;
-    applyChange(()=>{state.items=[];state.selected=null;state.widthMm=42;state.heightMm=42;state.transparent=true;state.texture=false;state.saturation=100;state.brightness=100;state.zoom=1;state.activePreset='Blank'});
+    applyChange(()=>{state.items=[];state.selected=null;state.widthMm=42;state.heightMm=42;state.transparent=true;state.texture=false;state.saturation=100;state.brightness=100;state.zoom=1;state.activePreset='Blank';delete state.countryTemplate;delete state.countryTemplateBase;root.dataset.countryStudio='false'});
     toast('New blank design ready.');
   }
   function goDownload(){
@@ -494,5 +499,5 @@ export function initStampStudio({root,toast=()=>{}}={}){
   }catch{}
   if(!restored){state.items=JSON.parse(JSON.stringify(first.items));state.widthMm=first.w;state.heightMm=first.h;state.selected=state.items[0]?.id||null;state.activePreset=first.name}
   renderAll();autoSave();switchMode('quick');
-  return {switchMode};
+  return {switchMode,openCountryDesign};
 }
