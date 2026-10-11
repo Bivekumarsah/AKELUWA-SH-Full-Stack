@@ -133,12 +133,17 @@ function itemMarkup(e,defs){
   if(e.type==='image')return e.src?'<image data-element="'+e.id+'" href="'+esc(e.src)+'" x="'+(e.x-e.w/2)+'" y="'+(e.y-e.h/2)+'" width="'+e.w+'" height="'+e.h+'" preserveAspectRatio="xMidYMid meet"/>':'';
   if(e.type==='arcText'){
     const pid='arc-'+e.id;defs.push(arcPath(e,pid));
-    return '<text data-element="'+e.id+'" fill="'+ink+'" font-family="'+esc(font(e.font))+'" font-size="'+e.size+'" font-weight="'+(e.weight||700)+'" letter-spacing="'+(e.spacing||0)+'" text-anchor="middle"><textPath href="#'+pid+'" startOffset="50%">'+esc(clean(e.text))+'</textPath></text>';
+    const chars=Math.max(1,[...clean(e.text,180)].length);
+    const arcRoom=Math.max(20,e.radius*(e.sweep||120)*Math.PI/180*.92);
+    const resolvedSize=e.autoFit?Math.max(8,Math.min(e.size,arcRoom/(chars*.62))):e.size;
+    return '<text data-element="'+e.id+'" fill="'+ink+'" font-family="'+esc(font(e.font))+'" font-size="'+resolvedSize+'" font-weight="'+(e.weight||700)+'" letter-spacing="'+(e.spacing||0)+'" text-anchor="middle"><textPath href="#'+pid+'" startOffset="50%">'+esc(clean(e.text))+'</textPath></text>';
   }
   const anchor=e.align==='start'?'start':e.align==='end'?'end':'middle';
-  const t='<text data-element="'+e.id+'" x="'+e.x+'" y="'+e.y+'" text-anchor="'+anchor+'" dominant-baseline="middle" fill="'+(e.invert?'#ffffff':ink)+'" font-family="'+esc(font(e.font))+'" font-size="'+e.size+'" font-weight="'+(e.weight||700)+'" letter-spacing="'+(e.spacing||0)+'" transform="rotate('+(e.rotation||0)+' '+e.x+' '+e.y+')">'+esc(clean(e.text))+'</text>';
+  const chars=Math.max(1,[...clean(e.text,180)].length);
+  const resolvedSize=e.autoFit?Math.max(10,Math.min(e.size,(e.maxTextWidth||395)/(chars*.6))):e.size;
+  const t='<text data-element="'+e.id+'" x="'+e.x+'" y="'+e.y+'" text-anchor="'+anchor+'" dominant-baseline="middle" fill="'+(e.invert?'#ffffff':ink)+'" font-family="'+esc(font(e.font))+'" font-size="'+resolvedSize+'" font-weight="'+(e.weight||700)+'" letter-spacing="'+(e.spacing||0)+'" transform="rotate('+(e.rotation||0)+' '+e.x+' '+e.y+')">'+esc(clean(e.text))+'</text>';
   if(!e.invert)return t;
-  const width=Math.max(70,clean(e.text).length*e.size*.68+28),height=e.size*1.55;
+  const width=Math.max(70,clean(e.text).length*resolvedSize*.68+28),height=resolvedSize*1.55;
   return '<g transform="rotate('+(e.rotation||0)+' '+e.x+' '+e.y+')"><rect x="'+(e.x-width/2)+'" y="'+(e.y-height/2)+'" width="'+width+'" height="'+height+'" rx="8" fill="'+ink+'"/></g>'+t;
 }
 function studioSvg(state,forExport=false){
