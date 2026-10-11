@@ -148,14 +148,16 @@ function studioSvg(state,forExport=false){
   const texture=state.texture?'<filter id="wear"><feTurbulence baseFrequency=".65" numOctaves="2" seed="4" type="fractalNoise" result="noise"/><feColorMatrix in="noise" type="luminanceToAlpha" result="alpha"/><feComponentTransfer in="alpha" result="fade"><feFuncA type="table" tableValues="1 .72 1 .8"/></feComponentTransfer><feComposite in="SourceGraphic" in2="fade" operator="in"/></filter>':'';
   const background=state.transparent?'':'<rect width="500" height="500" fill="#ffffff"/>';
   const filters=' filter="url(#studioFx)"'+(state.texture?' style="filter:url(#wear)"':'');
-  return '<svg xmlns="http://www.w3.org/2000/svg" width="'+state.widthMm+'mm" height="'+state.heightMm+'mm" viewBox="0 0 500 500" preserveAspectRatio="none" role="img" aria-label="Stamp design">'+
+  const artView=Array.isArray(state.viewBox)&&state.viewBox.length===4&&state.viewBox.every(Number.isFinite)?state.viewBox.join(' '):'0 0 500 500';
+  const aspect=artView==='0 0 500 500'?'none':'xMidYMid meet';
+  return '<svg xmlns="http://www.w3.org/2000/svg" width="'+state.widthMm+'mm" height="'+state.heightMm+'mm" viewBox="'+artView+'" preserveAspectRatio="'+aspect+'" role="img" aria-label="Stamp design">'+
     '<defs>'+defs.join('')+fx+texture+'</defs>'+background+'<g'+filters+'>'+body+'</g></svg>';
 }
 
 // Shared SVG renderer: template cards and downloadable artwork use the same primitives.
 export function renderStampPreview(project,options={}){
   const safe={items:Array.isArray(project?.items)?project.items:[],widthMm:project?.widthMm||42,heightMm:project?.heightMm||42,
-    transparent:options.transparent!==false,texture:false,saturation:100,brightness:100};
+    transparent:options.transparent!==false,texture:false,saturation:100,brightness:100,viewBox:project?.viewBox};
   return studioSvg(safe,true);
 }
 
@@ -309,7 +311,7 @@ export function initStampStudio({root,toast=()=>{}}={}){
     const thumb=document.createElement('span');thumb.className='ak-template-thumb';
     thumb.innerHTML=studioSvg({items:JSON.parse(JSON.stringify(p.items)),widthMm:p.w,heightMm:p.h,transparent:false,texture:false,saturation:100,brightness:100,zoom:1,selected:null},true);
     const label=document.createElement('strong');label.textContent=p.name;b.append(thumb,label);
-    b.onclick=()=>applyChange(()=>{state.items=JSON.parse(JSON.stringify(p.items));state.widthMm=p.w;state.heightMm=p.h;state.selected=state.items[0]?.id||null;state.activePreset=p.name;studio.querySelector('[data-step="2"]').open=true});
+    b.onclick=()=>applyChange(()=>{state.items=JSON.parse(JSON.stringify(p.items));state.widthMm=p.w;state.heightMm=p.h;state.viewBox=null;state.selected=state.items[0]?.id||null;state.activePreset=p.name;studio.querySelector('[data-step="2"]').open=true});
     presetBox.append(b);
   });
   studio.querySelector('[data-new-blank]').onclick=()=>{if(state.items.length&&!confirm('Start a blank stamp? Your current design will be replaced.'))return;applyChange(()=>{state.items=[];state.selected=null;state.activePreset='Blank';state.widthMm=42;state.heightMm=42})};
@@ -476,8 +478,8 @@ export function initStampStudio({root,toast=()=>{}}={}){
     if(!confirm('Reset the whole stamp to its starting design? Current changes will be replaced.'))return;
     applyChange(()=>{
       const p=allPresets.find(x=>x.name===state.activePreset);
-      if(state.countryTemplateBase){const b=state.countryTemplateBase;state.items=JSON.parse(JSON.stringify(b.items));state.widthMm=b.widthMm;state.heightMm=b.heightMm;state.selected=state.items.find(e=>e.role==='name')?.id||state.items[0]?.id||null}
-      else if(p){state.items=JSON.parse(JSON.stringify(p.items));state.widthMm=p.w;state.heightMm=p.h;state.selected=state.items[0]?.id||null}
+      if(state.countryTemplateBase){const b=state.countryTemplateBase;state.items=JSON.parse(JSON.stringify(b.items));state.widthMm=b.widthMm;state.heightMm=b.heightMm;state.viewBox=b.viewBox;state.selected=state.items.find(e=>e.role==='name')?.id||state.items[0]?.id||null}
+      else if(p){state.items=JSON.parse(JSON.stringify(p.items));state.widthMm=p.w;state.heightMm=p.h;state.viewBox=null;state.selected=state.items[0]?.id||null}
       else{state.items=[];state.selected=null;state.widthMm=42;state.heightMm=42}
       state.transparent=true;state.texture=false;state.saturation=100;state.brightness=100;state.zoom=1;
     });
@@ -485,7 +487,7 @@ export function initStampStudio({root,toast=()=>{}}={}){
   }
   function newDesign(){
     if(state.items.length&&!confirm('Create a new blank design? Your current design will be replaced.'))return;
-    applyChange(()=>{state.items=[];state.selected=null;state.widthMm=42;state.heightMm=42;state.transparent=true;state.texture=false;state.saturation=100;state.brightness=100;state.zoom=1;state.activePreset='Blank';delete state.countryTemplate;delete state.countryTemplateBase;root.dataset.countryStudio='false'});
+    applyChange(()=>{state.items=[];state.selected=null;state.widthMm=42;state.heightMm=42;state.viewBox=null;state.transparent=true;state.texture=false;state.saturation=100;state.brightness=100;state.zoom=1;state.activePreset='Blank';delete state.countryTemplate;delete state.countryTemplateBase;root.dataset.countryStudio='false'});
     toast('New blank design ready.');
   }
   function goDownload(){
@@ -552,7 +554,7 @@ export function initStampStudio({root,toast=()=>{}}={}){
     state={
       ...state,
       items:JSON.parse(JSON.stringify(source.items)),
-      widthMm:source.widthMm,heightMm:source.heightMm,
+      widthMm:source.widthMm,heightMm:source.heightMm,viewBox:source.viewBox,
       selected:source.items.find(e=>e.role==='name')?.id||source.items[0]?.id||null,
       activePreset:template.id,
       countryTemplate:{id:template.id,name:template.name},
@@ -577,7 +579,14 @@ export function initStampStudio({root,toast=()=>{}}={}){
   let restored=false;
   try{
     const saved=JSON.parse(localStorage.getItem(autosaveKey)||'null');
-    if(saved?.version===3&&saved.state&&Array.isArray(saved.state.items)){state=saved.state;restored=true}
+    if(saved?.version===3&&saved.state&&Array.isArray(saved.state.items)){
+      state=saved.state;restored=true;
+      if(state.countryTemplate){
+        root.dataset.countryStudio='true';root.dataset.countryEditing='true';
+        studio.querySelector('[data-country-design-bar]').hidden=false;
+        countryDesignDirty=true;
+      }
+    }
   }catch{}
   if(!restored){state.items=JSON.parse(JSON.stringify(first.items));state.widthMm=first.w;state.heightMm=first.h;state.selected=state.items[0]?.id||null;state.activePreset=first.name}
   renderAll();autoSave();switchMode('quick');
