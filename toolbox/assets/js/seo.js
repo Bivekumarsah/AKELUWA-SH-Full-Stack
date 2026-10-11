@@ -100,12 +100,12 @@ const pageDefinitions = [
   {
     path: '/digital-stamp-maker/', tool: 'stamp', label: 'Digital Stamp Maker',
     title: 'Free Digital Stamp Maker Online | Akeluwa ToolBox',
-    description: 'Create a custom round, oval, or rectangular business stamp online. Add your organization details and logo, preview instantly, and download transparent PNG or SVG.',
+    description: 'Create free digital business stamps online with round, double-ring, oval, rectangular, date, authorized, paid, and received templates. Add English or Nepali text, logo, colors, rings, and download PNG or SVG.',
     heading: 'How to create a digital business stamp',
-    intro: 'Design a business or organization stamp you are authorized to use. Enter your details, choose a shape and color, optionally add your logo, and download a transparent file directly from your browser.',
-    steps: ['Enter the business or organization name, location, and optional registration or PAN details.', 'Choose a round, oval, or rectangular layout, select a color, and optionally add your own logo.', 'Confirm that you are authorized to create the stamp, then download a transparent PNG or editable SVG.'],
+    intro: 'Choose from multiple free stamp templates, add English or Nepali business details, upload your logo, adjust rings, border, font, color, texture, and preview the design instantly before downloading.',
+    steps: ['Choose a round, double-ring, oval, rectangular, date, authorized, paid, or received template.', 'Enter business details, English or Nepali text, optional registration or PAN information, and upload a logo if wanted.', 'Adjust color, font, border, text curve, logo size, rings, and texture, confirm authorization, then download PNG, transparent PNG, or SVG for free.'],
     notes: ['The tool runs in your browser and does not upload the stamp details or logo to a server.', 'Only create stamps for businesses or organizations you are authorized to represent. Do not imitate government, court, police, bank, notary, or other official seals.'],
-    faq: [['Can I add my company logo?', 'Yes. You can add a PNG, JPG, WebP, or SVG logo up to 4 MB. The logo is read locally in your browser.'], ['What formats can I download?', 'You can download a high-resolution transparent PNG for everyday use or an SVG for scalable design workflows.'], ['Can I make a government or official seal?', 'No. The tool is intended for authorized business and organization stamps, not for imitating government departments, courts, police, banks, notaries, or other official seals.']],
+    faq: [['Are all stamp templates free?', 'Yes. All current templates, design controls, logo upload, PNG export, transparent PNG export, and SVG export are free and require no account.'], ['Can I add my company logo?', 'Yes. You can add a PNG, JPG, WebP, or SVG logo up to 4 MB. The logo is read locally in your browser.'], ['What formats can I download?', 'You can download a normal PNG, transparent PNG, or SVG.'], ['Can I make a government or official seal?', 'No. The tool is intended for authorized business and organization stamps, not for imitating government departments, courts, police, banks, notaries, or other official seals.']],
   },
   {
     path: '/remove-background/', tool: 'background', label: 'Remove background',
