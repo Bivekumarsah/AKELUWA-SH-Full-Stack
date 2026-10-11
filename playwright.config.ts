@@ -8,6 +8,15 @@ export default defineConfig({
   workers: 1,
   use: {
     baseURL,
+    // Browser flows start as a returning visitor who declined optional analytics.
+    // Consent UI is tested separately; it must not obstruct unrelated interactions.
+    storageState: {
+      cookies: [],
+      origins: [{
+        origin: new URL(baseURL).origin,
+        localStorage: [{ name: "akeluwa-meta-pixel-consent", value: "declined" }],
+      }],
+    },
     channel: process.env.PLAYWRIGHT_CHANNEL || (process.env.CI ? undefined : "msedge"),
     screenshot: "only-on-failure",
     trace: "retain-on-failure",
