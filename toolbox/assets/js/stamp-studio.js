@@ -220,22 +220,50 @@ async function epsBlob(state){
 
 export function initStampStudio({root,toast=()=>{}}={}){
   if(!root||root.querySelector('[data-ak-studio]'))return;
-  let state={items:[],widthMm:42,heightMm:42,transparent:true,texture:false,saturation:100,brightness:100,zoom:1,selected:null};
+  let state={items:[],widthMm:42,heightMm:42,transparent:true,texture:false,saturation:100,brightness:100,zoom:1,selected:null,activePreset:'Round Business'};
   let undo=[],redo=[];
+  const autosaveKey='akeluwastamp-autosave-v3';
   const copy=()=>JSON.parse(JSON.stringify(state));
-  const restore=s=>{state=JSON.parse(JSON.stringify(s));renderAll()};
+  const autoSave=()=>{try{localStorage.setItem(autosaveKey,JSON.stringify({version:3,state}))}catch{}};
+  const restore=s=>{state=JSON.parse(JSON.stringify(s));renderAll();autoSave()};
   const remember=()=>{undo.push(copy());if(undo.length>40)undo.shift();redo=[]};
-  const applyChange=fn=>{remember();fn();renderAll()};
+  const applyChange=fn=>{remember();fn();renderAll();autoSave()};
   const studio=document.createElement('section');studio.dataset.akStudio='1';studio.hidden=true;
   studio.style.cssText='margin:18px 0;padding:18px;border:1px solid #dfe3e8;border-radius:14px;background:#fff';
-  studio.innerHTML='<div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap"><div><p style="margin:0;color:#1767c0;font-weight:700;font-size:12px">AKELUWA STAMP STUDIO</p><h2 style="margin:4px 0 6px">Create your stamp in 4 simple steps</h2><p style="margin:0;color:#66716a">Start with a sample, change the words, add anything you need, then download.</p></div><div style="display:flex;gap:6px"><button type="button" data-undo>↶ Undo</button><button type="button" data-redo>↷ Redo</button></div></div>'+
-  '<div data-steps style="display:grid;gap:14px;margin-top:18px">'+
-  '<section data-step="1" style="border:1px solid #e5e7eb;border-radius:12px;padding:16px"><h3 style="margin:0 0 4px">1. Choose a starting design</h3><p style="margin:0 0 12px;color:#66716a">Pick the closest sample. You can change everything later.</p><div data-presets style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px"></div><div style="margin-top:10px"><button type="button" data-new-blank>Start blank instead</button></div></section>'+
-  '<section data-step="2" style="border:1px solid #e5e7eb;border-radius:12px;padding:16px"><h3 style="margin:0 0 4px">2. Enter your details</h3><p style="margin:0 0 12px;color:#66716a">This updates the main sample text for you.</p><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px"><label>Business / organization<input data-quick-name type="text" placeholder="Your business name"></label><label>Address / location<input data-quick-address type="text" placeholder="Kathmandu, Nepal"></label><label>Center text<input data-quick-center type="text" placeholder="AUTHORIZED"></label></div><button type="button" data-quick-apply style="margin-top:10px">Apply these details</button></section>'+
-  '<section data-step="3" style="border:1px solid #e5e7eb;border-radius:12px;padding:16px"><h3 style="margin:0 0 4px">3. Customize the design</h3><p style="margin:0 0 12px;color:#66716a">Use simple buttons. Click an item on the preview when you want to fine-tune it.</p><div data-add-buttons style="display:flex;flex-wrap:wrap;gap:7px"></div><details style="margin-top:12px"><summary style="cursor:pointer;font-weight:700">More tools & all design items</summary><div data-items style="display:grid;gap:6px;margin-top:10px"></div></details><div data-properties style="margin-top:12px"></div></section>'+
-  '<section data-step="4" style="border:1px solid #e5e7eb;border-radius:12px;padding:16px"><h3 style="margin:0 0 4px">4. Size, effect & download</h3><div data-sheet style="display:grid;gap:12px;margin-top:12px"></div><label style="display:flex;gap:8px;align-items:flex-start;margin:12px 0"><input data-authorized type="checkbox"> <span>I am authorized to create and use this business or organization stamp.</span></label><div data-export style="display:flex;flex-wrap:wrap;gap:8px"></div></section>'+
-  '</div>'+
-  '<aside style="position:sticky;bottom:12px;margin-top:16px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;padding:12px"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><strong>Live preview</strong><div><button type="button" data-zoom-out>−</button><span data-zoom-label style="display:inline-block;min-width:48px;text-align:center">100%</span><button type="button" data-zoom-in>+</button></div></div><div data-preview style="margin-top:10px;min-height:260px;display:grid;place-items:center;overflow:auto;background:white;border-radius:9px;border:1px dashed #d1d5db"></div><p style="margin:8px 0 0;color:#66716a;font-size:12px">Tip: drag an item directly on the preview to move it.</p></aside>';
+  studio.innerHTML='<style>'+
+  '[data-ak-studio]{--ak-line:#e3e7ec;--ak-muted:#66716a;--ak-blue:#1767c0}'+
+  '[data-ak-studio] button,[data-ak-studio] select,[data-ak-studio] input{font:inherit}'+
+  '[data-ak-studio] button{cursor:pointer}'+
+  '[data-ak-studio] input:not([type="checkbox"]):not([type="color"]),[data-ak-studio] select{width:100%;box-sizing:border-box;padding:8px;border:1px solid #cfd6df;border-radius:7px;background:#fff}'+
+  '[data-ak-studio] .ak-studio-toolbar{position:sticky;top:84px;z-index:8;display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 0;background:#fff;border-bottom:1px solid var(--ak-line)}'+
+  '[data-ak-studio] .ak-studio-toolbar-group{display:flex;gap:6px;flex-wrap:wrap}'+
+  '[data-ak-studio] .ak-studio-workspace{display:grid;grid-template-columns:minmax(360px,.85fr) minmax(440px,1.15fr);gap:18px;align-items:start;margin-top:14px}'+
+  '[data-ak-studio] .ak-studio-controls{max-height:calc(100vh - 150px);overflow-y:auto;padding-right:8px;scrollbar-gutter:stable}'+
+  '[data-ak-studio] .ak-step{border:1px solid var(--ak-line);border-radius:12px;background:#fff;margin-bottom:10px;overflow:hidden}'+
+  '[data-ak-studio] .ak-step summary{cursor:pointer;padding:14px 16px;font-weight:800;background:#f8fafc;list-style:none}'+
+  '[data-ak-studio] .ak-step summary::-webkit-details-marker{display:none}'+
+  '[data-ak-studio] .ak-step-body{padding:0 16px 16px}'+
+  '[data-ak-studio] .ak-studio-preview-pane{position:sticky;top:100px;align-self:start;background:#f8fafc;border:1px solid var(--ak-line);border-radius:14px;padding:14px}'+
+  '[data-ak-studio] .ak-preview-canvas{margin-top:10px;min-height:520px;display:grid;place-items:center;overflow:auto;background:#fff;border-radius:10px;border:1px dashed #cfd6df;padding:18px}'+
+  '[data-ak-studio] .ak-preview-canvas svg{display:block}'+
+  '[data-ak-studio] .ak-template-card{display:grid;grid-template-rows:86px auto;gap:7px;padding:9px;border:1px solid #dbe1e8;border-radius:9px;background:#fff;text-align:left}'+
+  '[data-ak-studio] .ak-template-thumb{display:grid;place-items:center;background:#f8fafc;border-radius:7px;overflow:hidden}'+
+  '[data-ak-studio] .ak-template-thumb svg{max-width:82px;max-height:76px;width:auto;height:auto}'+
+  '[data-ak-studio] .ak-sticky-download{position:sticky;bottom:0;z-index:5;padding:9px 0;background:linear-gradient(transparent,#fff 25%)}'+
+  '@media(max-width:980px){[data-ak-studio] .ak-studio-toolbar{top:8px}[data-ak-studio] .ak-studio-workspace{grid-template-columns:1fr}[data-ak-studio] .ak-studio-controls{max-height:none;overflow:visible;padding-right:0}[data-ak-studio] .ak-studio-preview-pane{position:relative;top:0;order:-1}[data-ak-studio] .ak-preview-canvas{min-height:320px}}'+
+  '</style>'+
+  '<div><p style="margin:0;color:#1767c0;font-weight:800;font-size:12px">AKELUWA STAMP STUDIO</p><h2 style="margin:4px 0 6px">Create your stamp with the preview always visible</h2><p style="margin:0;color:#66716a">Edit on the left. Your live stamp stays locked on the right while you scroll.</p></div>'+
+  '<div class="ak-studio-toolbar"><div class="ak-studio-toolbar-group"><button type="button" data-undo>↶ Undo</button><button type="button" data-redo>↷ Redo</button><button type="button" data-new-design>New design</button></div><div class="ak-studio-toolbar-group"><button type="button" data-reset-selected>Reset selected</button><button type="button" data-reset-all>Reset whole stamp</button><button type="button" data-go-download>Download ↓</button></div></div>'+
+  '<div class="ak-studio-workspace">'+
+    '<div class="ak-studio-controls" data-controls>'+
+      '<details class="ak-step" data-step="1" open><summary>1. Choose a starting design</summary><div class="ak-step-body"><p style="color:#66716a">Pick the closest sample. Every part can still be changed.</p><div data-presets style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px"></div><div style="margin-top:10px"><button type="button" data-new-blank>Start blank instead</button></div></div></details>'+
+      '<details class="ak-step" data-step="2"><summary>2. Enter your details</summary><div class="ak-step-body"><p style="color:#66716a">Change the main words without touching advanced settings.</p><div style="display:grid;gap:10px"><label>Business / organization<input data-quick-name type="text" placeholder="Your business name"></label><label>Address / location<input data-quick-address type="text" placeholder="Kathmandu, Nepal"></label><label>Center text<input data-quick-center type="text" placeholder="AUTHORIZED"></label></div><button type="button" data-quick-apply style="margin-top:10px">Apply these details</button></div></details>'+
+      '<details class="ak-step" data-step="3"><summary>3. Text, logo, rings & shapes</summary><div class="ak-step-body"><p style="color:#66716a">Add what you need. Click any item on the preview to adjust it.</p><div data-add-buttons style="display:flex;flex-wrap:wrap;gap:7px"></div><details style="margin-top:12px"><summary style="cursor:pointer;font-weight:700">All design items</summary><div data-items style="display:grid;gap:6px;margin-top:10px"></div></details><div data-properties style="margin-top:12px"></div></div></details>'+
+      '<details class="ak-step" data-step="4"><summary>4. Size, colors, effects & download</summary><div class="ak-step-body"><div data-sheet style="display:grid;gap:12px;margin-top:8px"></div><label style="display:flex;gap:8px;align-items:flex-start;margin:12px 0"><input data-authorized type="checkbox"> <span>I am authorized to create and use this business or organization stamp.</span></label><div data-export style="display:flex;flex-wrap:wrap;gap:8px"></div></div></details>'+
+      '<div class="ak-sticky-download"><button type="button" data-go-download-bottom style="width:100%;padding:10px;font-weight:800">Download or save stamp ↓</button></div>'+
+    '</div>'+
+    '<aside class="ak-studio-preview-pane"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><div><strong>Live preview</strong><div style="font-size:12px;color:#66716a">Stays visible while you edit</div></div><div style="display:flex;gap:5px;align-items:center"><button type="button" data-fit>Fit</button><button type="button" data-reset-view>Reset view</button><button type="button" data-zoom-out>−</button><span data-zoom-label style="display:inline-block;min-width:48px;text-align:center">100%</span><button type="button" data-zoom-in>+</button></div></div><div class="ak-preview-canvas" data-preview></div><p style="margin:8px 0 0;color:#66716a;font-size:12px">Tip: drag an unlocked item on the preview to move it.</p></aside>'+
+  '</div>';
   root.append(studio);
 
   const nav=document.createElement('nav');nav.setAttribute('aria-label','Stamp maker modes');
@@ -257,11 +285,14 @@ export function initStampStudio({root,toast=()=>{}}={}){
   const presetBox=studio.querySelector('[data-presets]'),preview=studio.querySelector('[data-preview]'),itemsBox=studio.querySelector('[data-items]'),props=studio.querySelector('[data-properties]');
   const allPresets=presets();
   allPresets.forEach(p=>{
-    const b=document.createElement('button');b.type='button';b.textContent=p.name;b.style.cssText='padding:10px;border:1px solid #dbe1e8;border-radius:8px;background:#fff;text-align:left;cursor:pointer';
-    b.onclick=()=>applyChange(()=>{state.items=JSON.parse(JSON.stringify(p.items));state.widthMm=p.w;state.heightMm=p.h;state.selected=state.items[0]?.id||null});
+    const b=document.createElement('button');b.type='button';b.className='ak-template-card';b.dataset.presetName=p.name;
+    const thumb=document.createElement('span');thumb.className='ak-template-thumb';
+    thumb.innerHTML=studioSvg({items:JSON.parse(JSON.stringify(p.items)),widthMm:p.w,heightMm:p.h,transparent:false,texture:false,saturation:100,brightness:100,zoom:1,selected:null},true);
+    const label=document.createElement('strong');label.textContent=p.name;b.append(thumb,label);
+    b.onclick=()=>applyChange(()=>{state.items=JSON.parse(JSON.stringify(p.items));state.widthMm=p.w;state.heightMm=p.h;state.selected=state.items[0]?.id||null;state.activePreset=p.name;studio.querySelector('[data-step="2"]').open=true});
     presetBox.append(b);
   });
-  studio.querySelector('[data-new-blank]').onclick=()=>applyChange(()=>{state.items=[];state.selected=null});
+  studio.querySelector('[data-new-blank]').onclick=()=>{if(state.items.length&&!confirm('Start a blank stamp? Your current design will be replaced.'))return;applyChange(()=>{state.items=[];state.selected=null;state.activePreset='Blank';state.widthMm=42;state.heightMm=42})};
 
   studio.querySelector('[data-quick-apply]').onclick=()=>{
     const name=clean(studio.querySelector('[data-quick-name]').value||'YOUR BUSINESS NAME'),address=clean(studio.querySelector('[data-quick-address]').value||'YOUR LOCATION'),center=clean(studio.querySelector('[data-quick-center]').value||'AUTHORIZED');
@@ -270,7 +301,7 @@ export function initStampStudio({root,toast=()=>{}}={}){
       if(texts[0])texts[0].text=name;else state.items.push({...baseItem('text'),text:name,y:200});
       if(texts[1])texts[1].text=address;else state.items.push({...baseItem('text'),text:address,y:255,size:21});
       if(center){if(texts[2])texts[2].text=center;else state.items.push({...baseItem('text'),text:center,y:305,size:23})}
-    });toast('Details applied. You can still change each item.');
+    });studio.querySelector('[data-step="3"]').open=true;toast('Details applied. You can still change each item.');
   };
 
   const addBox=studio.querySelector('[data-add-buttons]');
@@ -291,24 +322,37 @@ export function initStampStudio({root,toast=()=>{}}={}){
   function updatePreview(){
     preview.innerHTML=studioSvg(state);
     const svg=preview.querySelector('svg');if(!svg)return;
-    svg.style.cssText='max-width:100%;height:auto;transform:scale('+state.zoom+');transform-origin:center;touch-action:none';
+    svg.style.cssText='width:min(100%,560px);height:auto;max-height:560px;transform:scale('+state.zoom+');transform-origin:center;touch-action:none';
     studio.querySelector('[data-zoom-label]').textContent=Math.round(state.zoom*100)+'%';
     let drag=null;
-    svg.addEventListener('pointerdown',ev=>{const t=ev.target.closest('[data-element]');if(!t)return;const id=Number(t.dataset.element),item=state.items.find(i=>i.id===id);if(!item)return;state.selected=id;renderItems();renderProps();const rect=svg.getBoundingClientRect();drag={id,rect,start:copy(),startX:item.x,startY:item.y,startX2:item.x2,startY2:item.y2,target:t};svg.setPointerCapture(ev.pointerId)});
-    svg.addEventListener('pointermove',ev=>{if(!drag)return;const e=state.items.find(i=>i.id===drag.id);if(!e)return;const x=clamp((ev.clientX-drag.rect.left)*500/drag.rect.width,0,500),y=clamp((ev.clientY-drag.rect.top)*500/drag.rect.height,0,500),dx=x-drag.startX,dy=y-drag.startY;e.x=x;e.y=y;if(e.type==='line'){e.x2=clamp((drag.startX2||e.x2)+dx,0,500);e.y2=clamp((drag.startY2||e.y2)+dy,0,500)}if(drag.target)drag.target.style.transform='translate('+dx+'px,'+dy+'px)'});
-    svg.addEventListener('pointerup',()=>{if(drag){undo.push(drag.start);if(undo.length>40)undo.shift();redo=[];drag=null;renderAll()}});
+    svg.addEventListener('pointerdown',ev=>{
+      const t=ev.target.closest('[data-element]');if(!t)return;
+      const id=Number(t.dataset.element),item=state.items.find(i=>i.id===id);if(!item)return;
+      state.selected=id;renderItems();renderProps();
+      if(item.locked){toast('This item is locked. Unlock it before moving.');return}
+      const rect=svg.getBoundingClientRect();drag={id,rect,start:copy(),startX:item.x,startY:item.y,startX2:item.x2,startY2:item.y2,target:t};svg.setPointerCapture(ev.pointerId);
+    });
+    svg.addEventListener('pointermove',ev=>{
+      if(!drag)return;const e=state.items.find(i=>i.id===drag.id);if(!e)return;
+      const x=clamp((ev.clientX-drag.rect.left)*500/drag.rect.width,0,500),y=clamp((ev.clientY-drag.rect.top)*500/drag.rect.height,0,500),dx=x-drag.startX,dy=y-drag.startY;
+      e.x=x;e.y=y;if(e.type==='line'){e.x2=clamp((drag.startX2||e.x2)+dx,0,500);e.y2=clamp((drag.startY2||e.y2)+dy,0,500)}
+      if(drag.target)drag.target.style.transform='translate('+dx+'px,'+dy+'px)';
+    });
+    svg.addEventListener('pointerup',()=>{if(drag){undo.push(drag.start);if(undo.length>40)undo.shift();redo=[];drag=null;renderAll();autoSave()}});
+    svg.addEventListener('pointercancel',()=>{if(drag){drag=null;renderAll()}});
   }
   function renderItems(){
     itemsBox.replaceChildren();
     if(!state.items.length){itemsBox.textContent='No items yet. Add text, a ring, shape, logo or symbol above.';return}
     state.items.forEach((e,index)=>{
-      const row=document.createElement('div');row.style.cssText='display:grid;grid-template-columns:1fr auto auto auto auto;gap:4px;align-items:center';
-      const pick=document.createElement('button');pick.type='button';pick.textContent=(e.visible?'':'◌ ')+nameFor(e)+(e.text?' — '+clean(e.text,24):'');pick.style.cssText='text-align:left;padding:8px;border:1px solid '+(state.selected===e.id?'#1767c0':'#e1e5ea')+';border-radius:6px';pick.onclick=()=>{state.selected=e.id;renderItems();renderProps()};
+      const row=document.createElement('div');row.style.cssText='display:grid;grid-template-columns:minmax(0,1fr) repeat(5,auto);gap:4px;align-items:center';
+      const pick=document.createElement('button');pick.type='button';pick.textContent=(e.locked?'🔒 ':'')+(e.visible?'':'◌ ')+nameFor(e)+(e.text?' — '+clean(e.text,22):'');pick.style.cssText='min-width:0;text-align:left;padding:8px;border:1px solid '+(state.selected===e.id?'#1767c0':'#e1e5ea')+';border-radius:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';pick.onclick=()=>{state.selected=e.id;renderItems();renderProps()};
+      const lock=document.createElement('button');lock.type='button';lock.textContent=e.locked?'🔒':'🔓';lock.title=e.locked?'Unlock item':'Lock item';lock.onclick=()=>applyChange(()=>e.locked=!e.locked);
       const vis=document.createElement('button');vis.type='button';vis.textContent=e.visible?'👁':'◌';vis.title='Show or hide';vis.onclick=()=>applyChange(()=>e.visible=!e.visible);
+      const dup=document.createElement('button');dup.type='button';dup.textContent='⧉';dup.title='Duplicate';dup.onclick=()=>applyChange(()=>{const c={...JSON.parse(JSON.stringify(e)),id:uid(),locked:false,x:clamp((e.x||250)+12,0,500),y:clamp((e.y||250)+12,0,500)};state.items.push(c);state.selected=c.id});
       const up=document.createElement('button');up.type='button';up.textContent='↑';up.title='Move forward';up.onclick=()=>{if(index>=state.items.length-1)return;applyChange(()=>{const t=state.items[index+1];state.items[index+1]=e;state.items[index]=t})};
       const down=document.createElement('button');down.type='button';down.textContent='↓';down.title='Move backward';down.onclick=()=>{if(index<=0)return;applyChange(()=>{const t=state.items[index-1];state.items[index-1]=e;state.items[index]=t})};
-      const more=document.createElement('button');more.type='button';more.textContent='⋯';more.title='Duplicate';more.onclick=()=>applyChange(()=>{const c={...JSON.parse(JSON.stringify(e)),id:uid(),x:clamp((e.x||250)+12,0,500),y:clamp((e.y||250)+12,0,500)};state.items.push(c);state.selected=c.id});
-      row.append(pick,vis,up,down,more);itemsBox.append(row);
+      row.append(pick,lock,vis,dup,up,down);itemsBox.append(row);
     });
   }
   function prop(label,key,input,help=''){
@@ -318,8 +362,14 @@ export function initStampStudio({root,toast=()=>{}}={}){
   }
   function renderProps(){
     props.replaceChildren();const e=state.items.find(i=>i.id===state.selected);if(!e){props.innerHTML='<p style="color:#66716a">Click an item in the preview or item list to edit it.</p>';return}
-    const head=document.createElement('div');head.style.cssText='display:flex;justify-content:space-between;align-items:center;gap:8px;margin:12px 0 8px';
-    const strong=document.createElement('strong');strong.textContent='Edit '+nameFor(e);const del=document.createElement('button');del.type='button';del.textContent='Delete item';del.onclick=()=>applyChange(()=>{state.items=state.items.filter(i=>i.id!==e.id);state.selected=state.items[0]?.id||null});head.append(strong,del);props.append(head);
+    const head=document.createElement('div');head.style.cssText='display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin:12px 0 8px';
+    const strong=document.createElement('strong');strong.textContent='Edit '+nameFor(e);
+    const actions=document.createElement('div');actions.style.cssText='display:flex;gap:5px;flex-wrap:wrap';
+    const centerX=document.createElement('button');centerX.type='button';centerX.textContent='Center ↔';centerX.onclick=()=>applyChange(()=>{const dx=250-e.x;e.x=250;if(e.type==='line')e.x2=clamp(e.x2+dx,0,500)});
+    const centerY=document.createElement('button');centerY.type='button';centerY.textContent='Center ↕';centerY.onclick=()=>applyChange(()=>{const dy=250-e.y;e.y=250;if(e.type==='line')e.y2=clamp(e.y2+dy,0,500)});
+    const duplicate=document.createElement('button');duplicate.type='button';duplicate.textContent='Duplicate';duplicate.onclick=()=>applyChange(()=>{const c={...JSON.parse(JSON.stringify(e)),id:uid(),locked:false,x:clamp((e.x||250)+12,0,500),y:clamp((e.y||250)+12,0,500)};state.items.push(c);state.selected=c.id});
+    const del=document.createElement('button');del.type='button';del.textContent='Delete';del.onclick=()=>applyChange(()=>{state.items=state.items.filter(i=>i.id!==e.id);state.selected=state.items[0]?.id||null});
+    actions.append(centerX,centerY,duplicate,del);head.append(strong,actions);props.append(head);
     const grid=document.createElement('div');grid.style.cssText='display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:9px';props.append(grid);
     const add=(label,key,input,help='')=>{input.onchange=()=>applyChange(()=>{let v=input.type==='checkbox'?input.checked:input.value;if(input.type==='number')v=Number(v);e[key]=v});grid.append(inputRow(label,input,help))};
     if(e.type==='text'||e.type==='arcText'){add('Words','text',textInput(e.text));add('Font','font',selectInput(e.font,FONTS));add('Text size','size',numberInput(e.size,8,90));add('Letter spacing','spacing',numberInput(e.spacing||0,0,20,.5));add('Boldness','weight',selectInput(e.weight||700,[[400,'Regular'],[600,'Semi-bold'],[700,'Bold'],[800,'Extra bold']]));}
@@ -333,7 +383,7 @@ export function initStampStudio({root,toast=()=>{}}={}){
     if(e.type==='line'){add('End X','x2',numberInput(e.x2,0,500));add('End Y','y2',numberInput(e.y2,0,500));add('Thickness','thickness',numberInput(e.thickness,1,25));add('Line style','dash',selectInput(e.dash||'solid',[['solid','Solid'],['dashed','Dashed'],['dotted','Dotted']]));}
     if(e.type==='image'){add('Width','w',numberInput(e.w,20,300));add('Height','h',numberInput(e.h,20,300));}
     if(e.type!=='image')add('Color','ink',colorInput(e.ink));
-    add('Horizontal position','x',numberInput(e.x,0,500));add('Vertical position','y',numberInput(e.y,0,500));add('Show this item','visible',checkInput(e.visible));
+    add('Horizontal position','x',numberInput(e.x,0,500));add('Vertical position','y',numberInput(e.y,0,500));add('Show this item','visible',checkInput(e.visible));add('Lock this item','locked',checkInput(e.locked),'Locked items cannot be dragged accidentally.');
   };
 
   function renderSheet(){
@@ -356,18 +406,76 @@ export function initStampStudio({root,toast=()=>{}}={}){
     make('PDF',async()=>{if(!allowed())return;try{if(!window.PDFLib)throw new Error('PDF library unavailable');const canvas=await canvasFromSvg(studioSvg(state,true),1600,Math.max(450,Math.round(1600*state.heightMm/state.widthMm))),png=await canvasBlob(canvas),pdf=await window.PDFLib.PDFDocument.create(),img=await pdf.embedPng(await png.arrayBuffer()),pw=state.widthMm*72/25.4,ph=state.heightMm*72/25.4,page=pdf.addPage([pw,ph]);page.drawImage(img,{x:0,y:0,width:pw,height:ph});blobDownload(new Blob([await pdf.save()],{type:'application/pdf'}),'akeluwastamp.pdf')}catch(e){toast('Could not create PDF.')}} );
     make('DOCX',async()=>{if(!allowed())return;try{blobDownload(await docxBlob(state),'akeluwastamp.docx')}catch(e){console.error(e);toast('Could not create DOCX.')}});
     make('EPS',async()=>{if(!allowed())return;try{blobDownload(await epsBlob(state),'akeluwastamp.eps')}catch(e){console.error(e);toast('Could not create EPS.')}});
-    make('Save project',()=>blobDownload(new Blob([JSON.stringify({version:2,state},null,2)],{type:'application/json'}),'akeluwastamp-project.json'));
-    const saveLocal=document.createElement('button');saveLocal.type='button';saveLocal.textContent='Save in browser';saveLocal.onclick=()=>{localStorage.setItem('akeluwastamp-project-v2',JSON.stringify({version:2,state}));toast('Project saved in this browser.')};box.append(saveLocal);
-    const loadLocal=document.createElement('button');loadLocal.type='button';loadLocal.textContent='Open browser save';loadLocal.onclick=()=>{try{const v=JSON.parse(localStorage.getItem('akeluwastamp-project-v2')||'null');if(!v?.state)throw Error();remember();state=v.state;renderAll();toast('Saved project opened.')}catch{toast('No saved project found in this browser.')}};box.append(loadLocal);
+    make('Save project',()=>blobDownload(new Blob([JSON.stringify({version:3,state},null,2)],{type:'application/json'}),'akeluwastamp-project.json'));
+    const saveLocal=document.createElement('button');saveLocal.type='button';saveLocal.textContent='Save in browser';saveLocal.onclick=()=>{localStorage.setItem('akeluwastamp-project-v3',JSON.stringify({version:2,state}));toast('Project saved in this browser.')};box.append(saveLocal);
+    const loadLocal=document.createElement('button');loadLocal.type='button';loadLocal.textContent='Open browser save';loadLocal.onclick=()=>{try{const v=JSON.parse(localStorage.getItem('akeluwastamp-project-v3')||'null');if(!v?.state)throw Error();remember();state=v.state;renderAll();toast('Saved project opened.')}catch{toast('No saved project found in this browser.')}};box.append(loadLocal);
     const load=document.createElement('button');load.type='button';load.textContent='Open project file';box.append(load);
     const inp=document.createElement('input');inp.type='file';inp.accept='.json,application/json';inp.hidden=true;studio.append(inp);load.onclick=()=>inp.click();inp.onchange=async()=>{try{const v=JSON.parse(await inp.files[0].text());if(!v?.state||!Array.isArray(v.state.items))throw Error();remember();state=v.state;renderAll();toast('Project opened.')}catch{toast('Could not open that project file.')}finally{inp.value=''}};
   }
-  function renderAll(){updatePreview();renderItems();renderProps();renderSheet();renderExport();studio.querySelector('[data-undo]').disabled=!undo.length;studio.querySelector('[data-redo]').disabled=!redo.length}
+  function updatePresetSelection(){
+    studio.querySelectorAll('[data-preset-name]').forEach(btn=>{
+      const active=btn.dataset.presetName===state.activePreset;
+      btn.style.borderColor=active?'#1767c0':'#dbe1e8';
+      btn.style.boxShadow=active?'0 0 0 2px #1767c018':'none';
+    });
+  }
+  function renderAll(){
+    updatePreview();renderItems();renderProps();renderSheet();renderExport();updatePresetSelection();
+    studio.querySelector('[data-undo]').disabled=!undo.length;studio.querySelector('[data-redo]').disabled=!redo.length;
+    studio.querySelector('[data-reset-selected]').disabled=!state.items.some(i=>i.id===state.selected);
+  }
+  function resetSelected(){
+    const index=state.items.findIndex(i=>i.id===state.selected);if(index<0)return;
+    applyChange(()=>{
+      const current=state.items[index],fresh=baseItem(current.type);
+      fresh.id=current.id;fresh.locked=false;
+      if('text' in current)fresh.text=current.text;
+      if(current.type==='image')fresh.src=current.src;
+      state.items[index]=fresh;
+    });
+    toast('Selected item reset.');
+  }
+  function resetWhole(){
+    if(!confirm('Reset the whole stamp to its starting design? Current changes will be replaced.'))return;
+    applyChange(()=>{
+      const p=allPresets.find(x=>x.name===state.activePreset);
+      if(p){state.items=JSON.parse(JSON.stringify(p.items));state.widthMm=p.w;state.heightMm=p.h;state.selected=state.items[0]?.id||null}
+      else{state.items=[];state.selected=null;state.widthMm=42;state.heightMm=42}
+      state.transparent=true;state.texture=false;state.saturation=100;state.brightness=100;state.zoom=1;
+    });
+    toast('Whole stamp reset.');
+  }
+  function newDesign(){
+    if(state.items.length&&!confirm('Create a new blank design? Your current design will be replaced.'))return;
+    applyChange(()=>{state.items=[];state.selected=null;state.widthMm=42;state.heightMm=42;state.transparent=true;state.texture=false;state.saturation=100;state.brightness=100;state.zoom=1;state.activePreset='Blank'});
+    toast('New blank design ready.');
+  }
+  function goDownload(){
+    const step=studio.querySelector('[data-step="4"]');step.open=true;
+    const controls=studio.querySelector('[data-controls]');controls.scrollTo({top:Math.max(0,step.offsetTop-10),behavior:'smooth'});
+  }
   studio.querySelector('[data-undo]').onclick=()=>{if(!undo.length)return;redo.push(copy());restore(undo.pop())};
   studio.querySelector('[data-redo]').onclick=()=>{if(!redo.length)return;undo.push(copy());restore(redo.pop())};
+  studio.querySelector('[data-new-design]').onclick=newDesign;
+  studio.querySelector('[data-reset-selected]').onclick=resetSelected;
+  studio.querySelector('[data-reset-all]').onclick=resetWhole;
+  studio.querySelector('[data-go-download]').onclick=goDownload;
+  studio.querySelector('[data-go-download-bottom]').onclick=goDownload;
   studio.querySelector('[data-zoom-in]').onclick=()=>{state.zoom=Math.min(1.6,state.zoom+.1);updatePreview()};
   studio.querySelector('[data-zoom-out]').onclick=()=>{state.zoom=Math.max(.6,state.zoom-.1);updatePreview()};
+  studio.querySelector('[data-reset-view]').onclick=()=>{state.zoom=1;updatePreview()};
+  studio.querySelector('[data-fit]').onclick=()=>{
+    const svg=preview.querySelector('svg');if(!svg)return;
+    const baseWidth=svg.getBoundingClientRect().width/Math.max(.1,state.zoom),available=Math.max(120,preview.clientWidth-40);
+    state.zoom=clamp(available/baseWidth,.6,1.35);updatePreview();preview.scrollTo({top:0,left:0,behavior:'smooth'});
+  };
 
-  const first=allPresets[0];state.items=JSON.parse(JSON.stringify(first.items));state.widthMm=first.w;state.heightMm=first.h;state.selected=state.items[0]?.id||null;
-  renderAll();switchMode('quick');
+  const first=allPresets[0];
+  let restored=false;
+  try{
+    const saved=JSON.parse(localStorage.getItem(autosaveKey)||'null');
+    if(saved?.version===3&&saved.state&&Array.isArray(saved.state.items)){state=saved.state;restored=true}
+  }catch{}
+  if(!restored){state.items=JSON.parse(JSON.stringify(first.items));state.widthMm=first.w;state.heightMm=first.h;state.selected=state.items[0]?.id||null;state.activePreset=first.name}
+  renderAll();autoSave();switchMode('quick');
 }
