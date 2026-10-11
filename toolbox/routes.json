@@ -38,5 +38,9 @@
   {
     "path": "/remove-background/",
     "tool": "background"
+  },
+  {
+    "path": "/digital-stamp-maker/",
+    "tool": "stamp"
   }
 ]
