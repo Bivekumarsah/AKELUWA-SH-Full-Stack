@@ -180,6 +180,24 @@
     .stamp-status { margin:12px 0 0; color:var(--muted); font-size:11px; line-height:1.6; }
     @media(max-width:800px){ .stamp-tool{padding:26px 16px 40px}.stamp-heading{display:block}.stamp-heading h1{font-size:35px}.stamp-local{display:inline-flex;margin-top:14px}.stamp-layout{grid-template-columns:1fr}.stamp-preview-stage{min-height:340px;padding:18px} }
     @media(max-width:430px){ .stamp-two,.stamp-actions{grid-template-columns:1fr} }
+
+    .stamp-template-panel{margin-bottom:20px;padding:20px;background:#fff;border:1px solid var(--line);border-radius:8px}
+    .stamp-panel-title strong{display:block;font-size:15px}.stamp-panel-title small{display:block;margin-top:3px;color:var(--muted);font-size:11px}
+    .stamp-template-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:16px}
+    .stamp-template{min-height:105px;padding:14px 9px;border:1px solid var(--line);border-radius:7px;background:#fff;color:var(--ink);text-align:center}
+    .stamp-template:hover,.stamp-template.active{border-color:#1767c0;background:#f1f7ff;box-shadow:0 0 0 2px #1767c018}
+    .stamp-template-icon{display:block;font-size:30px;line-height:1;color:#0b4ea2;margin-bottom:9px}.stamp-template strong{display:block;font-size:12px}.stamp-template small{display:block;margin-top:3px;color:var(--muted);font-size:9px}
+    .stamp-v2{grid-template-columns:minmax(360px,.9fr) minmax(440px,1.1fr)}
+    .stamp-controls{max-height:none}.stamp-section h2{font-size:13px}
+    .stamp-range{display:block;margin-top:16px}.stamp-range>span{display:flex;justify-content:space-between;margin-bottom:7px;font-size:12px;font-weight:600;color:#4b5c4b}.stamp-range output{color:#0b4ea2}
+    .stamp-range input{width:100%;accent-color:#1767c0}
+    .stamp-toggle-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:18px}.stamp-toggle{display:flex;gap:8px;align-items:center;padding:10px;border:1px solid var(--line);border-radius:6px;font-size:11px}.stamp-toggle input{accent-color:#1767c0}
+    .stamp-preview-tools{display:flex;align-items:center;gap:7px}.stamp-preview-tools .btn{min-width:36px;padding:6px 9px}.stamp-preview-tools span{min-width:46px;text-align:center;font-size:11px;color:var(--muted)}
+    .stamp-samples{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:12px}.stamp-mini{min-height:58px;border:1px solid var(--line);border-radius:6px;background:#fafcfb;color:var(--ink);font-size:10px}.stamp-mini:hover{border-color:#1767c0;background:#f1f7ff}
+    .stamp-actions-v2{grid-template-columns:1fr 1fr}.stamp-free-note{margin:12px 0 0;padding:10px;border-radius:6px;background:#edf7f2;color:#245b45;font-size:10px;font-weight:600;text-align:center}
+    .stamp-preview-stage{transition:.15s}.stamp-preview-stage #stampPreview{transform-origin:center;transition:transform .15s}
+    @media(max-width:980px){.stamp-template-grid{grid-template-columns:repeat(4,1fr)}.stamp-v2{grid-template-columns:1fr}}
+    @media(max-width:600px){.stamp-template-grid{grid-template-columns:repeat(2,1fr)}.stamp-samples{grid-template-columns:1fr}.stamp-toggle-grid{grid-template-columns:1fr}}
   </style>
   <link rel="stylesheet" href="/assets/css/design.css" />
   <meta name="theme-color" content="#195443" />
@@ -420,42 +438,86 @@
     </section>
     <section class="stamp-tool hidden" id="stampTool">
       <div class="stamp-heading">
-        <div><p class="eyebrow">Business utility</p><h1>Digital Stamp Maker</h1><p>Create a stamp for a business or organization you are authorized to represent. Everything is generated in your browser.</p></div>
-        <span class="stamp-local"><svg class="icon" aria-hidden="true"><use href="#i-shield"></use></svg> Local processing</span>
+        <div><p class="eyebrow">Free business utility</p><h1>Digital Stamp Maker</h1><p>Choose a template, add your business details, customize the design, and download a professional stamp. All features are free and work in your browser.</p></div>
+        <span class="stamp-local"><svg class="icon" aria-hidden="true"><use href="#i-shield"></use></svg> Free · Local processing</span>
       </div>
-      <div class="stamp-layout">
+
+      <div class="stamp-template-panel">
+        <div class="stamp-panel-title"><div><strong>1. Template selector</strong><small>Choose the stamp style you want to create</small></div></div>
+        <div class="stamp-template-grid" id="stampTemplates">
+          <button type="button" class="stamp-template active" data-template="round"><span class="stamp-template-icon">◯</span><strong>Round stamp</strong><small>Classic company seal</small></button>
+          <button type="button" class="stamp-template" data-template="double"><span class="stamp-template-icon">◎</span><strong>Double ring</strong><small>Formal company seal</small></button>
+          <button type="button" class="stamp-template" data-template="oval"><span class="stamp-template-icon">⬭</span><strong>Oval stamp</strong><small>Compact business seal</small></button>
+          <button type="button" class="stamp-template" data-template="rect"><span class="stamp-template-icon">▭</span><strong>Rectangle</strong><small>Office stamp</small></button>
+          <button type="button" class="stamp-template" data-template="date"><span class="stamp-template-icon">▣</span><strong>Date stamp</strong><small>Date + company details</small></button>
+          <button type="button" class="stamp-template" data-template="authorized"><span class="stamp-template-icon">✓</span><strong>Authorized</strong><small>Approval-style stamp</small></button>
+          <button type="button" class="stamp-template" data-template="paid"><span class="stamp-template-icon">₹</span><strong>Paid</strong><small>Payment received stamp</small></button>
+          <button type="button" class="stamp-template" data-template="received"><span class="stamp-template-icon">↓</span><strong>Received</strong><small>Document receipt stamp</small></button>
+        </div>
+      </div>
+
+      <div class="stamp-layout stamp-v2">
         <form class="stamp-controls" id="stampForm">
           <div class="stamp-section">
-            <h2>Stamp details</h2>
-            <label class="stamp-field"><span>Business / organization name</span><input id="stampName" type="text" maxlength="60" value="AKELUWA Softwarehub" autocomplete="organization" /></label>
-            <label class="stamp-field"><span>Address or location</span><input id="stampAddress" type="text" maxlength="70" value="Kathmandu, Nepal" autocomplete="street-address" /></label>
-            <label class="stamp-field"><span>Registration / PAN <small>optional</small></span><input id="stampRegistration" type="text" maxlength="45" placeholder="Reg. No. / PAN" /></label>
-            <label class="stamp-field"><span>Center text <small>optional</small></span><input id="stampCenterText" type="text" maxlength="28" value="AUTHORIZED" placeholder="AUTHORIZED / PAID / RECEIVED" /></label>
-            <label class="stamp-field"><span>Date <small>optional</small></span><input id="stampDate" type="date" /></label>
-          </div>
-          <div class="stamp-section">
-            <h2>Style</h2>
+            <h2>2 · Stamp content</h2>
+            <label class="stamp-field"><span>Company / organization name</span><input id="stampName" type="text" maxlength="70" value="AKELUWA Softwarehub" autocomplete="organization" /></label>
+            <label class="stamp-field"><span>Bottom text / location</span><input id="stampAddress" type="text" maxlength="80" value="Kathmandu, Nepal" /></label>
+            <label class="stamp-field"><span>Nepali text <small>optional</small></span><input id="stampNepali" type="text" maxlength="80" value="अकेलुवा सफ्टवेयर हब" lang="ne" /></label>
             <div class="stamp-two">
-              <label class="stamp-field"><span>Shape</span><select id="stampShape"><option value="round">Round</option><option value="oval">Oval</option><option value="rect">Rectangular</option></select></label>
-              <label class="stamp-field"><span>Color</span><input id="stampColor" type="color" value="#0b4ea2" /></label>
+              <label class="stamp-field"><span>Center text</span><input id="stampCenterText" type="text" maxlength="30" value="AUTHORIZED" /></label>
+              <label class="stamp-field"><span>ESTD / custom date</span><input id="stampEstb" type="text" maxlength="24" value="ESTB 2082-08-02" /></label>
             </div>
-            <label class="stamp-field"><span>Logo <small>optional, PNG/JPG/WebP/SVG</small></span><input id="stampLogo" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml,.png,.jpg,.jpeg,.webp,.svg" /></label>
+            <label class="stamp-field"><span>Registration / PAN <small>optional</small></span><input id="stampRegistration" type="text" maxlength="50" placeholder="Reg. No. / PAN" /></label>
+            <label class="stamp-field"><span>Date <small>optional</small></span><input id="stampDate" type="date" /></label>
+            <label class="stamp-field"><span>Upload logo <small>optional · PNG/JPG/WebP/SVG · max 4 MB</small></span><input id="stampLogo" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml,.png,.jpg,.jpeg,.webp,.svg" /></label>
             <button class="btn" id="clearStampLogo" type="button" disabled>Remove logo</button>
           </div>
+
+          <div class="stamp-section">
+            <h2>3 · Design controls</h2>
+            <div class="stamp-two">
+              <label class="stamp-field"><span>Stamp color</span><input id="stampColor" type="color" value="#0b4ea2" /></label>
+              <label class="stamp-field"><span>Font style</span><select id="stampFont"><option value="Arial">Arial</option><option value="Georgia">Georgia</option><option value="Trebuchet MS">Trebuchet</option><option value="Verdana">Verdana</option><option value="Times New Roman">Times New Roman</option></select></label>
+            </div>
+            <label class="stamp-range"><span>Border thickness <output id="stampBorderOut">6</output></span><input id="stampBorder" type="range" min="2" max="14" value="6" /></label>
+            <label class="stamp-range"><span>Font size <output id="stampFontOut">28</output></span><input id="stampFontSize" type="range" min="18" max="38" value="28" /></label>
+            <label class="stamp-range"><span>Text curve / spacing <output id="stampCurveOut">50</output></span><input id="stampCurve" type="range" min="20" max="85" value="50" /></label>
+            <label class="stamp-range"><span>Logo size <output id="stampLogoOut">70</output></span><input id="stampLogoSize" type="range" min="35" max="110" value="70" /></label>
+            <label class="stamp-range"><span>Logo vertical position <output id="stampLogoYOut">0</output></span><input id="stampLogoY" type="range" min="-45" max="45" value="0" /></label>
+            <div class="stamp-toggle-grid">
+              <label class="stamp-toggle"><input id="stampInnerRing" type="checkbox" checked /><span>Inner ring</span></label>
+              <label class="stamp-toggle"><input id="stampOuterRing" type="checkbox" checked /><span>Outer ring</span></label>
+              <label class="stamp-toggle"><input id="stampTransparent" type="checkbox" checked /><span>Transparent PNG</span></label>
+              <label class="stamp-toggle"><input id="stampTexture" type="checkbox" /><span>Rubber-stamp texture</span></label>
+            </div>
+          </div>
+
           <div class="stamp-section stamp-legal">
             <h2>Authorized use</h2>
-            <p>This tool is for stamps you are authorized to create. Do not imitate government departments, courts, police, banks, notaries, or other official seals.</p>
+            <p>Create only stamps you are authorized to use. Do not imitate government departments, courts, police, banks, notaries, embassies, or other official seals.</p>
             <label class="stamp-confirm"><input id="stampAuthorized" type="checkbox" /> <span>I confirm I am authorized to create and use this stamp.</span></label>
           </div>
         </form>
+
         <div class="stamp-preview-panel">
-          <div class="stamp-preview-head"><div><span>Live preview</span><small>Transparent background</small></div><button class="btn" id="stampReset" type="button">Reset</button></div>
-          <div class="stamp-preview-stage"><div id="stampPreview" aria-label="Digital stamp preview"></div></div>
-          <div class="stamp-actions">
-            <button class="btn primary" id="downloadStampPng" type="button">Download PNG</button>
-            <button class="btn" id="downloadStampSvg" type="button">Download SVG</button>
+          <div class="stamp-preview-head">
+            <div><span>Live preview</span><small>All controls update instantly</small></div>
+            <div class="stamp-preview-tools"><button class="btn" id="stampZoomOut" type="button">−</button><span id="stampZoomLabel">100%</span><button class="btn" id="stampZoomIn" type="button">+</button></div>
           </div>
-          <p class="stamp-status" id="stampStatus" role="status" aria-live="polite">Complete your stamp details, confirm authorization, then download.</p>
+          <div class="stamp-preview-stage"><div id="stampPreview" aria-label="Digital stamp preview"></div></div>
+          <div class="stamp-samples">
+            <button type="button" class="stamp-mini" data-template="oval"><span>Oval example</span></button>
+            <button type="button" class="stamp-mini" data-template="rect"><span>Rectangle example</span></button>
+            <button type="button" class="stamp-mini" data-template="double"><span>Double-ring example</span></button>
+          </div>
+          <div class="stamp-actions stamp-actions-v2">
+            <button class="btn primary" id="downloadStampPng" type="button">Download PNG</button>
+            <button class="btn" id="downloadStampTransparent" type="button">Transparent PNG</button>
+            <button class="btn" id="downloadStampSvg" type="button">Download SVG</button>
+            <button class="btn" id="stampReset" type="button">Reset</button>
+          </div>
+          <p class="stamp-free-note">Everything in this Digital Stamp Maker is free. No account, subscription, or premium upgrade is required.</p>
+          <p class="stamp-status" id="stampStatus" role="status" aria-live="polite">Enter your details and confirm authorization to enable downloads.</p>
         </div>
       </div>
     </section>
