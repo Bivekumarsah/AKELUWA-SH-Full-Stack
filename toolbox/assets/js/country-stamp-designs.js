@@ -40,7 +40,12 @@ const ring=(radius=194,thickness=5,ink='#1555A0',extras={})=>base('ring',{x:250,
 const ellipse=(rx,ry,thickness,ink,extras={})=>base('ellipse',{x:250,y:250,rx,ry,thickness,ink,dash:'solid',...extras});
 const rect=(w,h,thickness,ink,extras={})=>base('rect',{x:250,y:250,w,h,rx:14,thickness,ink,dash:'solid',...extras});
 const line=(x,y,x2,y2,thickness,ink,extras={})=>base('line',{x,y,x2,y2,thickness,ink,dash:'solid',...extras});
-const text=(value,x,y,size,ink,extras={})=>base('text',{text:norm(value,90),x,y,size,ink,font:'Arial',weight:700,spacing:0,rotation:0,align:'middle',...extras});
+const text=(value,x,y,size,ink,extras={})=>{
+  const safe=norm(value,90),{fitWidth,...rest}=extras;
+  const available=fitWidth||((x>275&&x<410)?280:395);
+  const fitted=Math.max(13,Math.min(size,Math.floor(available/(Math.max(1,[...safe].length)*.56))));
+  return base('text',{text:safe,x,y,size:fitted,ink,font:'Arial',weight:700,spacing:0,rotation:0,align:'middle',...rest});
+};
 const arc=(value,r,start,sweep,size,ink,extras={})=>base('arcText',{text:norm(value,90),x:250,y:250,radius:r,start,sweep,size,ink,font:'Arial',weight:700,spacing:1,direction:'forward',...extras});
 const iconSvg=(name,ink)=>{
   const stroke='fill="none" stroke="'+ink+'" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"';
@@ -96,7 +101,14 @@ function buildDesign(country,category,subcategory,variant){
   const cat=category.id,ink=inkFor[cat]||inkFor.company,location=country.location;
   const regulated=cat==='government'||cat==='banking'||subcategory==='Notary template';
   const status=keywordStatus(subcategory);
-  const organization=regulated?'SAMPLE ORGANIZATION':'SAMPLE BUSINESS';
+  const organization=regulated?'SAMPLE ORGANIZATION':({
+    company:'SAMPLE COMPANY',education:'SAMPLE ACADEMY',medical:'SAMPLE CLINIC',
+    legal:'SAMPLE LAW OFFICE',accounting:'SAMPLE ACCOUNTING',engineering:'SAMPLE ENGINEERING',
+    personal:'SAMPLE NAME',office:'SAMPLE OFFICE',date:'SAMPLE OFFICE',
+    logistics:'SAMPLE COURIER',quality:'SAMPLE QUALITY TEAM',construction:'SAMPLE PROJECT',
+    ngo:'SAMPLE FOUNDATION',community:'SAMPLE COMMUNITY',hospitality:'SAMPLE HOTEL',
+    retail:'SAMPLE STORE',creative:'SAMPLE MAKER',digital:'SAMPLE DOCUMENT'
+  })[cat]||'SAMPLE BUSINESS';
   const primary=regulated?'SAMPLE':(status||truncate(subcategory.toUpperCase(),27));
   const smallLabel=truncate(subcategory.toUpperCase(),25);
   const iconName=CATEGORY_ICON[cat]||'document';
@@ -114,6 +126,63 @@ function buildDesign(country,category,subcategory,variant){
     add(rect(438,230,5,ink,{rx:12}),line(35,182,465,182,3,ink),line(35,318,465,318,3,ink),
       text('SAMPLE — NOT AN OFFICIAL SEAL',250,150,18,ink,{weight:700}),
       main(250,237,38),business(250,284,20),place(250,342,14));
+  }else if(variant===1&&['company','personal','creative','ngo'].includes(cat)){
+    // Independent monogram / community logo compositions (not a recolored rectangle).
+    widthMm=42;heightMm=42;shape=cat==='ngo'?'Logo based':'Square';
+    add(rect(408,408,6,ink,{rx:cat==='creative'?46:14}),
+      rect(366,366,2,ink,{rx:cat==='creative'?36:8}),
+      mark(250,203,112),line(100,277,400,277,2,ink),
+      business(250,321,27),main(250,363,21),place(250,407,16));
+    if(cat==='creative')add(rect(445,445,2,ink,{dash:'dotted',rx:52}));
+  }else if(variant===2&&cat==='education'){
+    // Ruled admission / library card with a separate bookmark graphic.
+    widthMm=56;heightMm=30;shape='Rectangle';
+    add(rect(451,312,5,ink,{rx:7}),line(40,164,460,164,4,ink),
+      mark(92,240,92),line(157,184,157,351,2,ink),
+      text('EDUCATION RECORD',306,151,19,ink),
+      business(306,219,23),main(306,275,25),
+      line(188,310,430,310,2,ink),place(306,342,16));
+  }else if(variant===2&&cat==='accounting'){
+    // A compact ledger panel with ruled fields.
+    widthMm=58;heightMm=28;shape='Rectangle';
+    add(rect(452,292,5,ink,{rx:4}),line(38,165,462,165,4,ink),
+      mark(89,224,68),text('ACCOUNTING / TAX RECORD',311,146,19,ink),
+      line(40,290,460,290,2,ink),
+      business(295,224,24),main(295,265,25),
+      text('REF: __________',156,333,19,ink),place(337,333,16));
+  }else if(variant===2&&cat==='engineering'){
+    // Blueprint-style ruled title block.
+    widthMm=59;heightMm=32;shape='Rectangle';
+    add(rect(451,315,5,ink,{rx:2,dash:'dashed'}),
+      line(36,166,464,166,4,ink),line(36,346,464,346,3,ink),
+      line(167,166,167,346,2,ink),mark(104,241,90),
+      text('TECHNICAL PROJECT',311,141,20,ink),
+      business(315,219,22),main(315,275,24),place(315,317,16));
+  }else if(variant===2&&cat==='logistics'){
+    // Consignment docket with parcel symbol and dotted tracking rule.
+    widthMm=58;heightMm=28;shape='Rectangle';
+    add(rect(454,286,6,ink,{rx:5}),mark(93,224,99),
+      line(174,144,174,351,3,ink),business(315,177,23),
+      main(315,240,32),line(195,287,429,287,2,ink,{dash:'dotted'}),
+      place(315,328,17),text('DELIVERY / TRACKING',310,366,16,ink));
+  }else if(variant===2&&cat==='legal'){
+    widthMm=59;heightMm=30;shape='Rectangle';
+    add(rect(453,292,5,ink,{rx:6}),
+      mark(103,218,95),line(165,157,165,346,3,ink),
+      text('CONSULTATION / RECORD',313,165,18,ink),
+      business(313,221,22),main(313,275,26),
+      place(313,331,17));
+  }else if(variant===2&&cat==='quality'){
+    widthMm=48;heightMm=37;shape='Round';
+    add(ring(210,6,ink),ring(179,3,ink,{dash:'dashed'}),mark(250,192,103),
+      main(250,294,29),business(250,343,21),place(250,389,17));
+  }else if(variant===2&&cat==='digital'){
+    // Borderless watermark-like status, not a generic seal.
+    widthMm=55;heightMm=30;shape='Text only';
+    add(line(59,174,441,174,3,ink),
+      mark(103,243,87),main(306,239,31),
+      business(306,293,21),place(306,338,17),
+      text('SAMPLE • NOT AN AUTHENTICATED SIGNATURE',250,395,16,ink));
   }else if(variant===1){
     // Profession-specific compact labels: vertical icon band + text hierarchy.
     widthMm=58;heightMm=26;shape='Rectangle';
