@@ -98,3 +98,20 @@ test('Extra-tool URLs are routed by both local worker and the canonical Next.js 
  assert.ok(route.includes('import extraTools from "@/toolbox/extra-tools/catalog.json"'));
  assert.ok(route.includes('page?.path || extra'));
 });
+
+test('Mobile stamp preview uses exact SVG from both editors without altering downloads',async()=>{
+ const [m,css,home,studio]=await Promise.all([
+  read('toolbox/assets/js/mobile-live-preview.mjs'),
+  read('toolbox/assets/css/mobile-live-preview.css'),
+  read('toolbox/index.html'),
+  read('toolbox/assets/js/stamp-studio.js')]);
+ assert.ok(m.includes('new MutationObserver(schedule)'));
+ assert.ok(m.includes("data:image/svg+xml;charset=utf-8,"));
+ assert.ok(m.includes("root.querySelector('[data-ak-studio]')"));
+ assert.ok(m.includes("dialog.showModal()"));
+ assert.ok(css.includes('position:sticky'));
+ assert.ok(css.includes('stamp-mobile-keyboard'));
+ assert.ok(home.includes('id="stampPreview"'));
+ assert.ok(home.includes('id="downloadStampSvg"'));
+ assert.ok(studio.includes('data-preview'));
+});

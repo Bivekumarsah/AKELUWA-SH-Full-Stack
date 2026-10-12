@@ -140,3 +140,19 @@ test('tool finder lets a first-time customer find the stamp maker and other util
   await page.getByRole('button', { name: 'Clear filters' }).click();
   await expect(page.locator('.extra-hub-link:not([hidden])')).toHaveCount(10);
 });
+
+test('mobile stamp editing keeps current SVG visible without scrolling back', async ({page}) => {
+ await page.setViewportSize({width:375,height:812});
+ await page.goto(base + '/digital-stamp-maker/');
+ const dock=page.locator('[data-stamp-mobile-dock]');
+ await expect(dock).toBeVisible();
+ const name=page.locator('#stampName');
+ await name.fill('MY MOBILE COMPANY');
+ await expect(dock.locator('img')).toHaveAttribute('src', /data:image\/svg\+xml/);
+ await dock.getByRole('button', {name:'Expand current stamp preview'}).click();
+ await expect(page.getByRole('dialog', {name:'Expanded stamp preview'})).toBeVisible();
+ await page.getByRole('button',{name:'Close ✕'}).click();
+ await expect(page.getByRole('dialog', {name:'Expanded stamp preview'})).not.toBeVisible();
+ await expect(page.locator('#downloadStampPng')).toHaveCount(1);
+ await expect(page.locator('#stampPreview svg')).toHaveCount(1);
+});

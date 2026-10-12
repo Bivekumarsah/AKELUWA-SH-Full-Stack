@@ -1,0 +1,81 @@
+// Compact mobile preview shared by both the basic and advanced stamp editors.
+// The preview is an isolated SVG image: duplicate inline SVG IDs cannot
+// interfere with the full editor's filters, masks or draggable elements.
+export function initMobileStampPreview(doc = document) {
+  const root = doc.getElementById('stampTool');
+  const heading = root?.querySelector('.stamp-heading');
+  const original = root?.querySelector('#stampPreview');
+  if (!heading || !original || root.querySelector('[data-stamp-mobile-dock]')) return;
+  const dock = doc.createElement('div');
+  dock.className = 'stamp-mobile-dock';
+  dock.dataset.stampMobileDock = '';
+  dock.innerHTML = '<img data-stamp-dock-image alt="Current stamp design preview" />' +
+    '<div class="stamp-mobile-dock-label"><strong>Live stamp preview</strong><small>Updates while you edit</small></div>' +
+    '<button type="button" data-stamp-expand aria-label="Expand current stamp preview">Expand ↗</button>';
+  heading.after(dock);
+  const dialog = doc.createElement('dialog');
+  dialog.className = 'stamp-mobile-preview-dialog';
+  dialog.setAttribute('aria-label', 'Expanded stamp preview');
+  dialog.innerHTML = '<div class="stamp-dialog-header"><strong>Current stamp design</strong><button type="button" data-stamp-close>Close ✕</button></div>' +
+    '<img data-stamp-dialog-image alt="Current stamp design, enlarged" />' +
+    '<p>Close to keep editing. Downloads are available in the stamp editor.</p>';
+  root.append(dialog);
+  const thumb = dock.querySelector('[data-stamp-dock-image]');
+  const full = dialog.querySelector('[data-stamp-dialog-image]');
+  const studio = root.querySelector('[data-ak-studio]');
+  const studioPreview = studio?.querySelector('[data-preview]');
+  let queued = false;
+  let lastSvg = '';
+  const isStudio = () => Boolean(studio && !studio.hidden);
+  const update = () => {
+    queued = false;
+    const svg = (isStudio() ? studioPreview : original)?.querySelector('svg');
+    if (!svg) return;
+    const source = svg.outerHTML;
+    if (source === lastSvg) return;
+    lastSvg = source;
+    // This is a preview of the exact editor SVG, not a second rendering engine.
+    const data = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(source);
+    thumb.src = data;
+    full.src = data;
+  };
+  const schedule = () => {
+    if (!queued) { queued = true; requestAnimationFrame(update); }
+  };
+  const observer = new MutationObserver(schedule);
+  observer.observe(original, {childList:true,subtree:true,attributes:true,characterData:true});
+  if (studioPreview) observer.observe(studioPreview, {childList:true,subtree:true,attributes:true,characterData:true});
+  if (studio) observer.observe(studio, {attributes:true,attributeFilter:['hidden']});
+  root.addEventListener('click', event => {
+    if (event.target.closest('[data-mode]')) schedule();
+  });
+  dock.querySelector('[data-stamp-expand]').addEventListener('click', () => {
+    schedule();
+    if (typeof dialog.showModal === 'function' && !dialog.open) dialog.showModal();
+  });
+  const close = () => dialog.close();
+  dialog.querySelector('[data-stamp-close]').addEventListener('click', close);
+  dialog.addEventListener('click', event => {if(event.target===dialog) close();});
+  root.addEventListener('focusin', event => {
+    if (event.target.matches?.('input:not([type=checkbox]):not([type=radio]),textarea,select')) {
+      root.classList.add('stamp-mobile-typing');
+    }
+  });
+  root.addEventListener('focusout', () => {
+    requestAnimationFrame(() => {
+      const current = doc.activeElement;
+      if (!current?.matches?.('input:not([type=checkbox]):not([type=radio]),textarea,select') || !root.contains(current)) root.classList.remove('stamp-mobile-typing');
+    });
+  });
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', () => {
+      root.classList.toggle('stamp-mobile-keyboard', window.visualViewport.height < window.innerHeight * .76);
+    }, {passive:true});
+  }
+  schedule();
+  return {update:schedule, destroy:() => observer.disconnect()};
+}
+if (typeof document !== 'undefined') {
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => initMobileStampPreview(), {once:true});
+  else initMobileStampPreview();
+}
