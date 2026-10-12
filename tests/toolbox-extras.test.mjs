@@ -87,5 +87,5 @@ test('Mounted toolbox discovery works with company-prefixed URLs without losing 
  const {categoryForPath,matchesTool}=await import('../toolbox/assets/js/tool-finder.mjs');
  assert.equal(categoryForPath('/akeluwatoolbox/digital-stamp-maker/'),'business');
  assert.equal(categoryForPath('/akeluwatoolbox/extra-tools/photo-signature-resizer/'),'images');
- assert.ok(matchesTool({href:'/akeluwatoolbox/digital-stamp-maker/',title:'Digital stamp maker',description:'Create company stamps'},'business stamp','business'));
+ assert.ok(matchesTool({href:'/akeluwatoolbox/digital-stamp-maker/',title:'Digital stamp maker',description:'Create authorized business stamps'},'business stamp','business'));
 });
