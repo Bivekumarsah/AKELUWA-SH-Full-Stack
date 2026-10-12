@@ -7,6 +7,8 @@ test('stamp editing keeps a live, finger-friendly dock in view across phone widt
   for (const width of widths) {
     await page.setViewportSize({ width, height: 812 });
     await page.goto(base + '/digital-stamp-maker/');
+    // The initial Quick Templates mode hides the classic form. Open it explicitly.
+    await page.locator('[data-mode="nepali"]').click();
     const root = page.locator('#stampTool');
     const dock = page.locator('[data-stamp-mobile-dock]');
     const preview = dock.locator('[data-stamp-dock-image]');
