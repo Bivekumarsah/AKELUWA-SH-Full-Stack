@@ -125,7 +125,8 @@ test('tool finder lets a first-time customer find the stamp maker and other util
   await page.locator('.tool-card[data-launch-tool="stamp"]').click();
   await expect(page).toHaveURL(new RegExp(base + '/digital-stamp-maker/$'));
   await expect(page.locator('#stampTool')).toBeVisible();
-  await expect(page.locator('#stampTemplates')).toBeVisible();
+  await expect(page.locator('#stampTemplates')).toHaveCount(1);
+  await expect(page.locator('#stampPreview')).toHaveCount(1);
 
   await page.goto(base + '/extra-tools/');
   const extraSearch = page.getByRole('searchbox', { name: 'Find the tool you need' });
