@@ -67,7 +67,11 @@ test('all mounted tool pages and metadata resolve without escaping to company ro
   expect((await request.get(base)).url()).toMatch(/\/akeluwatoolbox\/$/);
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto(base + '/compress-photo/');
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  const overflowing = await page.evaluate(() => [...document.querySelectorAll('*')].map(el => {
+    const r = el.getBoundingClientRect();
+    return {tag:el.tagName.toLowerCase(),className:typeof el.className==='string'?el.className.slice(0,120):'',id:el.id,right:Math.round(r.right),left:Math.round(r.left),width:Math.round(r.width)};
+  }).filter(el => el.right > innerWidth + 2 || el.left < -2).slice(0,18));
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),'Offscreen elements: '+JSON.stringify(overflowing)).toBe(true);
   expect(errors).toEqual([]);
 });
 
