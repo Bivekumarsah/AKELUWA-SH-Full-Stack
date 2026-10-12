@@ -6,6 +6,7 @@ export const siteURL = process.env.NEXT_PUBLIC_SITE_URL
 export const publicRoutes = [
   { path: "/", priority: 1 },
   { path: "/services", priority: 0.9 },
+  { path: "/products", priority: 0.9 },
   { path: "/about", priority: 0.8 },
   { path: "/case-studies", priority: 0.8 },
   { path: "/contact", priority: 0.8 },

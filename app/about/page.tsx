@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { InnerPage } from "@/app/components/inner-page";
 import { PageInvitation } from "@/app/components/page-invitation";
 
@@ -24,6 +25,7 @@ export default function AboutPage() {
         <div className="inner-copy">
           <p>We come from a place where constraints are real, so we design software that respects time, budget, security and maintainability from the beginning.</p>
           <p>Our work connects software engineering, cloud architecture, cybersecurity and practical AI into systems that can grow after launch.</p>
+          <p>AKELUWA Softwarehub is a registered company in Nepal. We also develop and maintain public-facing digital products, including <Link href="/akeluwatoolbox/">Akeluwa ToolBox</Link> and <Link href="/publicinfohub/">AKELUWA PublicInfoHub</Link>. <Link href="/products">Explore our products</Link>.</p>
         </div>
       </section>
 

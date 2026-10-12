@@ -46,7 +46,8 @@ export async function buildStatic(outputUrl = new URL('../dist/', import.meta.ur
     await writeFile(entry, original.replaceAll('__TOOLBOX_PUBLIC_ROOT__', origin + basePath)
       .replace('<meta name="robots" content="index,follow">', '<meta name="robots" content="' + (noindex ? 'noindex,follow' : 'index,follow') + '">'));
   }
-  await writeFile(join(output, 'robots.txt'), `User-agent: *\n${noindex ? 'Disallow: /' : 'Allow: /'}\n\nSitemap: ${origin}${sitePath('/sitemap.xml', basePath)}\n`);
+  const crawlPolicy = noindex ? 'Disallow: /' : 'Allow: /';
+  await writeFile(join(output, 'robots.txt'), `User-agent: *\n${crawlPolicy}\n\nUser-agent: OAI-SearchBot\n${crawlPolicy}\n\nUser-agent: PerplexityBot\n${crawlPolicy}\n\nSitemap: ${origin}${sitePath('/sitemap.xml', basePath)}\n`);
   await writeFile(join(output, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${[...pages.map(page => page.path), ...extraPaths].map(path => `  <url><loc>${escapeHtml(origin + sitePath(path, basePath))}</loc></url>`).join('\n')}\n</urlset>\n`);
   await writeFile(join(output, '404.html'), `<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex"><title>Page not found | Akeluwa ToolBox</title><link rel="stylesheet" href="${sitePath('/assets/css/design.css', basePath)}"></head><body><main class="seo-guide"><h1>Page not found</h1><p>Choose a PDF or photo tool from the homepage.</p><a href="${sitePath('/', basePath)}">Open Akeluwa ToolBox</a></main></body></html>`);
   console.log(`Static website built in ${output}: ${(await readdir(output)).join(', ')}`);
