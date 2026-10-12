@@ -144,3 +144,10 @@ test('Core PDF and photo tool previews show settings without processing a file',
  assert.ok(script.includes("get('photoOriginal')"));
  assert.ok(css.includes('position:sticky'));
 });
+
+test('Company Cloudflare Worker serves the exact extra tools CSS and JS paths',async()=>{
+ const worker=await read('worker/toolbox.ts');
+ assert.ok(worker.includes("'/extra-tools/app.js'"));
+ assert.ok(worker.includes("'/extra-tools/style.css'"));
+ assert.ok(worker.includes('isAsset = isExtraStatic ||'));
+});

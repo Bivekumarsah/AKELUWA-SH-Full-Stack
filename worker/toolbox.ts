@@ -32,7 +32,11 @@ export async function serveToolbox(request: Request, assets?: Fetcher): Promise<
     url.pathname = basePath + extra;
     return Response.redirect(url.toString(), 308);
   }
-  const isAsset = relative.startsWith('/assets/') || ['/site.webmanifest', '/sitemap.xml', '/robots.txt', '/googlefb3975d72926d897.html', '/404.html'].includes(relative);
+  // The extra tools' shared CSS and JS live beside their HTML pages.
+  // Without these explicit paths the development Worker returns 404 and
+  // native logo dimensions can overflow a narrow mobile viewport.
+  const isExtraStatic = ['/extra-tools/app.js', '/extra-tools/style.css'].includes(relative);
+  const isAsset = isExtraStatic || relative.startsWith('/assets/') || ['/site.webmanifest', '/sitemap.xml', '/robots.txt', '/googlefb3975d72926d897.html', '/404.html'].includes(relative);
   if (!assets) return new Response('Toolbox assets are unavailable', { status: 503 });
   if (!page && !extra && !isAsset) {
     // Asset HTML handling resolves the extensionless URL without redirecting it.
