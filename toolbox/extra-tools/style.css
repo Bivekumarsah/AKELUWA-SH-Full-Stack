@@ -67,3 +67,22 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
  body[data-extra-tool="resume-builder"] .extra-panel > .extra-fields > div > h3{display:none!important}
  body[data-extra-tool="resume-builder"] #resumePreview{display:block!important;margin:0!important}
 }
+
+/* Shared, accessible tool discovery: no overlays or forced modal dialogs. */
+.tool-finder{background:#fff;border:1px solid var(--line,#dce5df);padding:22px;border-radius:13px;margin:20px 0;color:#22342c}
+.tool-finder-home{margin-top:23px}
+.tool-finder label{display:block;font-weight:750;font-size:17px;color:#195443}
+.tool-finder-hint{font-size:13px;color:#546b60;line-height:1.5;margin:6px 0 12px}
+.tool-finder-input-row{display:flex;align-items:center;flex-wrap:wrap;gap:10px}
+.tool-finder input[type=search]{flex:1 1 230px;min-width:0;width:100%;padding:12px 14px;min-height:47px;border:1px solid #9daea1;border-radius:8px;background:#fff;color:#1d3429;font:inherit}
+.tool-finder input[type=search]:focus-visible{outline:3px solid #1267b2;outline-offset:2px}
+.tool-finder button{cursor:pointer;font:inherit}
+#toolSearchClear{padding:10px 13px;min-height:44px;border:1px solid #b3c4ba;border-radius:8px;color:#195443;background:white;font-weight:650}
+.tool-finder-filters{display:flex;flex-wrap:wrap;gap:7px;margin-top:13px}
+.tool-finder-filters button{padding:8px 12px;min-height:42px;border:1px solid #cbdcd0;border-radius:999px;background:#f5f8f5;color:#254337;font-size:12px;font-weight:650}
+.tool-finder-filters button[aria-pressed=true]{background:#195443;color:white;border-color:#195443}
+.tool-finder-filters button:focus-visible,#toolSearchClear:focus-visible{outline:3px solid #1267b2;outline-offset:2px}
+.tool-finder-count{color:#526b60;font-size:12px;font-weight:650;margin:13px 0 0}
+.tool-finder-empty{padding:12px;color:#6e301c;background:#fff4eb;border:1px solid #f5d8bd;border-radius:8px;font-size:13px}
+.tool-card[hidden],.extra-home-card[hidden],.extra-hub-link[hidden],.extra-home-panel[hidden],.tools-section[hidden],#toolSearchClear[hidden],#toolSearchEmpty[hidden]{display:none!important}
+@media(max-width:700px){.tool-finder{padding:16px}.tool-finder label{font-size:16px}.tool-finder-filters button{font-size:12px;padding:8px 9px}.tool-finder-home{margin-top:18px}}

@@ -68,3 +68,24 @@ test('Resume print CSS keeps preview visible and PNG reports accurate target siz
  assert.ok(js.includes('blob.size<=targetKB*1024'));
  assert.ok(js.includes('drawImageTo(img,img.naturalWidth,img.naturalHeight'));
 });
+
+test('Mounted toolbox discovery works with company-prefixed URLs without losing advanced stamp features',async()=>{
+ const [home,extra,css,stamp,studio] = await Promise.all([
+  read('toolbox/index.html'),read('toolbox/extra-tools/index.html'),
+  read('toolbox/assets/css/design.css'),read('toolbox/assets/js/digital-stamp.js'),
+  read('toolbox/assets/js/stamp-studio.js')]);
+ for(const html of [home,extra]){
+  assert.ok(html.includes('id="toolSearch"'));
+  assert.ok(html.includes('id="toolSearchCount"'));
+  assert.ok(html.includes('tool-finder.mjs'));
+ }
+ assert.ok(home.includes('id="stampTool"'), 'preserve advanced stamp workspace');
+ assert.ok(home.includes('href="/digital-stamp-maker/"'), 'stamp route must stay available');
+ assert.ok(stamp.includes('outerSize: 199'), 'advanced ring controls remain present');
+ assert.ok(studio.includes('data-undo'), 'advanced stamp studio preserved');
+ assert.ok(css.includes('.tool-card[hidden]'));
+ const {categoryForPath,matchesTool}=await import('../toolbox/assets/js/tool-finder.mjs');
+ assert.equal(categoryForPath('/akeluwatoolbox/digital-stamp-maker/'),'business');
+ assert.equal(categoryForPath('/akeluwatoolbox/extra-tools/photo-signature-resizer/'),'images');
+ assert.ok(matchesTool({href:'/akeluwatoolbox/digital-stamp-maker/',title:'Digital stamp maker',description:'Create company stamps'},'business stamp','business'));
+});
