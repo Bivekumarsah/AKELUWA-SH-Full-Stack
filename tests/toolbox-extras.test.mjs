@@ -89,3 +89,12 @@ test('Mounted toolbox discovery works with company-prefixed URLs without losing 
  assert.equal(categoryForPath('/akeluwatoolbox/extra-tools/photo-signature-resizer/'),'images');
  assert.ok(matchesTool({href:'/akeluwatoolbox/digital-stamp-maker/',title:'Digital stamp maker',description:'Create authorized business stamps'},'business stamp','business'));
 });
+
+test('Extra-tool URLs are routed by both local worker and the canonical Next.js fallback',async()=>{
+ const [worker,route]=await Promise.all([
+  read('worker/toolbox.ts'),read('app/akeluwatoolbox/[[...path]]/route.ts')]);
+ assert.ok(worker.includes("import extraTools from '../toolbox/extra-tools/catalog.json'"));
+ assert.ok(worker.includes("!page && !extra && !isAsset"));
+ assert.ok(route.includes('import extraTools from "@/toolbox/extra-tools/catalog.json"'));
+ assert.ok(route.includes('page?.path || extra'));
+});
