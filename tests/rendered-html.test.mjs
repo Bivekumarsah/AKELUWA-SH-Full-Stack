@@ -76,7 +76,7 @@ test("serves crawlable homepage SEO metadata and linked company markup", async (
   assert.match(html, /<title>AKELUWA Softwarehub \| Software Development &amp; IT Services<\/title>/);
   assert.match(html, /<meta(?=[^>]*\bname="description")(?=[^>]*\bcontent="AKELUWA Softwarehub)[^>]*>/);
   assert.match(html, /<meta(?=[^>]*\bname="content-language")(?=[^>]*\bcontent="en")[^>]*>/);
-  assert.match(html, /<link(?=[^>]*\brel="canonical")(?=[^>]*\bhref="https:\/\/www\.akeluwasoftwarehub\.com\.np\/")[^>]*>/);
+  assert.match(html, /<link(?=[^>]*\brel="canonical")(?=[^>]*\bhref="https:\/\/www\.akeluwasoftwarehub\.com\.np\/?")[^>]*>/);
   assert.match(html, /<h1\b[^>]*>Software built for/);
   assert.match(html, /<meta(?=[^>]*\bproperty="og:title")[^>]*>/);
 
