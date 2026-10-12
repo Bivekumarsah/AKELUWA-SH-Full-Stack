@@ -122,7 +122,7 @@ test('tool finder lets a first-time customer find the stamp maker and other util
   await expect(page.locator('.tool-card:not([hidden])')).toContainText(['Digital stamp maker']);
   await expect(page.locator('.extra-home-card:not([hidden])')).toHaveCount(0);
   await expect(page.locator('#toolSearchCount')).toContainText('1 matching tool');
-  await page.locator('.tool-card[href="/digital-stamp-maker/"]').click();
+  await page.locator('.tool-card[data-launch-tool="stamp"]').click();
   await expect(page).toHaveURL(new RegExp(base + '/digital-stamp-maker/$'));
   await expect(page.locator('#stampTool')).toBeVisible();
   await expect(page.locator('#stampTemplates')).toBeVisible();
