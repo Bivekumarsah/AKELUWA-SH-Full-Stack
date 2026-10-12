@@ -490,7 +490,7 @@ export function initStampStudio({root,toast=()=>{}}={}){
   function goDownload(){
     const step=studio.querySelector('[data-step="4"]');step.open=true;
     const behavior=matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth';
-    if(matchMedia('(max-width:980px)').matches)step.scrollIntoView({block:'start',behavior});
+    if(matchMedia('(max-width:980px)').matches){step.setAttribute('tabindex','-1');step.focus({preventScroll:true});step.scrollIntoView({block:'start',behavior:'instant'});}
     else{const controls=studio.querySelector('[data-controls]');controls.scrollTo({top:Math.max(0,step.offsetTop-10),behavior});}
   }
   studio.querySelector('[data-undo]').onclick=()=>{if(!undo.length)return;redo.push(copy());restore(undo.pop())};
