@@ -37,7 +37,8 @@ export function initMobileStampPreview(doc = document) {
     // This is a preview of the exact editor SVG, not a second rendering engine.
     const data = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(source);
     thumb.src = data;
-    full.src = data;
+    // Decode the larger image only while the modal is in use on low-memory phones.
+    if (dialog.open) full.src = data;
   };
   const schedule = () => {
     if (!queued) { queued = true; requestAnimationFrame(update); }
@@ -50,9 +51,15 @@ export function initMobileStampPreview(doc = document) {
     if (event.target.closest('[data-mode]')) schedule();
   });
   dock.querySelector('[data-stamp-expand]').addEventListener('click', () => {
+    if (typeof dialog.showModal === 'function' && !dialog.open) {
+      dialog.showModal();
+      // The compact image is already up to date; refresh if a change is queued.
+      if (thumb.hasAttribute('src')) full.src = thumb.src;
+    }
     schedule();
-    if (typeof dialog.showModal === 'function' && !dialog.open) dialog.showModal();
   });
+  // Release the unused enlarged image, including when Escape closes the dialog.
+  dialog.addEventListener('close', () => full.removeAttribute('src'));
   const close = () => dialog.close();
   dialog.querySelector('[data-stamp-close]').addEventListener('click', close);
   dialog.addEventListener('click', event => {if(event.target===dialog) close();});
