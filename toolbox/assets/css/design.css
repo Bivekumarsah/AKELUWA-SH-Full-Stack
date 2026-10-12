@@ -333,3 +333,10 @@ aside,.bg-side { background:var(--panel2); }
  .app>header .tool-tabs{grid-template-columns:1fr 1fr}
  .stamp-tool .stamp-heading h1{font-size:31px}
 }
+
+/* PDF editor: full-page default on narrow phones and finger-size image resize handles. */
+@media(max-width:700px){
+ .workspace #pageStage{touch-action:pan-x pan-y}
+ .workspace .placed-image .handle{width:44px;height:44px;right:-22px;bottom:-22px;border-width:4px;box-shadow:0 0 0 2px #245b4540}
+ .workspace #fitWidthBtn[aria-pressed="true"]{background:#e7f4ed;color:#195443;border-color:#195443}
+}
