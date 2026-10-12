@@ -6,6 +6,9 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteURL),
+  applicationName: "AKELUWA Softwarehub",
+  // Keep a machine-readable language declaration alongside <html lang="en">.
+  other: { "content-language": "en" },
   title: {
     default: "AKELUWA Softwarehub | Software Development & IT Services",
     template: "%s | AKELUWA Softwarehub",
@@ -19,6 +22,7 @@ export const metadata: Metadata = {
     title: "AKELUWA Softwarehub | Software Development & IT Services",
     description: "Software development, cloud infrastructure, security and automation from Nepal.",
     type: "website",
+    locale: "en_NP",
     url: siteURL,
     siteName: "AKELUWA Softwarehub",
     images: [
@@ -46,6 +50,7 @@ export default function RootLayout({
   const organizationSchema = {
     "@context": "https://schema.org",
     "@type": "Organization",
+    "@id": absoluteURL("/#organization"),
     name: "AKELUWA Softwarehub",
     url: siteURL,
     logo: absoluteURL("/company-logo.png"),
@@ -56,13 +61,22 @@ export default function RootLayout({
       addressCountry: "NP",
     },
   };
+  const websiteSchema = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "@id": absoluteURL("/#website"),
+    url: siteURL,
+    name: "AKELUWA Softwarehub",
+    inLanguage: "en",
+    publisher: { "@id": absoluteURL("/#organization") },
+  };
 
   return (
     <html lang="en">
       <body>
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@graph": [organizationSchema, websiteSchema] }).replace(/</g, "\\u003c") }}
         />
         {children}
         <Suspense fallback={null}>
