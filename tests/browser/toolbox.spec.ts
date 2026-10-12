@@ -112,3 +112,31 @@ test('mounted photo and PDF tools download valid output and treat filenames as t
   await expect(page.locator('#imageToPdfStatus img')).toHaveCount(0);
   expect(await page.evaluate(() => (window as unknown as { __filenameXss?: number }).__filenameXss)).toBeUndefined();
 });
+
+
+test('tool finder lets a first-time customer find the stamp maker and other utilities', async ({ page }) => {
+  await page.goto(base + '/');
+  const search = page.getByRole('searchbox', { name: 'Find the tool you need' });
+  await expect(search).toBeVisible();
+  await search.fill('stamp');
+  await expect(page.locator('.tool-card:not([hidden])')).toContainText(['Digital stamp maker']);
+  await expect(page.locator('.extra-home-card:not([hidden])')).toHaveCount(0);
+  await expect(page.locator('#toolSearchCount')).toContainText('1 matching tool');
+  await page.locator('.tool-card[data-launch-tool="stamp"]').click();
+  await expect(page).toHaveURL(new RegExp(base + '/digital-stamp-maker/$'));
+  await expect(page.locator('#stampTool')).toBeVisible();
+  await expect(page.locator('#stampTemplates')).toHaveCount(1);
+  await expect(page.locator('#stampPreview')).toHaveCount(1);
+
+  await page.goto(base + '/extra-tools/');
+  const extraSearch = page.getByRole('searchbox', { name: 'Find the tool you need' });
+  await expect(extraSearch).toBeVisible();
+  await extraSearch.fill('signature');
+  await expect(page.locator('.extra-hub-link:not([hidden])')).toHaveCount(2);
+  await page.getByRole('button', { name: 'PDF & documents' }).click();
+  await expect(page.locator('.extra-hub-link:not([hidden])')).toHaveCount(1);
+  await extraSearch.fill('no-match-123456');
+  await expect(page.locator('#toolSearchEmpty')).toBeVisible();
+  await page.getByRole('button', { name: 'Clear filters' }).click();
+  await expect(page.locator('.extra-hub-link:not([hidden])')).toHaveCount(10);
+});

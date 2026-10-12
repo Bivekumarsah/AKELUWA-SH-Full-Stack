@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import routes from "@/toolbox/routes.json";
+import extraTools from "@/toolbox/extra-tools/catalog.json";
 
 // Canonical pages use static rewrites; public assets use filesystem routing.
 // Handle missing slashes here because Next config redirects also match a
@@ -9,9 +10,11 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const base = "/akeluwatoolbox";
   const relative = url.pathname.slice(base.length);
+  const extraPaths = ["/extra-tools/", ...extraTools.map(tool => "/extra-tools/" + tool.slug + "/")];
+  const extra = extraPaths.find(path => path.slice(0, -1) === relative || path + "index.html" === relative);
   const page = routes.find(route => route.path.slice(0, -1) === relative);
-  if (page) {
-    url.pathname = base + page.path;
+  if (page || extra) {
+    url.pathname = base + (page?.path || extra);
     return Response.redirect(url, 308);
   }
 
