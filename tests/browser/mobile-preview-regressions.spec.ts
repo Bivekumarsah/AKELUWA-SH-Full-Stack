@@ -162,9 +162,10 @@ test('beginners can type Stamp Studio details with an immediate preview and undo
     await expect(studio.locator('[data-quick-name]')).not.toHaveValue(newName);
     await studio.locator('[data-go-download]').click();
     await expect(studio.locator('[data-step="4"]')).toHaveAttribute('open', '');
-    const stepTop = await studio.locator('[data-step="4"]').evaluate(el => el.getBoundingClientRect().top);
-    expect(stepTop, width + 'px download section visible').toBeGreaterThanOrEqual(0);
-    expect(stepTop, width + 'px download section visible').toBeLessThan(812);
+    const step = studio.locator('[data-step="4"]');
+    await expect(step).toBeFocused();
+    await expect.poll(() => step.evaluate(el => el.getBoundingClientRect().top),
+      { message: width + 'px download section visible' }).toBeLessThan(812);
     await studio.locator('[data-step="3"]').evaluate(el => (el as HTMLDetailsElement).open = true);
     await studio.locator('[data-step="3"] details summary').click();
     await expect(studio.getByRole('button', { name: /Lock (Ring|Text|Curved text|Oval|Frame)/ }).first()).toBeVisible();
