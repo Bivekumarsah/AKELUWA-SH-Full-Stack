@@ -28,7 +28,18 @@ test('stamp editing keeps a live, finger-friendly dock in view across phone widt
     await input.fill('AKELUWA MOBILE ' + width);
     await expect.poll(() => preview.getAttribute('src')).not.toBe(before);
     await expect(root).toHaveClass(/stamp-mobile-typing/);
-    await expect(dock).toHaveCSS('max-height', '58px');
+    const typedPreviewSize = await preview.evaluate(el => el.getBoundingClientRect().height);
+    expect(typedPreviewSize, width + 'px readable typing preview').toBeGreaterThanOrEqual(86);
+    await dock.locator('[data-stamp-inline-expand]').click();
+    await expect(dock).toHaveClass(/is-enlarged/);
+    await expect(dock.locator('[data-stamp-inline-expand]')).toHaveAttribute('aria-pressed', 'true');
+    await expect(dock).toBeInViewport({ ratio: 0.5 });
+    const bigPreviewSize = await preview.evaluate(el => el.getBoundingClientRect().height);
+    expect(bigPreviewSize).toBeGreaterThanOrEqual(125);
+    await input.fill('UPDATED MOBILE STAMP ' + width);
+    await expect.poll(() => preview.getAttribute('src')).not.toBe(before);
+    await dock.locator('[data-stamp-inline-expand]').click();
+    await expect(dock.locator('[data-stamp-inline-expand]')).toHaveAttribute('aria-pressed', 'false');
   }
 });
 
@@ -58,5 +69,31 @@ test('PDF placement and Nepali converter pages avoid horizontal overflow on phon
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
       expect(overflow, route + ' at ' + width + 'px').toBeLessThanOrEqual(1);
     }
+  }
+});
+
+
+test('mobile navigation exposes every core tool and supports keyboard dismissal', async ({ page }) => {
+  for (const width of [320, 375, 430]) {
+    await page.setViewportSize({ width, height: 812 });
+    await page.goto(base + '/');
+    const toggle = page.getByRole('button', { name: 'Open tools menu' });
+    const nav = page.getByRole('navigation', { name: 'Tool navigation' });
+    await expect(toggle).toBeVisible();
+    await expect(nav).toBeHidden();
+    await toggle.click();
+    await expect(nav).toBeVisible();
+    await expect(page.locator('[data-mobile-tools-toggle]')).toHaveAttribute('aria-expanded', 'true');
+    await expect(nav.locator('a[data-tool="stamp"]')).toBeVisible();
+    await expect(nav.locator('a[href="/akeluwatoolbox/extra-tools/"]')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(nav).toBeHidden();
+    await expect(page.locator('[data-mobile-tools-toggle]')).toHaveAttribute('aria-expanded', 'false');
+    await page.getByRole('button', { name: 'Open tools menu' }).click();
+    await nav.locator('a[data-tool="stamp"]').click();
+    await expect(nav).toBeHidden();
+    await expect(page).toHaveURL(/\/digital-stamp-maker\/$/);
+    await expect(page.locator('#stampTool')).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth-window.innerWidth)).toBeLessThanOrEqual(1);
   }
 });

@@ -11,7 +11,9 @@ export function initMobileStampPreview(doc = document) {
   dock.dataset.stampMobileDock = '';
   dock.innerHTML = '<img data-stamp-dock-image alt="Current stamp design preview" />' +
     '<div class="stamp-mobile-dock-label"><strong>Live stamp preview</strong><small>Updates while you edit</small></div>' +
-    '<button type="button" data-stamp-expand aria-label="Expand current stamp preview">Expand ↗</button>';
+    '<div class="stamp-mobile-dock-actions">' +
+    '<button type="button" data-stamp-inline-expand aria-pressed="false" aria-label="Show larger live preview while editing">Bigger preview</button>' +
+    '<button type="button" data-stamp-expand aria-label="Expand current stamp preview">Full view ↗</button></div>';
   heading.after(dock);
   const dialog = doc.createElement('dialog');
   dialog.className = 'stamp-mobile-preview-dialog';
@@ -49,6 +51,14 @@ export function initMobileStampPreview(doc = document) {
   if (studio) observer.observe(studio, {attributes:true,attributeFilter:['hidden']});
   root.addEventListener('click', event => {
     if (event.target.closest('[data-mode]')) schedule();
+  });
+  // Unlike the dialog, the larger in-page preview remains visible while controls are editable.
+  const toggleSize = dock.querySelector('[data-stamp-inline-expand]');
+  toggleSize.addEventListener('click', () => {
+    const enlarged = dock.classList.toggle('is-enlarged');
+    toggleSize.setAttribute('aria-pressed', String(enlarged));
+    toggleSize.setAttribute('aria-label', enlarged ? 'Use smaller live preview while editing' : 'Show larger live preview while editing');
+    toggleSize.textContent = enlarged ? 'Smaller preview' : 'Bigger preview';
   });
   dock.querySelector('[data-stamp-expand]').addEventListener('click', () => {
     if (typeof dialog.showModal === 'function' && !dialog.open) {
