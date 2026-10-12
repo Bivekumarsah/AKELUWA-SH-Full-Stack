@@ -340,3 +340,15 @@ aside,.bg-side { background:var(--panel2); }
  .workspace .placed-image .handle{width:44px;height:44px;right:-22px;bottom:-22px;border-width:4px;box-shadow:0 0 0 2px #245b4540}
  .workspace #fitWidthBtn[aria-pressed="true"]{background:#e7f4ed;color:#195443;border-color:#195443}
 }
+
+/* Beginner-friendly actions stay below the toolbar rather than covering the PDF. */
+.pdf-mobile-start{display:none}
+@media(max-width:700px){
+ .workspace main:has(.pdf-mobile-start:not([hidden])){grid-template-rows:auto auto minmax(0,1fr)}
+ .pdf-mobile-start:not([hidden]){display:block;padding:12px 14px;background:#fff;border-bottom:1px solid #d8e2db;color:#1c372b}
+ .pdf-mobile-start>strong{display:block;font-size:14px}
+ .pdf-mobile-actions{display:flex;gap:8px;overflow-x:auto;padding:10px 0 5px;scrollbar-width:thin}
+ .pdf-mobile-actions button{flex:0 0 auto;min-height:44px;padding:10px 13px;border-radius:9px;border:1px solid #2b7155;color:#195443;background:#eef8f1;font-size:13px;font-weight:700}
+ .pdf-mobile-actions button:focus-visible{outline:3px solid #1267b2;outline-offset:2px}
+ .pdf-mobile-start p{margin:4px 0 0;font-size:12px;line-height:1.4;color:#53695d}
+}

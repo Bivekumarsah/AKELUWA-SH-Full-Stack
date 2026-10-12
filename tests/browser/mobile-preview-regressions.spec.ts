@@ -140,3 +140,85 @@ test('mobile PDF editor fits each page width while keeping zoom and download fun
   const bytes = Buffer.from(await (await import('node:fs/promises')).readFile((await download.path())!));
   expect(bytes.subarray(0, 5).toString()).toBe('%PDF-');
 });
+
+
+test('beginners can type Stamp Studio details with an immediate preview and undo on phones', async ({ page }) => {
+  for (const width of [320, 375, 430]) {
+    await page.setViewportSize({ width, height: 812 });
+    await page.goto(base + '/digital-stamp-maker/');
+    await page.locator('[data-mode="studio"]').click();
+    const dockImage = page.locator('[data-stamp-dock-image]');
+    const studio = page.locator('[data-ak-studio]');
+    await expect(studio).toBeVisible();
+    await studio.locator('[data-step="2"] summary').click();
+    const name = studio.locator('[data-quick-name]');
+    const previous = await dockImage.getAttribute('src');
+    const newName = 'AKELUWA LIVE ' + width;
+    await name.fill(newName);
+    await expect(name).toBeFocused();
+    await expect.poll(() => dockImage.getAttribute('src')).not.toBe(previous);
+    await expect(studio.locator('[data-preview] svg')).toContainText(newName);
+    await studio.locator('[data-undo]').click();
+    await expect(studio.locator('[data-quick-name]')).not.toHaveValue(newName);
+    await studio.locator('[data-go-download]').click();
+    await expect(studio.locator('[data-step="4"]')).toHaveAttribute('open', '');
+    const step = studio.locator('[data-step="4"]');
+    await expect(step).toBeFocused();
+    await expect.poll(() => step.evaluate(el => el.getBoundingClientRect().top),
+      { message: width + 'px download section visible' }).toBeLessThan(812);
+    await studio.locator('[data-step="3"]').evaluate(el => (el as HTMLDetailsElement).open = true);
+    await studio.locator('[data-step="3"] details summary').click();
+    await expect(studio.getByRole('button', { name: /Lock (Ring|Text|Curved text|Oval|Frame)/ }).first()).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth), width + 'px Studio overflow').toBeLessThanOrEqual(1);
+  }
+});
+
+test('keyboard uploads and contextual skip links work in each Toolbox editor', async ({ page }) => {
+  for (const [route, destination] of [
+    ['/pdf-editor/', '#pdfTool'],
+    ['/digital-stamp-maker/', '#stampTool'],
+    ['/compress-photo/', '#photoTool']
+  ]) {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto(base + route);
+    const skip = page.locator('.skip-link');
+    await expect(skip).toHaveAttribute('href', destination);
+    await skip.focus();
+    await page.keyboard.press('Enter');
+    await expect(page.locator(destination)).toBeFocused();
+    await expect(page).toHaveURL(new RegExp(route.replaceAll('/', '\\/') + '$'));
+  }
+  await page.goto(base + '/pdf-editor/');
+  const upload = page.locator('#pdfInput');
+  await upload.focus();
+  await expect(upload).toBeFocused();
+  expect(await upload.evaluate(el => getComputedStyle(el).display)).not.toBe('none');
+});
+
+test('mobile PDF beginner shortcuts expose labeled text editing without hiding the document', async ({ page }) => {
+  await page.goto(base + '/pdf-editor/');
+  const pdf = Buffer.from(await page.evaluate(async () => {
+    const lib = (window as unknown as { PDFLib: { PDFDocument: { create(): Promise<{ addPage(): void; save(): Promise<Uint8Array> }> } } }).PDFLib;
+    const document = await lib.PDFDocument.create();
+    document.addPage();
+    return Array.from(await document.save());
+  }));
+  for (const width of [320, 390, 430]) {
+    await page.setViewportSize({ width, height: 812 });
+    await page.goto(base + '/pdf-editor/');
+    const actions = page.locator('#pdfMobileStart');
+    await expect(actions).toBeHidden();
+    await page.locator('#pdfInput').setInputFiles({ name: 'beginner.pdf', mimeType: 'application/pdf', buffer: pdf });
+    await expect(actions).toBeVisible();
+    const addText = page.locator('#pdfMobileAddText');
+    await expect(addText).toBeVisible();
+    expect(await addText.evaluate(el => el.getBoundingClientRect().height)).toBeGreaterThanOrEqual(44);
+    await addText.click();
+    const editor = page.getByRole('textbox', { name: 'New text' });
+    await expect(editor).toBeFocused();
+    await editor.fill('Mobile access checked ' + width);
+    await expect(page.locator('#pageStage')).toBeVisible();
+    await expect(page.locator('#exportBtn')).toBeEnabled();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth), width + 'px PDF overflow').toBeLessThanOrEqual(1);
+  }
+});
