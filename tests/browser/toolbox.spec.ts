@@ -67,7 +67,11 @@ test('all mounted tool pages and metadata resolve without escaping to company ro
   expect((await request.get(base)).url()).toMatch(/\/akeluwatoolbox\/$/);
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto(base + '/compress-photo/');
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  const overflowing = await page.evaluate(() => [...document.querySelectorAll('*')].map(el => {
+    const r = el.getBoundingClientRect();
+    return {tag:el.tagName.toLowerCase(),className:typeof el.className==='string'?el.className.slice(0,120):'',id:el.id,right:Math.round(r.right),left:Math.round(r.left),width:Math.round(r.width)};
+  }).filter(el => el.right > innerWidth + 2 || el.left < -2).slice(0,18));
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),'Offscreen elements: '+JSON.stringify(overflowing)).toBe(true);
   expect(errors).toEqual([]);
 });
 
@@ -139,4 +143,54 @@ test('tool finder lets a first-time customer find the stamp maker and other util
   await expect(page.locator('#toolSearchEmpty')).toBeVisible();
   await page.getByRole('button', { name: 'Clear filters' }).click();
   await expect(page.locator('.extra-hub-link:not([hidden])')).toHaveCount(10);
+});
+
+test('mobile stamp editing keeps current SVG visible without scrolling back', async ({page}) => {
+ await page.setViewportSize({width:375,height:812});
+ await page.goto(base + '/digital-stamp-maker/');
+ const dock=page.locator('[data-stamp-mobile-dock]');
+ await expect(dock).toBeVisible();
+ await page.locator('.stamp-sample-card').first().click();
+ const name=page.locator('[data-quick-editor-bar] [data-quick-name]');
+ await expect(name).toBeVisible();
+ await name.fill('MY MOBILE COMPANY');
+ await expect(dock.locator('img')).toHaveAttribute('src', /data:image\/svg\+xml/);
+ await dock.getByRole('button', {name:'Expand current stamp preview'}).click();
+ await expect(page.getByRole('dialog', {name:'Expanded stamp preview'})).toBeVisible();
+ await page.getByRole('button',{name:'Close ✕'}).click();
+ await expect(page.getByRole('dialog', {name:'Expanded stamp preview'})).not.toBeVisible();
+ await expect(page.locator('#downloadStampPng')).toHaveCount(1);
+ await expect(page.locator('#stampPreview svg')).toHaveCount(1);
+});
+
+test('mobile extra tools show live placement and Nepali conversion previews', async ({page}) => {
+ await page.setViewportSize({width:360,height:780});
+ await page.goto(base+'/extra-tools/pdf-page-numbers/');
+ const panel=page.locator('#extraLivePanel');
+ await expect(panel).toBeVisible();
+ await page.locator('#pagePosition').selectOption('top-right');
+ await expect(panel.locator('.extra-live-mark')).toHaveCSS('top','10px');
+ await expect(panel.locator('.extra-live-mark')).toHaveText('1');
+ const offscreen=await page.evaluate(() => [...document.querySelectorAll('*')].map(el => {
+   const r=el.getBoundingClientRect();return {tag:el.tagName,id:el.id,cls:typeof el.className==='string'?el.className.slice(0,65):'',left:Math.round(r.left),right:Math.round(r.right),width:Math.round(r.width)};
+ }).filter(x => x.right > innerWidth + 2 || x.left < -2).slice(0,14));
+ expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'Mobile overflow offenders: '+JSON.stringify(offscreen)).toBe(true);
+ await page.goto(base+'/extra-tools/unicode-preeti/');
+ await expect(page.locator('#extraLivePanel')).toBeVisible();
+ await page.locator('#fontInput').fill('g]kfn');
+ await expect(page.locator('#fontResult')).not.toBeEmpty();
+});
+
+test('mobile photo and PDF settings have a live summary before processing',async({page})=>{
+ await page.setViewportSize({width:375,height:812});
+ await page.goto(base+'/compress-photo/');
+ const photo=page.locator('[data-core-live="photoTool"]');
+ await expect(photo).toBeVisible();
+ await page.locator('#photoWidth').fill('500');
+ await expect(photo).toContainText('Max width 500px');
+ await page.goto(base+'/compress-pdf/');
+ const pdf=page.locator('[data-core-live="reducerTool"]');
+ await expect(pdf).toBeVisible();
+ await page.locator('#reduceTarget').evaluate((el: HTMLInputElement) => {el.value='75';el.dispatchEvent(new Event('input',{bubbles:true}));});
+ await expect(pdf).toContainText('target 75%');
 });

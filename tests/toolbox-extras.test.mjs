@@ -98,3 +98,56 @@ test('Extra-tool URLs are routed by both local worker and the canonical Next.js 
  assert.ok(route.includes('import extraTools from "@/toolbox/extra-tools/catalog.json"'));
  assert.ok(route.includes('page?.path || extra'));
 });
+
+test('Mobile stamp preview uses exact SVG from both editors without altering downloads',async()=>{
+ const [m,css,home,studio]=await Promise.all([
+  read('toolbox/assets/js/mobile-live-preview.mjs'),
+  read('toolbox/assets/css/mobile-live-preview.css'),
+  read('toolbox/index.html'),
+  read('toolbox/assets/js/stamp-studio.js')]);
+ assert.ok(m.includes('new MutationObserver(schedule)'));
+ assert.ok(m.includes("data:image/svg+xml;charset=utf-8,"));
+ assert.ok(m.includes("root.querySelector('[data-ak-studio]')"));
+ assert.ok(m.includes("dialog.showModal()"));
+ assert.ok(css.includes('position:sticky'));
+ assert.ok(css.includes('stamp-mobile-keyboard'));
+ assert.ok(home.includes('id="stampPreview"'));
+ assert.ok(home.includes('id="downloadStampSvg"'));
+ assert.ok(studio.includes('data-preview'));
+});
+
+test('All extra utilities have responsive live preview hooks without auto-conversion',async()=>{
+ const catalog=JSON.parse(await read('toolbox/extra-tools/catalog.json'));
+ const mod=await read('toolbox/assets/js/extra-live-previews.mjs');
+ const app=await read('toolbox/extra-tools/app.js');
+ const style=await read('toolbox/extra-tools/style.css');
+ for(const item of catalog){
+  const html=await read('toolbox/extra-tools/'+item.slug+'/index.html');
+  assert.ok(html.includes('extra-live-previews.mjs'),item.slug);
+ }
+ assert.ok(mod.includes('requestAnimationFrame(render)'));
+ assert.ok(mod.includes("slug==='pdf-page-numbers'"));
+ assert.ok(mod.includes('URL.revokeObjectURL'));
+ assert.ok(style.includes('.extra-live-panel'));
+ assert.ok(app.includes('byId("fontInput").addEventListener("input",updateText)'));
+ assert.ok(app.includes('byId("qrValue").addEventListener("input",schedule)'));
+ assert.ok(app.includes('if(shouldDownload)'));
+});
+
+test('Core PDF and photo tool previews show settings without processing a file',async()=>{
+ const [html,script,css]=await Promise.all([read('toolbox/index.html'),read('toolbox/assets/js/core-live-previews.mjs'),read('toolbox/assets/css/core-live-previews.css')]);
+ for(const id of ['reducerTool','photoTool','pdf-to-image','image-to-pdf','merge-pdfs','extract-pages']){
+  assert.ok(script.includes("'"+id+"'"),id);
+ }
+ assert.ok(html.includes('core-live-previews.mjs'));
+ assert.ok(script.includes('First-page preview is below'));
+ assert.ok(script.includes("get('photoOriginal')"));
+ assert.ok(css.includes('position:sticky'));
+});
+
+test('Company Cloudflare Worker serves the exact extra tools CSS and JS paths',async()=>{
+ const worker=await read('worker/toolbox.ts');
+ assert.ok(worker.includes("'/extra-tools/app.js'"));
+ assert.ok(worker.includes("'/extra-tools/style.css'"));
+ assert.ok(worker.includes('isAsset = isExtraStatic ||'));
+});

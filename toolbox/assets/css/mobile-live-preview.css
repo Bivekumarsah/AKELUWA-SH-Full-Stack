@@ -1,0 +1,24 @@
+
+/* Phone-first live stamp preview: the editor remains untouched underneath. */
+.stamp-mobile-dock{display:none}
+.stamp-mobile-preview-dialog{border:1px solid #cadbd7;border-radius:18px;padding:16px;background:#fff;color:#20372e;max-width:min(94vw,560px);width:94%;box-shadow:0 24px 80px #07130d75}
+.stamp-mobile-preview-dialog::backdrop{background:#071b17b5}
+.stamp-dialog-header{display:flex;justify-content:space-between;align-items:center;gap:16px}
+.stamp-dialog-header button{border:1px solid #bed5c9;background:#fff;border-radius:8px;min-height:44px;padding:8px 15px;font-weight:700;cursor:pointer}
+.stamp-mobile-preview-dialog img{display:block;width:min(100%,420px);max-height:65vh;object-fit:contain;margin:12px auto;background:white}
+.stamp-mobile-preview-dialog p{text-align:center;font-size:12px;color:#516a60}
+@media(max-width:980px){
+  .stamp-mobile-dock{position:sticky;top:96px;z-index:19;display:flex;align-items:center;gap:12px;padding:8px 10px;margin:0 0 15px;background:#fffffff5;backdrop-filter:blur(12px);border:1px solid #aecaba;border-radius:12px;box-shadow:0 5px 18px #11362520;min-height:92px;max-height:112px}
+  .stamp-mobile-dock img{width:80px;height:80px;object-fit:contain;flex:none;background:#fff}
+  .stamp-mobile-dock-label{flex:1;min-width:0;display:grid;gap:4px}
+  .stamp-mobile-dock-label strong{font-size:13px;color:#194d36}
+  .stamp-mobile-dock-label small{font-size:11px;color:#536b61}
+  .stamp-mobile-dock [data-stamp-expand]{border:1px solid #277657;background:#1b6449;color:white;border-radius:9px;min-width:84px;min-height:44px;padding:9px;font-size:12px;font-weight:700;line-height:1.2;cursor:pointer}
+  .stamp-mobile-dock [data-stamp-expand]:focus-visible,.stamp-dialog-header button:focus-visible{outline:3px solid #1267b2;outline-offset:2px}
+  .stamp-mobile-typing .stamp-mobile-dock,.stamp-mobile-keyboard .stamp-mobile-dock{min-height:52px;max-height:58px;gap:8px;padding:4px 8px}
+  .stamp-mobile-typing .stamp-mobile-dock img,.stamp-mobile-keyboard .stamp-mobile-dock img{width:46px;height:46px}
+  .stamp-mobile-typing .stamp-mobile-dock-label small,.stamp-mobile-keyboard .stamp-mobile-dock-label small{display:none}
+}
+@media(max-width:700px){.stamp-mobile-dock{top:105px}}
+@media(max-width:380px){.stamp-mobile-dock{gap:6px}.stamp-mobile-dock-label strong{font-size:12px}.stamp-mobile-dock [data-stamp-expand]{min-width:74px;padding:7px}}
+@media(prefers-reduced-motion:reduce){.stamp-mobile-dock{scroll-behavior:auto}}

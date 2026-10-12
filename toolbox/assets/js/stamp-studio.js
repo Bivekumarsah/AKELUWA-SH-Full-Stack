@@ -269,7 +269,7 @@ export function initStampStudio({root,toast=()=>{}}={}){
   '[data-ak-studio][data-country-design="true"]:not([data-country-advanced="true"]) [data-step="3"]{display:none}'+
   '@media(max-width:980px){[data-ak-studio] .ak-studio-toolbar{top:8px}[data-ak-studio] .ak-studio-workspace{grid-template-columns:1fr}[data-ak-studio] .ak-studio-controls{max-height:none;overflow:visible;padding-right:0}[data-ak-studio] .ak-studio-preview-pane{position:relative;top:0;order:-1}[data-ak-studio] .ak-preview-canvas{min-height:320px}}'+
   '</style>'+
-  '<div><p style="margin:0;color:#1767c0;font-weight:800;font-size:12px">AKELUWA STAMP STUDIO</p><h2 style="margin:4px 0 6px">Create your stamp with the preview always visible</h2><p style="margin:0;color:#66716a">Edit on the left. Your live stamp stays locked on the right while you scroll.</p></div>'+
+  '<div><p style="margin:0;color:#1767c0;font-weight:800;font-size:12px">AKELUWA STAMP STUDIO</p><h2 style="margin:4px 0 6px">Create your stamp with live preview</h2><p style="margin:0;color:#66716a">Changes appear instantly. On phones, use the compact preview above to check edits without scrolling back.</p></div>'+
   '<div class="ak-studio-toolbar"><div class="ak-studio-toolbar-group"><button type="button" data-undo>↶ Undo</button><button type="button" data-redo>↷ Redo</button><button type="button" data-new-design>New design</button></div><div class="ak-studio-toolbar-group"><button type="button" data-reset-selected>Reset selected</button><button type="button" data-reset-all>Reset whole stamp</button><button type="button" data-go-download>Download ↓</button></div></div>'+
   '<div class="ak-studio-workspace">'+
     '<div class="ak-studio-controls" data-controls>'+

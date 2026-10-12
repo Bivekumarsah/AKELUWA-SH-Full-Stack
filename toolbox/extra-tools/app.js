@@ -262,6 +262,14 @@
     return result;
   }
   function unicodePreetiTool(){
+    const updateText=()=>{
+      const input=byId("fontInput").value;
+      if(input.length>25000||!input.trim()){byId("fontResult").value="";return;}
+      const pairs=byId("fontDirection").value==="toUnicode"?preetiPairs:reversePairs.map(([legacy,unicode])=>[unicode,legacy]);
+      byId("fontResult").value=basicConvert(input,pairs);
+    };
+    byId("fontInput").addEventListener("input",updateText);
+    byId("fontDirection").addEventListener("change",updateText);
     onSubmit("fontForm",async()=>{
       const input=byId("fontInput").value;
       if(input.length>25000)throw new Error("Maximum 25,000 characters.");
@@ -307,19 +315,28 @@
     });
   }
   function qrTool(){
-    onSubmit("qrForm",async()=>{
-      const data=byId("qrValue").value.trim();
-      if(!data||data.length>500)throw new Error("Enter 1–500 characters for the QR code.");
+    let timer=0,revision=0;
+    async function generate(shouldDownload=false){
+      const ticket=++revision,data=byId("qrValue").value.trim(),target=byId("qrCanvas");
+      if(!data||data.length>500){target.replaceChildren();if(shouldDownload)throw new Error("Enter 1–500 characters for the QR code.");return;}
       const size=number("qrSize",128,1000);
-      const qrcode=await inject("https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js","QRCode");
-      const target=byId("qrCanvas");target.replaceChildren();
-      new qrcode(target,{text:data,width:size,height:size,correctLevel:qrcode.CorrectLevel.H,colorDark:"#102c48",colorLight:"#ffffff"});
-      const image=target.querySelector("canvas");
-      if(!image)throw new Error("QR canvas was not created.");
-      const blob=await asBlob(image,"image/png",1);
-      download(blob,"akeluwatoolbox-qr.png");
-      say("QR code generated and downloaded. Scan it on another device before printing or sharing.");
-    });
+      const QR=await inject("https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js","QRCode");
+      if(ticket!==revision)return;
+      target.replaceChildren();
+      new QR(target,{text:data,width:size,height:size,correctLevel:QR.CorrectLevel.H,colorDark:"#102c48",colorLight:"#ffffff"});
+      const canvas=target.querySelector("canvas");if(!canvas)throw new Error("QR canvas was not created.");
+      if(shouldDownload){
+        download(await asBlob(canvas,"image/png",1),"akeluwatoolbox-qr.png");
+        say("QR code generated and downloaded. Scan it on another device before using it.");
+      }
+    }
+    const schedule=()=>{
+      clearTimeout(timer);
+      timer=setTimeout(()=>generate().catch(()=>say("Preview unavailable; try Generate and download.")),400);
+    };
+    byId("qrValue").addEventListener("input",schedule);
+    byId("qrSize").addEventListener("input",schedule);
+    onSubmit("qrForm",async()=>{clearTimeout(timer);await generate(true);});
   }
   function pageNumbersTool(){
     onSubmit("numbersForm",async()=>{
