@@ -146,7 +146,9 @@ test('mobile stamp editing keeps current SVG visible without scrolling back', as
  await page.goto(base + '/digital-stamp-maker/');
  const dock=page.locator('[data-stamp-mobile-dock]');
  await expect(dock).toBeVisible();
- const name=page.locator('#stampName');
+ await page.locator('.stamp-sample-card').first().click();
+ const name=page.locator('[data-quick-name]');
+ await expect(name).toBeVisible();
  await name.fill('MY MOBILE COMPANY');
  await expect(dock.locator('img')).toHaveAttribute('src', /data:image\/svg\+xml/);
  await dock.getByRole('button', {name:'Expand current stamp preview'}).click();
@@ -155,4 +157,19 @@ test('mobile stamp editing keeps current SVG visible without scrolling back', as
  await expect(page.getByRole('dialog', {name:'Expanded stamp preview'})).not.toBeVisible();
  await expect(page.locator('#downloadStampPng')).toHaveCount(1);
  await expect(page.locator('#stampPreview svg')).toHaveCount(1);
+});
+
+test('mobile extra tools show live placement and Nepali conversion previews', async ({page}) => {
+ await page.setViewportSize({width:360,height:780});
+ await page.goto(base+'/extra-tools/pdf-page-numbers/');
+ const panel=page.locator('#extraLivePanel');
+ await expect(panel).toBeVisible();
+ await page.locator('#pagePosition').selectOption('top-right');
+ await expect(panel.locator('.extra-live-mark')).toHaveCSS('top','10px');
+ await expect(panel.locator('.extra-live-mark')).toHaveText('1');
+ expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+ await page.goto(base+'/extra-tools/unicode-preeti/');
+ await expect(page.locator('#extraLivePanel')).toBeVisible();
+ await page.locator('#fontInput').fill('g]kfn');
+ await expect(page.locator('#fontResult')).not.toBeEmpty();
 });

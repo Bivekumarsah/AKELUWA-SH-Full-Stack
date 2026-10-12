@@ -13,7 +13,7 @@
   .stamp-mobile-dock-label{flex:1;min-width:0;display:grid;gap:4px}
   .stamp-mobile-dock-label strong{font-size:13px;color:#194d36}
   .stamp-mobile-dock-label small{font-size:11px;color:#536b61}
-  .stamp-mobile-dock [data-stamp-expand]{border:1px solid #277657;background:#1b6449;color:white;border-radius:9px;min-width:84px;min-height:44px;padding:9px;font:700 12px/1.2 inherit;cursor:pointer}
+  .stamp-mobile-dock [data-stamp-expand]{border:1px solid #277657;background:#1b6449;color:white;border-radius:9px;min-width:84px;min-height:44px;padding:9px;font-size:12px;font-weight:700;line-height:1.2;cursor:pointer}
   .stamp-mobile-dock [data-stamp-expand]:focus-visible,.stamp-dialog-header button:focus-visible{outline:3px solid #1267b2;outline-offset:2px}
   .stamp-mobile-typing .stamp-mobile-dock,.stamp-mobile-keyboard .stamp-mobile-dock{min-height:52px;max-height:58px;gap:8px;padding:4px 8px}
   .stamp-mobile-typing .stamp-mobile-dock img,.stamp-mobile-keyboard .stamp-mobile-dock img{width:46px;height:46px}
