@@ -97,3 +97,46 @@ test('mobile navigation exposes every core tool and supports keyboard dismissal'
     expect(await page.evaluate(() => document.documentElement.scrollWidth-window.innerWidth)).toBeLessThanOrEqual(1);
   }
 });
+
+
+test('mobile PDF editor fits each page width while keeping zoom and download functional', async ({ page }) => {
+  await page.goto(base + '/pdf-editor/');
+  const pdf = Buffer.from(await page.evaluate(async () => {
+    const pdfLib = (window as unknown as { PDFLib: { PDFDocument: { create(): Promise<{ addPage(size: number[]): void; save(): Promise<Uint8Array> }> } } }).PDFLib;
+    const doc = await pdfLib.PDFDocument.create();
+    doc.addPage([595, 842]);
+    doc.addPage([842, 595]);
+    return Array.from(await doc.save());
+  }));
+  for (const width of widths) {
+    await page.setViewportSize({ width, height: 812 });
+    await page.goto(base + '/pdf-editor/');
+    await page.locator('#pdfInput').setInputFiles({ name: 'mobile-fit.pdf', mimeType: 'application/pdf', buffer: pdf });
+    const stage = page.locator('#pageStage');
+    const fit = page.locator('#fitWidthBtn');
+    await expect(stage).toBeVisible();
+    await expect(fit).toHaveAttribute('aria-pressed', 'true');
+    const fitsViewer = () => page.evaluate(() => {
+      const wrap = document.getElementById('stageWrap')!;
+      const sheet = document.getElementById('pageStage')!;
+      const styles = getComputedStyle(wrap);
+      const available = wrap.clientWidth - parseFloat(styles.paddingLeft) - parseFloat(styles.paddingRight);
+      return sheet.getBoundingClientRect().width <= available + 2;
+    });
+    expect(await fitsViewer(), width + 'px first page fit').toBe(true);
+    await page.locator('#nextBtn').click();
+    await expect(page.locator('#pageReadout')).toHaveText('2 / 2');
+    expect(await fitsViewer(), width + 'px landscape page fit').toBe(true);
+    await page.locator('#zoomIn').click();
+    await expect(fit).toHaveAttribute('aria-pressed', 'false');
+    await fit.click();
+    await expect(fit).toHaveAttribute('aria-pressed', 'true');
+    expect(await fitsViewer(), width + 'px restored fit').toBe(true);
+  }
+  const downloadEvent = page.waitForEvent('download');
+  await page.locator('#exportBtn').click();
+  const download = await downloadEvent;
+  expect(download.suggestedFilename()).toBe('mobile-fit-edited.pdf');
+  const bytes = Buffer.from(await (await import('node:fs/promises')).readFile((await download.path())!));
+  expect(bytes.subarray(0, 5).toString()).toBe('%PDF-');
+});
