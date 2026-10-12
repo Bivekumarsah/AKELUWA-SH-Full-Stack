@@ -24,13 +24,23 @@ export function initMobileStampPreview(doc = document) {
   root.append(dialog);
   const thumb = dock.querySelector('[data-stamp-dock-image]');
   const full = dialog.querySelector('[data-stamp-dialog-image]');
-  const studio = root.querySelector('[data-ak-studio]');
-  const studioPreview = studio?.querySelector('[data-preview]');
+  // Stamp Studio may mount after this module; connect its preview when it appears.
+  let studio = null;
+  let studioPreview = null;
   let queued = false;
   let lastSvg = '';
+  const observeStudio = () => {
+    const current = root.querySelector('[data-ak-studio]');
+    if (!current || current === studio) return;
+    studio = current;
+    studioPreview = studio.querySelector('[data-preview]');
+    if (studioPreview) observer.observe(studioPreview, {childList:true,subtree:true,attributes:true,characterData:true});
+    observer.observe(studio, {attributes:true,attributeFilter:['hidden']});
+  };
   const isStudio = () => Boolean(studio && !studio.hidden);
   const update = () => {
     queued = false;
+    observeStudio();
     const svg = (isStudio() ? studioPreview : original)?.querySelector('svg');
     if (!svg) return;
     const source = svg.outerHTML;
@@ -47,8 +57,8 @@ export function initMobileStampPreview(doc = document) {
   };
   const observer = new MutationObserver(schedule);
   observer.observe(original, {childList:true,subtree:true,attributes:true,characterData:true});
-  if (studioPreview) observer.observe(studioPreview, {childList:true,subtree:true,attributes:true,characterData:true});
-  if (studio) observer.observe(studio, {attributes:true,attributeFilter:['hidden']});
+  observer.observe(root, {childList:true});
+  observeStudio();
   root.addEventListener('click', event => {
     if (event.target.closest('[data-mode]')) schedule();
   });
