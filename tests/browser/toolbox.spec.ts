@@ -147,7 +147,7 @@ test('mobile stamp editing keeps current SVG visible without scrolling back', as
  const dock=page.locator('[data-stamp-mobile-dock]');
  await expect(dock).toBeVisible();
  await page.locator('.stamp-sample-card').first().click();
- const name=page.locator('[data-quick-name]');
+ const name=page.locator('[data-quick-editor-bar] [data-quick-name]');
  await expect(name).toBeVisible();
  await name.fill('MY MOBILE COMPANY');
  await expect(dock.locator('img')).toHaveAttribute('src', /data:image\/svg\+xml/);
@@ -184,6 +184,6 @@ test('mobile photo and PDF settings have a live summary before processing',async
  await page.goto(base+'/compress-pdf/');
  const pdf=page.locator('[data-core-live="reducerTool"]');
  await expect(pdf).toBeVisible();
- await page.locator('#reduceTarget').fill('75');
+ await page.locator('#reduceTarget').evaluate((el: HTMLInputElement) => {el.value='75';el.dispatchEvent(new Event('input',{bubbles:true}));});
  await expect(pdf).toContainText('target 75%');
 });

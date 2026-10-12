@@ -3,7 +3,7 @@
 export function initCoreLivePreviews(doc=document) {
   const get=id=>doc.getElementById(id);
   const panels=[
-    ['reducerTool','reducer-heading','PDF preview'],['photoTool','reducer-heading','Photo preview'],
+    ['reducerTool','.reducer-heading','PDF preview'],['photoTool','.reducer-heading','Photo preview'],
     ['pdf-to-image','h2','PDF to images'],['image-to-pdf','h2','Images to PDF'],
     ['image-converter','h2','Image conversion'],['merge-pdfs','h2','Merge PDFs'],
     ['extract-pages','h2','Extract pages']
