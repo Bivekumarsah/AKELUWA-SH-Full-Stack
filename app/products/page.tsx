@@ -32,7 +32,7 @@ export default function ProductsPage() {
           <h2 id="publicinfo-heading">AKELUWA PublicInfoHub</h2>
         </div>
         <div className="inner-copy">
-          <p>An independent directory of Nepal-related public-service links, government websites, office information, and citizen utilities. It is not a government agency or an official application portal; always verify procedures on the linked authority's website.</p>
+          <p>An independent directory of Nepal-related public-service links, government websites, office information, and citizen utilities. It is not a government agency or an official application portal; always verify procedures on the linked authority&apos;s website.</p>
           <p><Link href="/publicinfohub/">Explore PublicInfoHub →</Link></p>
         </div>
       </section>
