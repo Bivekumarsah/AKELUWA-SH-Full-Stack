@@ -115,3 +115,21 @@ test('Mobile stamp preview uses exact SVG from both editors without altering dow
  assert.ok(home.includes('id="downloadStampSvg"'));
  assert.ok(studio.includes('data-preview'));
 });
+
+test('All extra utilities have responsive live preview hooks without auto-conversion',async()=>{
+ const catalog=JSON.parse(await read('toolbox/extra-tools/catalog.json'));
+ const mod=await read('toolbox/assets/js/extra-live-previews.mjs');
+ const app=await read('toolbox/extra-tools/app.js');
+ const style=await read('toolbox/extra-tools/style.css');
+ for(const item of catalog){
+  const html=await read('toolbox/extra-tools/'+item.slug+'/index.html');
+  assert.ok(html.includes('extra-live-previews.mjs'),item.slug);
+ }
+ assert.ok(mod.includes('requestAnimationFrame(render)'));
+ assert.ok(mod.includes("slug==='pdf-page-numbers'"));
+ assert.ok(mod.includes('URL.revokeObjectURL'));
+ assert.ok(style.includes('.extra-live-panel'));
+ assert.ok(app.includes('byId("fontInput").addEventListener("input",updateText)'));
+ assert.ok(app.includes('byId("qrValue").addEventListener("input",schedule)'));
+ assert.ok(app.includes('if(shouldDownload)'));
+});

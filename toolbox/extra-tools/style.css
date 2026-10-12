@@ -86,3 +86,31 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 .tool-finder-empty{padding:12px;color:#6e301c;background:#fff4eb;border:1px solid #f5d8bd;border-radius:8px;font-size:13px}
 .tool-card[hidden],.extra-home-card[hidden],.extra-hub-link[hidden],.extra-home-panel[hidden],.tools-section[hidden],#toolSearchClear[hidden],#toolSearchEmpty[hidden]{display:none!important}
 @media(max-width:700px){.tool-finder{padding:16px}.tool-finder label{font-size:16px}.tool-finder-filters button{font-size:12px;padding:8px 9px}.tool-finder-home{margin-top:18px}}
+
+
+/* Low-memory mobile preview cards, with no automatic heavy processing. */
+.extra-live-panel{border:1px solid #bbd5ca;border-radius:13px;background:#f7fbf9;padding:13px 15px;margin:18px 0 22px;box-shadow:0 5px 18px #143c2820}
+.extra-live-heading{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:5px;font-weight:800;color:#17583c}
+.extra-live-heading small{font-size:11px;color:#53695f;font-weight:500}
+.extra-live-body{display:flex;align-items:center;gap:12px;min-height:65px}
+.extra-live-body p{line-height:1.45;font-size:13px;color:#38564b;flex:1;margin:10px 0;overflow-wrap:anywhere}
+.extra-live-visual{display:grid;place-items:center;flex:0 0 auto;max-width:160px}
+.extra-live-visual canvas{max-width:130px;max-height:130px;object-fit:contain;border:1px solid #c5d8ce;border-radius:7px}
+.extra-live-sheet{width:104px;height:135px;background:white;border:1px solid #b8cbbf;box-shadow:0 3px 8px #09291a16;position:relative;overflow:hidden}
+.extra-live-sheet::before{content:"";position:absolute;left:12px;right:12px;top:22px;height:65px;background:repeating-linear-gradient(to bottom,#e5ede8 0 2px,transparent 2px 14px)}
+.extra-live-mark{position:absolute;white-space:nowrap;color:#344766;font-weight:650;font-size:12px}
+.extra-live-signature img{max-width:78px;max-height:34px;object-fit:contain}
+.extra-live-watermark{color:#7086a0;opacity:.6;transform:rotate(-28deg);max-width:80%;overflow:hidden;text-overflow:ellipsis}
+@media(max-width:700px){
+.extra-live-panel{position:sticky;top:76px;z-index:12;padding:9px 11px;background:#f7fbf9f5;backdrop-filter:blur(10px);margin:12px 0;box-shadow:0 4px 14px #1338222e}
+.extra-live-visual{max-width:86px}
+.extra-live-visual canvas{max-width:83px;max-height:85px}
+.extra-live-sheet{width:72px;height:94px}
+.extra-live-heading strong{font-size:13px}
+.extra-live-body p{font-size:12px;margin:5px 0}
+.extra-live-typing .extra-live-body{min-height:44px}
+.extra-live-typing .extra-live-visual{max-width:48px}
+.extra-live-typing .extra-live-visual canvas{max-width:45px;max-height:45px}
+.extra-live-typing .extra-live-sheet{width:35px;height:45px}
+.extra-live-typing .extra-live-heading small{display:none}
+}
