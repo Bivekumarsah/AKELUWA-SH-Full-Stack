@@ -173,3 +173,17 @@ test('mobile extra tools show live placement and Nepali conversion previews', as
  await page.locator('#fontInput').fill('g]kfn');
  await expect(page.locator('#fontResult')).not.toBeEmpty();
 });
+
+test('mobile photo and PDF settings have a live summary before processing',async({page})=>{
+ await page.setViewportSize({width:375,height:812});
+ await page.goto(base+'/compress-photo/');
+ const photo=page.locator('[data-core-live="photoTool"]');
+ await expect(photo).toBeVisible();
+ await page.locator('#photoWidth').fill('500');
+ await expect(photo).toContainText('Max width 500px');
+ await page.goto(base+'/compress-pdf/');
+ const pdf=page.locator('[data-core-live="reducerTool"]');
+ await expect(pdf).toBeVisible();
+ await page.locator('#reduceTarget').fill('75');
+ await expect(pdf).toContainText('target 75%');
+});

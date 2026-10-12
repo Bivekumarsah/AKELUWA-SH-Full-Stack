@@ -1,0 +1,11 @@
+
+/* Core tool live settings panels; actual expensive processing stays on demand. */
+.core-live-panel{padding:12px 15px;margin:14px 0;background:#f5faf7;border:1px solid #bcd5c8;border-radius:11px;color:#1e4b38}
+.core-live-panel strong{display:block;font-size:13px;margin:0 0 6px}
+.core-live-content{display:flex;gap:10px;align-items:center}
+.core-live-content p{margin:0;font-size:12px;line-height:1.5;color:#416152;flex:1}
+.core-live-content canvas{max-width:80px;max-height:85px;object-fit:contain;background:white;border-radius:7px;border:1px solid #d7e4da}
+@media(max-width:700px){
+  .core-live-panel{position:sticky;top:105px;z-index:12;margin:10px 0;padding:10px;background:#f5faf7f5;backdrop-filter:blur(9px);box-shadow:0 4px 14px #12362315}
+  .core-live-content p{font-size:12px}
+}

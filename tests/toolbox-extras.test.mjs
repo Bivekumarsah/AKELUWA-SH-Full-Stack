@@ -133,3 +133,14 @@ test('All extra utilities have responsive live preview hooks without auto-conver
  assert.ok(app.includes('byId("qrValue").addEventListener("input",schedule)'));
  assert.ok(app.includes('if(shouldDownload)'));
 });
+
+test('Core PDF and photo tool previews show settings without processing a file',async()=>{
+ const [html,script,css]=await Promise.all([read('toolbox/index.html'),read('toolbox/assets/js/core-live-previews.mjs'),read('toolbox/assets/css/core-live-previews.css')]);
+ for(const id of ['reducerTool','photoTool','pdf-to-image','image-to-pdf','merge-pdfs','extract-pages']){
+  assert.ok(script.includes("'"+id+"'"),id);
+ }
+ assert.ok(html.includes('core-live-previews.mjs'));
+ assert.ok(script.includes('First-page preview is below'));
+ assert.ok(script.includes("get('photoOriginal')"));
+ assert.ok(css.includes('position:sticky'));
+});
