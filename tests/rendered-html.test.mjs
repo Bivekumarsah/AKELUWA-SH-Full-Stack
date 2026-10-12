@@ -66,6 +66,34 @@ test("renders the public homepage and its critical content", async () => {
   assert.doesNotMatch(html, /gmail\.com\.com/);
 });
 
+
+test("serves crawlable homepage SEO metadata and linked company markup", async () => {
+  const worker = await loadWorker();
+  const html = await renderPath(worker, "/");
+
+  // Validate the server response, not metadata that appears only after hydration.
+  assert.match(html, /<html\\b[^>]*\\blang="en"/);
+  assert.match(html, /<title>AKELUWA Softwarehub \\| Software Development &amp; IT Services<\\/title>/);
+  assert.match(html, /<meta(?=[^>]*\\bname="description")(?=[^>]*\\bcontent="AKELUWA Softwarehub)[^>]*>/);
+  assert.match(html, /<meta(?=[^>]*\\bname="content-language")(?=[^>]*\\bcontent="en")[^>]*>/);
+  assert.match(html, /<link(?=[^>]*\\brel="canonical")(?=[^>]*\\bhref="https:\\/\\/www\\.akeluwasoftwarehub\\.com\\.np\\/")[^>]*>/);
+  assert.match(html, /<h1\\b[^>]*>Software built for/);
+  assert.match(html, /<meta(?=[^>]*\\bproperty="og:title")[^>]*>/);
+
+  const markup = [...html.matchAll(/<script\\b[^>]*\\btype="application\\/ld\\+json"[^>]*>([\\s\\S]*?)<\\/script>/g)];
+  assert.ok(markup.length > 0, "Expected JSON-LD in the server-rendered HTML");
+  const schemas = markup.flatMap((match) => {
+    const parsed = JSON.parse(match[1]);
+    return Array.isArray(parsed["@graph"]) ? parsed["@graph"] : [parsed];
+  });
+  const organization = schemas.find((schema) => schema["@type"] === "Organization");
+  const website = schemas.find((schema) => schema["@type"] === "WebSite");
+  assert.equal(organization?.name, "AKELUWA Softwarehub");
+  assert.equal(website?.url, "https://www.akeluwasoftwarehub.com.np");
+  assert.equal(website?.inLanguage, "en");
+  assert.equal(website?.publisher?.["@id"], organization?.["@id"]);
+});
+
 test('production Worker serves toolbox pages, assets, redirects and isolated 404 responses', async () => {
   const worker = await loadWorker();
   const assetEnv = {
