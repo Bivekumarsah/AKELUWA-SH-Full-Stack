@@ -2,6 +2,8 @@
 export const site = {
   name: 'Akeluwa ToolBox',
   origin: 'https://akeluwatoolbox-website.vercel.app',
+  publisherName: 'AKELUWA Softwarehub',
+  publisherUrl: 'https://www.akeluwasoftwarehub.com.np/',
   description: 'AkeluwaToolBox offers free online PDF and photo tools. Compress, edit, convert and merge files or remove image backgrounds in your browser. No sign-up.',
 };
 
@@ -146,7 +148,8 @@ export function renderGuide(page, basePath = browserBasePath) {
   const steps = page.steps.length ? `<ol>${page.steps.map(step => `<li>${escapeHtml(step)}</li>`).join('')}</ol>` : '';
   const breadcrumb = page.tool === 'home' ? '' : `<nav class="breadcrumbs" aria-label="Breadcrumb"><ol><li><a href="${sitePath('/', basePath)}">${escapeHtml(site.name)}</a></li><li aria-current="page">${escapeHtml(page.label)}</li></ol></nav>`;
   const example = page.example ? `<h3>Practical example</h3><p>${escapeHtml(page.example)}</p>` : '';
-  return `<section class="seo-guide" id="toolGuide" aria-labelledby="guideTitle">${breadcrumb}<h2 id="guideTitle">${escapeHtml(page.heading)}</h2><p>${escapeHtml(page.intro)}</p>${steps}${example}${page.notes.map(note => `<p>${escapeHtml(note)}</p>`).join('')}<h3>Common questions</h3>${page.faq.map(([question, answer]) => `<details><summary>${escapeHtml(question)}</summary><p>${escapeHtml(answer)}</p></details>`).join('')}<nav class="related-tools" aria-label="Related file tools">${links}</nav></section>`;
+  const publisher = page.tool === 'home' ? `<p>Developed by <a href="${site.publisherUrl}">${escapeHtml(site.publisherName)}</a>, a registered software company in Nepal.</p>` : '';
+  return `<section class="seo-guide" id="toolGuide" aria-labelledby="guideTitle">${breadcrumb}<h2 id="guideTitle">${escapeHtml(page.heading)}</h2><p>${escapeHtml(page.intro)}</p>${publisher}${steps}${example}${page.notes.map(note => `<p>${escapeHtml(note)}</p>`).join('')}<h3>Common questions</h3>${page.faq.map(([question, answer]) => `<details><summary>${escapeHtml(question)}</summary><p>${escapeHtml(answer)}</p></details>`).join('')}<nav class="related-tools" aria-label="Related file tools">${links}</nav></section>`;
 }
 
 export function structuredData(page, origin = site.origin, basePath = browserBasePath) {
@@ -157,9 +160,15 @@ export function structuredData(page, origin = site.origin, basePath = browserBas
     url, description: page.description, applicationCategory: 'UtilitiesApplication', operatingSystem: 'Any device with a supported web browser',
     offers: {'@type': 'Offer', price: '0', priceCurrency: 'USD'},
   };
-  const graph = [application];
+  application.provider = { '@id': site.publisherUrl + '#organization' };
+  const graph = [application, {
+    '@type': 'Organization', '@id': site.publisherUrl + '#organization',
+    name: site.publisherName, url: site.publisherUrl,
+    address: { '@type': 'PostalAddress', addressCountry: 'NP' },
+  }];
   if (page.tool === 'home') graph.push({
     '@type': 'WebSite', '@id': home + '#website', name: site.name,
+    publisher: { '@id': site.publisherUrl + '#organization' },
     alternateName: ['AkeluwaToolBox', 'Akeluwa Toolbox', new URL(origin).hostname], url: home, description: site.description,
   });
   else graph.push({'@type': 'BreadcrumbList', itemListElement: [

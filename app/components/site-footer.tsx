@@ -17,6 +17,7 @@ export function SiteFooter() {
         <nav className="footer-column" aria-label="Footer services and resources">
           <p>EXPLORE</p>
           <Link href="/services">Services</Link>
+          <Link href="/products">Our products</Link>
           <Link href="/case-studies">Our work</Link>
           <Link href="/careers">Careers</Link>
           <Link href="/downloads">Downloads</Link>
@@ -33,6 +34,7 @@ export function SiteFooter() {
         <div className="footer-column footer-company-data">
           <p>COMPANY DETAILS</p>
           <span><small>BASE</small>Nepal / Remote worldwide</span>
+          <span><small>BUSINESS</small>Registered company in Nepal</span>
           <span><small>WORKING WITH US</small>Scope and terms agreed in writing</span>
           <span><small>RESPONSE</small>Within one business day</span>
         </div>

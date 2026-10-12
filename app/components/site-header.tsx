@@ -35,6 +35,7 @@ export function SiteHeader() {
       </div>
       <nav className="nova-nav" aria-label="Primary navigation">
         <Link href="/services" aria-current={pathname === "/services" ? "page" : undefined}>Services</Link>
+        <Link href="/products" aria-current={pathname === "/products" ? "page" : undefined}>Products</Link>
         <Link href="/case-studies" aria-current={pathname === "/case-studies" ? "page" : undefined}>Our work</Link>
         <Link href="/about" aria-current={pathname === "/about" ? "page" : undefined}>About</Link>
       </nav>

@@ -43,18 +43,35 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Use a stable organization ID across our company and product websites.
+  const organizationId = absoluteURL("/#organization");
   const organizationSchema = {
     "@context": "https://schema.org",
-    "@type": "Organization",
-    name: "AKELUWA Softwarehub",
-    url: siteURL,
-    logo: absoluteURL("/company-logo.png"),
-    email: "akeluwasoftwarehub@gmail.com",
-    areaServed: "Worldwide",
-    address: {
-      "@type": "PostalAddress",
-      addressCountry: "NP",
-    },
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": organizationId,
+        name: "AKELUWA Softwarehub",
+        url: absoluteURL("/"),
+        logo: absoluteURL("/company-logo.png"),
+        email: "akeluwasoftwarehub@gmail.com",
+        areaServed: "Worldwide",
+        address: { "@type": "PostalAddress", addressCountry: "NP" },
+      },
+      {
+        "@type": "WebSite",
+        "@id": absoluteURL("/#website"),
+        name: "AKELUWA Softwarehub",
+        url: absoluteURL("/"),
+        inLanguage: "en",
+        publisher: { "@id": organizationId },
+        hasPart: [
+          { "@type": "WebPage", url: absoluteURL("/products") },
+          { "@type": "WebSite", url: absoluteURL("/akeluwatoolbox/") },
+          { "@type": "WebSite", url: absoluteURL("/publicinfohub/") },
+        ],
+      },
+    ],
   };
 
   return (
