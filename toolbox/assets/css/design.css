@@ -305,7 +305,7 @@ aside,.bg-side { background:var(--panel2); }
 .mobile-tools-toggle{display:none}
 .mobile-only-stamp{display:none}
 @media(max-width:700px){
- .app>header{min-height:72px;flex-wrap:nowrap;gap:9px;position:sticky;top:0}
+ .app>header{min-height:72px;flex-wrap:nowrap;gap:9px;padding:9px 12px;position:sticky;top:0}
  .app>header .brand{min-width:0;flex:1}
  .app>header .brand-logo-wrap{width:min(56vw,215px);height:42px}
  .app>header .mobile-tools-toggle{display:inline-flex;align-items:center;justify-content:center;gap:8px;flex:none;min-width:100px;min-height:46px;padding:9px 12px;border:1px solid #b7d2c3;border-radius:10px;background:#fff;color:#195443;font-size:15px;font-weight:750}
