@@ -121,3 +121,10 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 .extra-field input[type="file"]{max-width:100%;min-width:0}
 .extra-live-body p{min-width:0}
 @media(max-width:560px){.extra-header .extra-container{gap:6px}.extra-links a{padding:6px 5px}.extra-breadcrumb{overflow-wrap:anywhere}}
+
+/* Use finger-sized controls throughout the standalone extra-tool workflows. */
+@media(max-width:700px){
+ .extra-panel button,.extra-panel input[type=button],.extra-panel input[type=submit]{min-height:44px}
+ .extra-panel .extra-field input:not([type=checkbox]),.extra-panel .extra-field select,.extra-panel .extra-field textarea{font-size:16px;min-height:46px}
+ .extra-panel .extra-live-panel{top:74px}
+}

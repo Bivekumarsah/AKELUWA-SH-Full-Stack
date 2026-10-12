@@ -229,7 +229,8 @@
   <div class="app">
     <header>
       <a class="brand" href="/" data-launch-tool="home" aria-label="Akeluwa ToolBox home"><span class="brand-logo-wrap"><img class="brand-logo" src="/assets/images/logo.png" alt="Akeluwa ToolBox" width="2172" height="724" fetchpriority="high" /></span><small>Everyday work, made lighter</small></a>
-      <nav class="tool-tabs" aria-label="Tool navigation"><a class="tool-tab active" data-tool="home" aria-current="page" href="/">All tools</a><a class="tool-tab" data-tool="pdf" href="/pdf-editor/">PDF editor</a><a class="tool-tab" data-tool="reducer" href="/compress-pdf/">Compress PDF</a><a class="tool-tab" data-tool="photo" href="/compress-photo/">Compress photo</a><a class="tool-tab" data-tool="converter" href="/pdf-converter/">Convert &amp; organize</a><a class="tool-tab" data-tool="background" href="/remove-background/">Remove background</a><a class="extra-nav-tab" href="/extra-tools/">More tools ↗</a></nav>
+      <button class="mobile-tools-toggle" type="button" data-mobile-tools-toggle aria-expanded="false" aria-controls="mobile-tools-menu" aria-label="Open tools menu"><span aria-hidden="true">☰</span> <span data-mobile-menu-text>Tools</span></button>
+      <nav class="tool-tabs" id="mobile-tools-menu" aria-label="Tool navigation"><a class="tool-tab active" data-tool="home" aria-current="page" href="/">All tools</a><a class="tool-tab" data-tool="pdf" href="/pdf-editor/">PDF editor</a><a class="tool-tab" data-tool="reducer" href="/compress-pdf/">Compress PDF</a><a class="tool-tab" data-tool="photo" href="/compress-photo/">Compress photo</a><a class="tool-tab" data-tool="converter" href="/pdf-converter/">Convert &amp; organize</a><a class="tool-tab" data-tool="background" href="/remove-background/">Remove background</a><a class="tool-tab mobile-only-stamp" data-tool="stamp" href="/digital-stamp-maker/">Digital stamp maker</a><a class="extra-nav-tab" href="/extra-tools/">More tools ↗</a></nav>
       <div class="privacy"><svg class="icon " aria-hidden="true"><use href="#i-shield"></use></svg> Files stay on your device</div>
     </header>
     <section class="home" id="homeTool" aria-label="Akeluwa ToolBox">
@@ -627,6 +628,7 @@
   <script id="site-origin" type="application/json">"https://akeluwatoolbox-website.vercel.app"</script>
   <script src="/assets/vendor/pdf-lib/pdf-lib.min.js"></script>
   <script type="module" src="/assets/js/tool-finder.mjs"></script>
+  <script type="module" src="/assets/js/mobile-navigation.mjs"></script>
   <script type="module" src="/assets/js/mobile-live-preview.mjs"></script>
   <script type="module" src="/assets/js/core-live-previews.mjs"></script>
   <script type="module">
