@@ -344,6 +344,7 @@ aside,.bg-side { background:var(--panel2); }
 /* Beginner-friendly actions stay below the toolbar rather than covering the PDF. */
 .pdf-mobile-start{display:none}
 @media(max-width:700px){
+ .workspace main:has(.pdf-mobile-start:not([hidden])){grid-template-rows:auto auto minmax(0,1fr)}
  .pdf-mobile-start:not([hidden]){display:block;padding:12px 14px;background:#fff;border-bottom:1px solid #d8e2db;color:#1c372b}
  .pdf-mobile-start>strong{display:block;font-size:14px}
  .pdf-mobile-actions{display:flex;gap:8px;overflow-x:auto;padding:10px 0 5px;scrollbar-width:thin}
