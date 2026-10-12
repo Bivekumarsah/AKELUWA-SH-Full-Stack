@@ -171,7 +171,10 @@ test('mobile extra tools show live placement and Nepali conversion previews', as
  await page.locator('#pagePosition').selectOption('top-right');
  await expect(panel.locator('.extra-live-mark')).toHaveCSS('top','10px');
  await expect(panel.locator('.extra-live-mark')).toHaveText('1');
- expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+ const offscreen=await page.evaluate(() => [...document.querySelectorAll('*')].map(el => {
+   const r=el.getBoundingClientRect();return {tag:el.tagName,id:el.id,cls:typeof el.className==='string'?el.className.slice(0,65):'',left:Math.round(r.left),right:Math.round(r.right),width:Math.round(r.width)};
+ }).filter(x => x.right > innerWidth + 2 || x.left < -2).slice(0,14));
+ expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'Mobile overflow offenders: '+JSON.stringify(offscreen)).toBe(true);
  await page.goto(base+'/extra-tools/unicode-preeti/');
  await expect(page.locator('#extraLivePanel')).toBeVisible();
  await page.locator('#fontInput').fill('g]kfn');

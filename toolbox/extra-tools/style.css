@@ -116,7 +116,8 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 }
 
 /* Prevent native file inputs and long output from forcing horizontal scroll on phones. */
-.extra-container,.extra-main,.extra-panel,.extra-form,.extra-field,.extra-live-panel,.extra-live-body,.extra-live-body p,.extra-header .extra-container{min-width:0;max-width:100%;overflow-wrap:anywhere}
+.extra-main,.extra-panel,.extra-form,.extra-field,.extra-live-panel,.extra-live-body,.extra-live-body p{min-width:0;max-width:100%;overflow-wrap:anywhere}
+.extra-container,.extra-header .extra-container{min-width:0;max-width:1100px;overflow-wrap:anywhere}
 .extra-field input[type="file"]{max-width:100%;min-width:0}
 .extra-live-body p{min-width:0}
 @media(max-width:560px){.extra-header .extra-container{gap:6px}.extra-links a{padding:6px 5px}.extra-breadcrumb{overflow-wrap:anywhere}}
