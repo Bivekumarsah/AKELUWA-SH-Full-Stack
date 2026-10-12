@@ -343,7 +343,7 @@
       <main>
         <div class="toolbar">
           <div class="toolbar-group"><button class="btn" id="prevBtn" disabled>← Previous</button><span id="pageReadout" class="zoom">— / —</span><button class="btn" id="nextBtn" disabled>Next →</button></div>
-          <div class="toolbar-group"><button class="btn" id="zoomOut" disabled>−</button><span id="zoomReadout" class="zoom">100%</span><button class="btn" id="zoomIn" disabled>＋</button><button class="btn primary" id="exportBtn" disabled>Download PDF</button></div>
+          <div class="toolbar-group"><button class="btn" id="zoomOut" disabled>−</button><span id="zoomReadout" class="zoom">100%</span><button class="btn" id="zoomIn" disabled>＋</button><button class="btn" id="fitWidthBtn" type="button" aria-pressed="false" aria-label="Fit PDF page to available width" disabled>Fit width</button><button class="btn primary" id="exportBtn" disabled>Download PDF</button></div>
         </div>
         <div class="stage-wrap" id="stageWrap">
           <div class="empty" id="empty"><div class="empty-icon"></div><h1>Free online PDF editor</h1><p>Open a PDF, add text or a PNG or JPG image, adjust its position and size, and download the edited PDF.</p></div>
@@ -640,7 +640,7 @@
     pdfjsLib.GlobalWorkerOptions.workerSrc = '/assets/vendor/pdfjs/pdf.worker.min.js';
 
     const $ = (id) => document.getElementById(id);
-    const state = { pdfBytes:null, pdfDoc:null, fileName:'document.pdf', page:1, pages:0, scale:1.15, items:[], selected:null, renderTask:null, textMode:false, textEdits:[], selectedText:null };
+    const state = { pdfBytes:null, pdfDoc:null, fileName:'document.pdf', page:1, pages:0, scale:1.15, items:[], selected:null, renderTask:null, textMode:false, textEdits:[], selectedText:null, fitWidth:false };
     const canvas = $('pdfCanvas'), ctx = canvas.getContext('2d'), stage = $('pageStage');
 
     function toast(message) { const el=$('toast'); el.textContent=message; el.classList.add('show'); clearTimeout(toast.timer); toast.timer=setTimeout(()=>el.classList.remove('show'),2400); }
@@ -651,9 +651,9 @@ async function openPdf(file) {
       try {
         const bytes = await file.arrayBuffer();
         const doc = await pdfjsLib.getDocument({data: bytes.slice(0)}).promise;
-        state.pdfBytes=bytes; state.pdfDoc=doc; state.fileName=file.name; state.page=1; state.pages=doc.numPages; state.items=[]; state.selected=null; state.textMode=false; state.textEdits=[]; state.selectedText=null;
+        state.pdfBytes=bytes; state.pdfDoc=doc; state.fileName=file.name; state.page=1; state.pages=doc.numPages; state.items=[]; state.selected=null; state.textMode=false; state.textEdits=[]; state.selectedText=null; state.scale=1.15; state.fitWidth=window.matchMedia('(max-width:700px)').matches;
         $('docName').textContent=file.name; $('docMeta').textContent=`${doc.numPages} page${doc.numPages===1?'':'s'} · ${formatBytes(file.size)}`; $('docCard').classList.add('show');
-        $('empty').style.display='none'; stage.style.display='block'; ['prevBtn','nextBtn','zoomOut','zoomIn','exportBtn','textModeBtn','addTextBtn'].forEach(id=>$(id).disabled=false);
+        $('empty').style.display='none'; stage.style.display='block'; ['prevBtn','nextBtn','zoomOut','zoomIn','fitWidthBtn','exportBtn','textModeBtn','addTextBtn'].forEach(id=>$(id).disabled=false);
         buildPages(); await renderPage(); toast('PDF opened. Now add a logo or photo.');
       } catch (e) { console.error(e); toast('This PDF could not be opened. It may be encrypted or damaged.'); }
     }
@@ -666,11 +666,17 @@ async function openPdf(file) {
     async function renderPage() {
       if (!state.pdfDoc) return;
       if (state.renderTask) { try { state.renderTask.cancel(); } catch {} }
-      const page=await state.pdfDoc.getPage(state.page); const viewport=page.getViewport({scale:state.scale});
+      const page=await state.pdfDoc.getPage(state.page);
+      if (state.fitWidth) {
+        const stageWrap=$('stageWrap'), styles=getComputedStyle(stageWrap);
+        const innerWidth=Math.max(150,stageWrap.clientWidth-(parseFloat(styles.paddingLeft)||0)-(parseFloat(styles.paddingRight)||0)-2);
+        state.scale=Math.max(.25,Math.min(2.3,innerWidth/page.getViewport({scale:1}).width));
+      }
+      const viewport=page.getViewport({scale:state.scale});
       canvas.width=Math.ceil(viewport.width); canvas.height=Math.ceil(viewport.height); stage.style.width=canvas.width+'px'; stage.style.height=canvas.height+'px';
       state.renderTask=page.render({canvasContext:ctx,viewport});
       try { await state.renderTask.promise; } catch(e) { if(e?.name!=='RenderingCancelledException') throw e; }
-      state.renderTask=null; $('pageReadout').textContent=`${state.page} / ${state.pages}`; $('zoomReadout').textContent=`${Math.round(state.scale/1.15*100)}%`;
+      state.renderTask=null; $('pageReadout').textContent=`${state.page} / ${state.pages}`; $('zoomReadout').textContent=state.fitWidth?'Fit':`${Math.round(state.scale/1.15*100)}%`; $('fitWidthBtn').setAttribute('aria-pressed',String(state.fitWidth));
       $('prevBtn').disabled=state.page<=1; $('nextBtn').disabled=state.page>=state.pages; buildPages(); await renderTextLayer(page,viewport); renderOverlays();
     }
 
@@ -818,7 +824,8 @@ async function openPdf(file) {
     wireDrop($('pdfDrop'),$('pdfInput'),openPdf); wireDrop($('imageDrop'),$('imageInput'),addImages,true);
     $('imageScope').onchange=e=>$('imageSyncWrap').classList.toggle('hidden',e.target.value!=='all');
     $('prevBtn').onclick=()=>goPage(state.page-1); $('nextBtn').onclick=()=>goPage(state.page+1);
-    $('zoomOut').onclick=async()=>{state.scale=Math.max(.575,state.scale-.23);await renderPage()}; $('zoomIn').onclick=async()=>{state.scale=Math.min(2.3,state.scale+.23);await renderPage()};
+    $('zoomOut').onclick=async()=>{state.fitWidth=false;state.scale=Math.max(.25,state.scale-.23);await renderPage()}; $('zoomIn').onclick=async()=>{state.fitWidth=false;state.scale=Math.min(2.3,state.scale+.23);await renderPage()};
+    $('fitWidthBtn').onclick=async()=>{state.fitWidth=true;await renderPage()};
     $('exportBtn').onclick=exportPdf;
     $('textModeBtn').onclick=toggleTextMode; $('addTextBtn').onclick=addNewText;
     window.addEventListener('keydown',e=>{ if((e.key==='Delete'||e.key==='Backspace')&&state.selected&&!['INPUT','TEXTAREA'].includes(document.activeElement.tagName)){ const item=itemById(state.selected); if(item)removeImageItem(item); } });
