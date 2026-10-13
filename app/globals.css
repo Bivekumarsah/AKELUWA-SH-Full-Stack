@@ -1940,6 +1940,19 @@ h1 em { color: var(--signal); font-family: Georgia, "Times New Roman", serif; fo
 .footer-policy-links { display: flex; flex-wrap: wrap; align-items: center; gap: 24px; }
 .footer-policy-links a { min-height: 44px; display: inline-flex; align-items: center; }
 
+
+/* Make genuinely useful file tools discoverable on every company page. */
+.site-footer .footer-tools {
+  width: min(1200px, calc(100% - 96px)); margin-inline: auto; padding: 20px 0;
+  display: flex; flex-wrap: wrap; align-items: center; column-gap: 24px; row-gap: 8px;
+  border-top: 1px solid rgba(255,255,255,.18);
+}
+.site-footer .footer-tools > span { color: #bccddd; font: 600 11px/1.5 "Segoe UI", Arial, sans-serif; letter-spacing: .06em; }
+.site-footer .footer-tools > a { display: inline-flex; align-items: center; min-height: 36px; font-size: 13px; }
+.site-footer .footer-tools > a:hover { text-decoration: underline; text-underline-offset: 4px; }
+@media (max-width: 1100px) { .site-footer .footer-tools { width: calc(100% - 64px); } }
+@media (max-width: 640px) { .site-footer .footer-tools { width: calc(100% - 40px); column-gap: 18px; } }
+
 /* The complete account-access journey shares the public palette. */
 .portal-shell { padding: 24px; background: var(--brand-surface); }
 .portal-shell .auth-card { width: min(100%, 540px); padding: 36px; background: #fff; border: 1px solid var(--brand-border); border-radius: 8px; box-shadow: 0 12px 40px rgba(17,43,70,.045); }
