@@ -109,3 +109,25 @@ test('Extra tools hub also has an accessible logo and canonical URL', async () =
   assert.match(html, /<img[^>]+alt="Akeluwa ToolBox logo"/);
   assert.ok(html.includes('<link rel="canonical" href="' + origin + base + '/extra-tools/"'));
 });
+
+
+test('Company site links to the five genuine free tools from homepage, desktop/mobile menus and footer', async () => {
+  const [homepage, header, footer, routes] = await Promise.all([
+    read('app/page.tsx'), read('app/components/site-header.tsx'),
+    read('app/components/site-footer.tsx'), read('toolbox/routes.json'),
+  ]);
+  const main = new Set(JSON.parse(routes).map(route => '/akeluwatoolbox' + route.path));
+  const featured = [
+    '/akeluwatoolbox/digital-stamp-maker/', '/akeluwatoolbox/compress-pdf/',
+    '/akeluwatoolbox/compress-photo/', '/akeluwatoolbox/pdf-editor/',
+    '/akeluwatoolbox/extra-tools/unicode-preeti/',
+  ];
+  assert.ok(homepage.includes('id="free-tools"'));
+  assert.equal(header.split('href="/akeluwatoolbox/"').length - 1, 2, 'Desktop and mobile menus must both link Toolbox');
+  assert.ok(footer.includes('href="/akeluwatoolbox/"'));
+  for (const url of featured) {
+    assert.ok(main.has(url) || known.has(url.replace('/akeluwatoolbox', '')), url + ' must exist');
+    assert.ok(homepage.includes('href: "' + url + '"'), 'Homepage must feature ' + url);
+    assert.ok(footer.includes('href="' + url + '"'), 'Every company page must link ' + url);
+  }
+});
