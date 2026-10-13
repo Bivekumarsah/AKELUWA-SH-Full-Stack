@@ -128,3 +128,12 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
  .extra-panel .extra-field input:not([type=checkbox]),.extra-panel .extra-field select,.extra-panel .extra-field textarea{font-size:16px;min-height:46px}
  .extra-panel .extra-live-panel{top:74px}
 }
+
+/* People-first search guidance is displayed in the actual tool page, not a duplicate URL. */
+.extra-intent-guide{margin:28px 0 6px;padding:20px;border:1px solid #d8e9df;background:#f7fbf9;border-radius:13px}
+.extra-intent-guide h2{font-size:21px!important;letter-spacing:0!important}
+.extra-intent-guide h3{font-size:16px;margin:15px 0 9px}
+.extra-intent-guide ul{padding-left:21px;margin:0}
+.extra-intent-guide li{margin:8px 0;font-size:14px;line-height:1.65;color:#355b4d}
+.extra-intent-links{display:flex;flex-wrap:wrap;gap:9px}
+.extra-intent-links a{display:inline-flex;align-items:center;min-height:44px;padding:9px 12px;border:1px solid #c8e2d1;background:white;border-radius:9px;color:#115f4a;font-size:13px;font-weight:700}
