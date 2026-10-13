@@ -20,6 +20,7 @@ export function SiteFooter() {
           <Link href="/case-studies">Our work</Link>
           <Link href="/careers">Careers</Link>
           <Link href="/downloads">Downloads</Link>
+          <Link href="/akeluwatoolbox/">Free tools</Link>
         </nav>
 
         <nav className="footer-column" aria-label="Footer company navigation">
@@ -37,6 +38,15 @@ export function SiteFooter() {
           <span><small>RESPONSE</small>Within one business day</span>
         </div>
       </div>
+
+      <nav className="footer-tools" aria-label="Free AKELUWA ToolBox utilities">
+        <span>FREE ONLINE TOOLS</span>
+        <Link href="/akeluwatoolbox/digital-stamp-maker/">Digital stamp maker</Link>
+        <Link href="/akeluwatoolbox/compress-pdf/">Compress PDF</Link>
+        <Link href="/akeluwatoolbox/compress-photo/">Compress photo to 100 KB</Link>
+        <Link href="/akeluwatoolbox/pdf-editor/">Edit PDF</Link>
+        <Link href="/akeluwatoolbox/extra-tools/unicode-preeti/">Unicode to Preeti</Link>
+      </nav>
 
       <div className="footer-bottom">
         <span>© 2026 AKELUWA SH. All rights reserved.</span>
