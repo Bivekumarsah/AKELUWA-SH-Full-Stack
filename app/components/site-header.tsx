@@ -37,6 +37,7 @@ export function SiteHeader() {
         <Link href="/services" aria-current={pathname === "/services" ? "page" : undefined}>Services</Link>
         <Link href="/case-studies" aria-current={pathname === "/case-studies" ? "page" : undefined}>Our work</Link>
         <Link href="/about" aria-current={pathname === "/about" ? "page" : undefined}>About</Link>
+        <Link href="/akeluwatoolbox/">Free tools</Link>
       </nav>
       <div className="nova-header-actions">
         <Link className="nova-header-login" href="/login">Sign in</Link>
@@ -51,6 +52,7 @@ export function SiteHeader() {
         <Link href="/services" aria-current={pathname === "/services" ? "page" : undefined}>Services</Link>
         <Link href="/case-studies" aria-current={pathname === "/case-studies" ? "page" : undefined}>Our work</Link>
         <Link href="/about" aria-current={pathname === "/about" ? "page" : undefined}>About</Link>
+        <Link href="/akeluwatoolbox/">Free tools</Link>
         <Link href="/careers" aria-current={pathname === "/careers" ? "page" : undefined}>Careers</Link>
         <Link href="/downloads" aria-current={pathname === "/downloads" ? "page" : undefined}>Downloads</Link>
         <Link href="/contact" aria-current={pathname === "/contact" ? "page" : undefined}>Contact us</Link>
