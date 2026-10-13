@@ -239,7 +239,7 @@
         <div class="hero">
           <div class="hero-copy">
             <p class="eyebrow">Akeluwa ToolBox</p>
-            <h1>Free PDF &amp;<br>photo tools.<br><em>Made simple.</em></h1>
+            <h1 data-tool-heading="home">Free PDF &amp;<br>photo tools.<br><em>Made simple.</em></h1>
             <p class="hero-description">AkeluwaToolBox brings free online tools to your everyday PDFs and photos. Edit, reduce file size, convert, and create, with your files on your device.</p>
             <div class="hero-actions"><a class="btn primary" href="/pdf-editor/" data-launch-tool="pdf">Start with a PDF <svg class="icon " aria-hidden="true"><use href="#i-arrow"></use></svg></a><a class="text-link" href="#tools">Explore the tools</a></div>
             <p class="hero-note"><svg class="icon " aria-hidden="true"><use href="#i-check"></use></svg> Free to use. No account needed.</p>
@@ -348,7 +348,7 @@
         </div>
         <section class="pdf-mobile-start" id="pdfMobileStart" aria-label="Quick PDF editing actions" hidden><strong>PDF ready. What would you like to do?</strong><div class="pdf-mobile-actions"><button type="button" id="pdfMobileAddLogo">Add logo or photo</button><button type="button" id="pdfMobileAddText">Add new text</button><button type="button" id="pdfMobileEditText">Edit existing text</button></div><p>Check your page below, then use Download PDF when finished.</p></section>
         <div class="stage-wrap" id="stageWrap">
-          <div class="empty" id="empty"><div class="empty-icon"></div><h1>Free online PDF editor</h1><p>Open a PDF, add text or a PNG or JPG image, adjust its position and size, and download the edited PDF.</p></div>
+          <div class="empty" id="empty"><div class="empty-icon"></div><h1 data-tool-heading="pdf">Free online PDF editor</h1><p>Open a PDF, add text or a PNG or JPG image, adjust its position and size, and download the edited PDF.</p></div>
           <div id="pageStage"><canvas id="pdfCanvas"></canvas><div id="textLayer"></div><div id="overlayLayer"></div></div>
         </div>
       </main>
@@ -359,7 +359,7 @@
       </aside>
     </div>
     <section class="reducer-tool hidden" id="reducerTool" aria-labelledby="reducerTitle">
-      <div class="reducer-heading"><div><p class="eyebrow">A little lighter</p><h1 id="reducerTitle">PDF size reducer</h1><p>Less weight. The same pages. A document ready to share.</p></div><span class="reducer-engine" id="reduceEngine">Processing in your browser</span></div>
+      <div class="reducer-heading"><div><p class="eyebrow">A little lighter</p><h1 id="reducerTitle" data-tool-heading="reducer">PDF size reducer</h1><p>Less weight. The same pages. A document ready to share.</p></div><span class="reducer-engine" id="reduceEngine">Processing in your browser</span></div>
       <div class="reducer-layout">
         <div class="reducer-settings">
           <label class="upload" id="reduceDrop"><input id="reduceInput" type="file" accept="application/pdf,.pdf" /><span class="upload-icon">PDF</span><strong>Choose your PDF</strong><small>or drag it here · up to 60 MB and 200 pages</small></label>
@@ -384,7 +384,7 @@
       </div>
     </section>
     <section class="reducer-tool photo-tool hidden" id="photoTool" aria-labelledby="photoTitle">
-      <div class="reducer-heading"><div><p class="eyebrow">Ready to share</p><h1 id="photoTitle">Photo size reducer</h1><p>Make a photo lighter, with a size that fits.</p></div><span class="reducer-engine">Processing in your browser</span></div>
+      <div class="reducer-heading"><div><p class="eyebrow">Ready to share</p><h1 id="photoTitle" data-tool-heading="photo">Photo size reducer</h1><p>Make a photo lighter, with a size that fits.</p></div><span class="reducer-engine">Processing in your browser</span></div>
       <div class="reducer-layout">
         <div class="reducer-settings">
           <label class="upload" id="photoDrop"><input id="photoInput" type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" /><span class="upload-icon"><svg class="icon" aria-hidden="true"><use href="#i-image"></use></svg></span><strong>Choose your photo</strong><small>or drag it here · JPG, PNG, WebP · up to 30 MB</small></label>
@@ -416,7 +416,7 @@
       </div>
     </section>
     <section class="converter-tool hidden" id="converterTool">
-      <div class="bg-bar"><div><h1 id="converterTitle">Free PDF &amp; Image Converter Online</h1><p>Convert PDF pages to images, or build a PDF from images</p></div></div>
+      <div class="bg-bar"><div><h1 id="converterTitle" data-tool-heading="converter">Free PDF &amp; Image Converter Online</h1><p>Convert PDF pages to images, or build a PDF from images</p></div></div>
       <div class="converter-layout">
         <section class="converter-panel" id="pdf-to-image" tabindex="-1">
           <h2>PDF to image</h2>
@@ -475,7 +475,7 @@
     </section>
     <section class="stamp-tool hidden" id="stampTool">
       <div class="stamp-heading">
-        <div><p class="eyebrow">Free business utility</p><h1>Digital Stamp Maker</h1><p>Choose a template, add your business details, customize the design, and download a professional stamp. All features are free and work in your browser.</p></div>
+        <div><p class="eyebrow">Free business utility</p><h1 data-tool-heading="stamp">Digital Stamp Maker</h1><p>Choose a template, add your business details, customize the design, and download a professional stamp. All features are free and work in your browser.</p></div>
         <span class="stamp-local"><svg class="icon" aria-hidden="true"><use href="#i-shield"></use></svg> Free · Local processing</span>
       </div>
 
@@ -600,7 +600,7 @@
       </div>
     </section>
     <section class="bg-tool hidden" id="backgroundTool">
-      <div class="bg-bar"><div><h1>AI Background Remover</h1><p>High-quality subject cutout with transparent PNG export</p></div><div class="toolbar-group"><button class="btn" id="bgReset" disabled>Start over</button><button class="btn primary" id="bgDownload" disabled>Download PNG</button></div></div>
+      <div class="bg-bar"><div><h1 data-tool-heading="background">AI Background Remover</h1><p>High-quality subject cutout with transparent PNG export</p></div><div class="toolbar-group"><button class="btn" id="bgReset" disabled>Start over</button><button class="btn primary" id="bgDownload" disabled>Download PNG</button></div></div>
       <div class="bg-layout">
         <aside class="bg-side">
           <h2>1 · Original image</h2>
@@ -767,7 +767,9 @@ async function openPdf(file) {
       state.items.filter(i=>i.page===state.page).forEach(item=>{
         const el=document.createElement('div'); el.className='placed-image'+(item.id===state.selected?' selected':''); el.dataset.id=item.id;
         Object.assign(el.style,{left:(item.x*canvas.width)+'px',top:(item.y*canvas.height)+'px',width:(item.width*canvas.width)+'px',height:(item.height*canvas.height)+'px',opacity:item.opacity});
-        el.innerHTML=`<img alt="${item.name.replace(/[&<>\"]/g,'')}" src="${item.url}"><span class="handle" aria-label="Resize image"></span>`;
+        const placedImage=document.createElement('img');placedImage.alt=item.name||'Uploaded image';placedImage.src=item.url;
+         const resizeHandle=document.createElement('span');resizeHandle.className='handle';resizeHandle.setAttribute('aria-label','Resize image');
+         el.replaceChildren(placedImage,resizeHandle);
         el.addEventListener('pointerdown', startMove); el.querySelector('.handle').addEventListener('pointerdown',startResize); layer.appendChild(el);
       });
       renderProperties();

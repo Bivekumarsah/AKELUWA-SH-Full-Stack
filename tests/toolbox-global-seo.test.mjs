@@ -59,6 +59,10 @@ test('All ten extra utilities have distinct editorial task guidance in published
     const html = await read('public/akeluwatoolbox/extra-tools/' + item.slug + '/index.html');
     const url = origin + base + '/extra-tools/' + item.slug + '/';
     assert.ok(html.includes('href="' + url + '"'), item.slug + ' canonical');
+    const title = html.match(/<title>([^<]*)<\/title>/)?.[1].replaceAll('&amp;', '&');
+    assert.ok(title && title.length <= 60, item.slug + ' title should fit search results');
+    assert.match(html, /<a class="extra-brand"[^>]*aria-label="Akeluwa ToolBox home"[^>]*>/, item.slug + ' accessible brand');
+    assert.match(html, /<img[^>]+alt="Akeluwa ToolBox logo"/, item.slug + ' informative logo alt');
     assert.ok(html.includes('Common tasks and practical tips'), item.slug);
     assert.ok(html.includes(guide.tasks[0].replaceAll('&', '&amp;')), item.slug + ' visible guidance');
     assert.ok(html.includes('Related tools for the next step'), item.slug);
@@ -81,4 +85,27 @@ test('Sitemaps list each real canonical tool URL once without false modification
   assert.ok(robots.includes('Sitemap: ' + origin + base + '/sitemap.xml'));
   assert.ok(rootSitemap.includes('toolboxRoutes.map') && rootSitemap.includes('extraTools.map'));
   assert.ok(!rootSitemap.includes('lastModified: now'), 'Avoid invented modification dates');
+});
+
+
+test('All 11 primary tool routes expose exactly one H1 and meaningful image alternatives', async () => {
+  const template = await read('toolbox/index.html');
+  for (const page of pages) {
+    const html = renderPage(template, page, origin, false, base);
+    const primary = [...html.matchAll(/<h1\b[^>]*data-tool-heading="([^"]+)"[^>]*>/g)];
+    assert.equal(primary.length, 1, page.path + ' must have exactly one H1');
+    assert.equal(primary[0][1], page.tool, page.path + ' H1 must belong to the active workspace');
+    const images = [...html.matchAll(/<img\b[^>]*>/g)];
+    assert.ok(images.length >= 5, page.path + ' should include the original preview elements');
+    for (const image of images) assert.match(image[0], /\balt="[^"]*"/, page.path + ' image needs an alt attribute');
+    assert.ok(!html.includes('el.innerHTML=`<img'), 'PDF overlay images should use safe DOM construction');
+  }
+});
+
+
+test('Extra tools hub also has an accessible logo and canonical URL', async () => {
+  const html = await read('public/akeluwatoolbox/extra-tools/index.html');
+  assert.match(html, /<a class="extra-brand"[^>]*aria-label="Akeluwa ToolBox home"/);
+  assert.match(html, /<img[^>]+alt="Akeluwa ToolBox logo"/);
+  assert.ok(html.includes('<link rel="canonical" href="' + origin + base + '/extra-tools/"'));
 });
