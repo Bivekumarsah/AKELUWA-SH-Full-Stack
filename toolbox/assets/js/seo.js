@@ -8,7 +8,7 @@ export const site = {
 const pageDefinitions = [
   {
     path: '/', tool: 'home', label: 'All tools',
-    title: 'Free Online PDF, Photo & Digital Stamp Tools | Akeluwa ToolBox',
+    title: 'Free PDF, Photo & Digital Stamp Tools | Akeluwa ToolBox',
     description: site.description, heading: 'Free online PDF and photo tools',
     intro: 'AkeluwaToolBox helps you prepare files for application forms, email, printing, and sharing. Compress a PDF, reduce a photo to a size in KB, add text to a document, convert images, or organize PDF pages. Choose the tool below and download the result without creating an account.',
     steps: [], notes: ['The hosted tools process files in your browser. The PDF libraries are served by this website; background removal needs an internet connection to load its library and AI model. You do not need to upload your documents to a cloud compression service.'],
@@ -496,6 +496,12 @@ export function renderPage(template, page, origin = site.origin, noindex = false
   if (page.tool === 'converter') {
     html = html.replace(/(<h1 id="converterTitle">)[^<]*(<\/h1>)/, (_, open, close) => open + escapeHtml(page.title.split(' | ')[0]) + close);
   }
+  // The template includes every workspace. Only the active workspace is an H1
+  // in the server-rendered HTML; inactive workspace labels remain H2 headings.
+  html = html.replace(/<(h1|h2)([^>]*\\bdata-tool-heading="([^"]+)"[^>]*)>([\\s\\S]*?)<\\/\\1>/g, (_, tag, attributes, tool, contents) => {
+    const level = tool === page.tool ? 'h1' : 'h2';
+    return `<${level}${attributes}>${contents}</${level}>`;
+  });
   html = html.replace(/class="tool-tab(?: active)?"([^>]*?)data-tool="([^"]+)"(?: aria-current="page")?/g, (_, middle, tool) => `class="tool-tab${tool === page.tool ? ' active' : ''}"${middle}data-tool="${tool}"${tool === page.tool ? ' aria-current="page"' : ''}`);
   // Mount only local HTML URLs and module/worker imports; external URLs and PDF content are untouched.
   html = html.replace(/(\b(?:href|src)=["'])(\/(?!\/)[^"']*)/g, (_, prefix, path) => prefix + sitePath(path, basePath));
@@ -511,11 +517,25 @@ export function pageFromLocation() {
   return tool ? pageFor(tool) : (matched || pages[0]);
 }
 
+// In-app navigation changes workspaces without reloading. Keep the sole H1 in
+// the visible workspace while retaining IDs, child markup and visual styling.
+function setPrimaryHeading(tool) {
+  document.querySelectorAll('[data-tool-heading]').forEach(heading => {
+    const level = heading.getAttribute('data-tool-heading') === tool ? 'h1' : 'h2';
+    if (heading.tagName.toLowerCase() === level) return;
+    const replacement = document.createElement(level);
+    for (const attribute of heading.attributes) replacement.setAttribute(attribute.name, attribute.value);
+    replacement.replaceChildren(...heading.childNodes);
+    heading.replaceWith(replacement);
+  });
+}
+
 export function updateSeo(page, navigate = false) {
   const origin = normalizeOrigin(JSON.parse(document.getElementById('site-origin').textContent));
   const noindex = document.body.dataset.seoNoindex === 'true';
   document.title = page.title;
   if (page.tool === 'converter') document.getElementById('converterTitle').textContent = page.title.split(' | ')[0];
+  setPrimaryHeading(page.tool);
   for (const [attribute, key, value] of metaValues(page, origin, noindex)) {
     let meta = document.querySelector(`meta[${attribute}="${key}"]`);
     if (!meta) { meta = document.createElement('meta'); meta.setAttribute(attribute, key); document.head.append(meta); }
