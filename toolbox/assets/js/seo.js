@@ -2,13 +2,13 @@
 export const site = {
   name: 'Akeluwa ToolBox',
   origin: 'https://akeluwatoolbox-website.vercel.app',
-  description: 'AkeluwaToolBox offers free online PDF and photo tools. Compress, edit, convert and merge files or remove image backgrounds in your browser. No sign-up.',
+  description: 'Free online PDF editor, PDF compressor, JPG to PDF converter, photo resizer, background remover and digital stamp maker. Browser-based tools, no sign-up.',
 };
 
 const pageDefinitions = [
   {
     path: '/', tool: 'home', label: 'All tools',
-    title: 'Akeluwa ToolBox | Free PDF & Photo Tools Online',
+    title: 'Free Online PDF, Photo & Digital Stamp Tools | Akeluwa ToolBox',
     description: site.description, heading: 'Free online PDF and photo tools',
     intro: 'AkeluwaToolBox helps you prepare files for application forms, email, printing, and sharing. Compress a PDF, reduce a photo to a size in KB, add text to a document, convert images, or organize PDF pages. Choose the tool below and download the result without creating an account.',
     steps: [], notes: ['The hosted tools process files in your browser. The PDF libraries are served by this website; background removal needs an internet connection to load its library and AI model. You do not need to upload your documents to a cloud compression service.'],
@@ -16,7 +16,7 @@ const pageDefinitions = [
   },
   {
     path: '/pdf-editor/', tool: 'pdf', label: 'PDF editor',
-    title: 'Free Online PDF Editor: Add Text & Images | Akeluwa ToolBox',
+    title: 'Edit PDF Online Free: Add Text, Logos & Images | Akeluwa',
     description: 'Edit a PDF online, add text, place a logo or photo, and download the result. Free browser PDF editor with no sign-up.',
     heading: 'How to edit a PDF online',
     intro: 'Add a note, place a logo, or change the visible text of an existing PDF. The editor works on your device and lets you check each page before downloading.',
@@ -37,8 +37,8 @@ const pageDefinitions = [
   },
   {
     path: '/compress-photo/', tool: 'photo', label: 'Compress photo',
-    title: 'Compress Photo to 100 KB or 200 KB Online | Akeluwa ToolBox',
-    description: 'Reduce JPG, PNG, or WebP photo size with 100 KB, 200 KB, and 500 KB targets. Adjust dimensions, compare previews, and download for free.',
+    title: 'Compress Photo to 20, 50, 100 or 200 KB | Akeluwa ToolBox',
+    description: 'Compress JPG, PNG or WebP photos toward 20, 50, 100 or 200 KB targets. Set a custom KB limit, compare quality and download free in your browser.',
     heading: 'How to reduce a photo to a target size in KB',
     intro: 'Prepare a photo for an application form, email, or website. Choose a target such as 100 KB or 200 KB and let the reducer adjust encoding quality and dimensions.',
     steps: ['Choose a JPG, PNG, or WebP photo up to 30 MB.', 'Set the target size, maximum width, quality, and output format.', 'Compare the previews and size change, check whether the target was met, and download.'],
@@ -48,7 +48,7 @@ const pageDefinitions = [
   },
   {
     path: '/pdf-converter/', tool: 'converter', label: 'PDF & image converter',
-    title: 'Free PDF & Image Converter Online | Akeluwa ToolBox',
+    title: 'PDF & Image Converter: JPG to PDF, PDF to PNG | Akeluwa',
     description: 'Convert PDF pages to PNG, combine JPG or PNG photos into a PDF, convert images, merge PDFs, and extract pages in your browser.',
     heading: 'Choose a PDF or image conversion tool',
     intro: 'Use the conversion workspace to turn pages into images, collect photos in a PDF, or organize existing documents. Each panel has its own file input and download control.',
@@ -99,8 +99,8 @@ const pageDefinitions = [
   },
   {
     path: '/digital-stamp-maker/', tool: 'stamp', label: 'Digital Stamp Maker',
-    title: 'Free Digital Stamp Maker Online | Akeluwa ToolBox',
-    description: 'Create free digital business stamps online with round, double-ring, oval, rectangular, date, authorized, paid, and received templates. Add English or Nepali text, logo, colors, rings, and download PNG or SVG.',
+    title: 'Digital Stamp Maker: Round & Business Stamp | Akeluwa',
+    description: 'Create a round, double-ring, oval or rectangular business stamp online. Customize authorized text, rings and logos with a live preview; save PNG or SVG.',
     heading: 'How to create a digital business stamp',
     intro: 'Choose from multiple free stamp templates, add English or Nepali business details, upload your logo, adjust rings, border, font, color, texture, and preview the design instantly before downloading.',
     steps: ['Choose a round, double-ring, oval, rectangular, date, authorized, paid, or received template.', 'Enter business details, English or Nepali text, optional registration or PAN information, and upload a logo if wanted.', 'Adjust color, font, border, text curve, logo size, rings, and texture, confirm authorization, then download PNG, transparent PNG, or SVG for free.'],
@@ -129,7 +129,288 @@ export function sitePath(path, basePath = browserBasePath) {
   const base = normalizeBasePath(basePath);
   return base && !path.startsWith(base + '/') && path !== base ? base + path : path;
 }
-export const pages = pageDefinitions.map(page => ({ ...page, path: sitePath(page.path) }));
+// Each task explains a real user goal on an existing functioning tool page.
+// These are editorial guidance, not extra doorway URLs or claims about keyword volume.
+const searchIntentGuides = {
+  "/": {
+    "tasks": [
+      "Need to edit a PDF without installing software? Open the PDF editor to place a logo, add text, and check the finished pages before saving.",
+      "Need a smaller file for an online form or email? Compress a PDF or photo, then verify the actual output size instead of assuming a target was reached.",
+      "Combining scans or phone photos? Convert JPG or PNG images into a PDF and select the page size and image fit.",
+      "Preparing a business document? Create an authorized digital company stamp with a live preview, or merge supporting PDF documents.",
+      "Need a transparent product or profile image? Remove the background and save the cutout as a PNG.",
+      "Making an application photo or signature? Use the photo and signature resizer for dimensions as well as file size."
+    ],
+    "related": [
+      {
+        "path": "/pdf-editor/",
+        "label": "Edit a PDF: add text or a logo"
+      },
+      {
+        "path": "/compress-pdf/",
+        "label": "Compress a PDF for email or upload"
+      },
+      {
+        "path": "/compress-photo/",
+        "label": "Reduce photo size in KB"
+      },
+      {
+        "path": "/jpg-to-pdf/",
+        "label": "Combine photos into a PDF"
+      },
+      {
+        "path": "/digital-stamp-maker/",
+        "label": "Create an authorized business stamp"
+      },
+      {
+        "path": "/extra-tools/photo-signature-resizer/",
+        "label": "Resize a photo or signature for a form"
+      }
+    ]
+  },
+  "/pdf-editor/": {
+    "tasks": [
+      "Add a company logo, signature image, date, or note to a PDF and move it into place on the page.",
+      "Make a visible change to selectable PDF text. This editor uses an overlay; it does not securely erase the underlying text.",
+      "On a phone, fit the page to the screen before dragging an image or editing text. Preview every page before downloading.",
+      "Place an image on one page or reuse its position across all pages of the document."
+    ],
+    "related": [
+      {
+        "path": "/extra-tools/pdf-esign-watermark/",
+        "label": "Add a visible signature or watermark"
+      },
+      {
+        "path": "/merge-pdf/",
+        "label": "Join edited PDFs"
+      },
+      {
+        "path": "/compress-pdf/",
+        "label": "Reduce the edited PDF size"
+      },
+      {
+        "path": "/extra-tools/ocr-text-extractor/",
+        "label": "Extract text from a scanned page"
+      }
+    ]
+  },
+  "/compress-pdf/": {
+    "tasks": [
+      "Reduce the size of a PDF attachment before sending it by email or messaging.",
+      "Prepare a document for an upload limit by comparing the finished file size with your application portal's maximum.",
+      "Use preserve-text compression when selectable text, links, or forms are important; visual compression may turn pages into images.",
+      "Try a lower reduction target if the compressed pages become difficult to read. Exact target sizes cannot be guaranteed."
+    ],
+    "related": [
+      {
+        "path": "/merge-pdf/",
+        "label": "Merge several PDF files before compressing"
+      },
+      {
+        "path": "/extract-pdf-pages/",
+        "label": "Keep only the pages you need"
+      },
+      {
+        "path": "/extra-tools/pdf-to-word/",
+        "label": "Extract editable text into Word"
+      },
+      {
+        "path": "/compress-photo/",
+        "label": "Compress an image rather than a PDF"
+      }
+    ]
+  },
+  "/compress-photo/": {
+    "tasks": [
+      "Make a JPG or PNG photo smaller for an online application with a 20 KB, 50 KB, 100 KB, or 200 KB limit; enter a custom target when needed.",
+      "Compress a photo for email or web sharing while reviewing the changed image side by side.",
+      "Resize a picture's maximum width if the result is still too large; check the destination's minimum pixel dimensions too.",
+      "Choose JPG when transparency is unnecessary. Choose PNG or WebP when you need to retain transparency, if the receiving website accepts that format."
+    ],
+    "related": [
+      {
+        "path": "/extra-tools/photo-signature-resizer/",
+        "label": "Set exact photo or signature dimensions"
+      },
+      {
+        "path": "/extra-tools/bulk-image-compressor/",
+        "label": "Compress multiple photos in a batch"
+      },
+      {
+        "path": "/extra-tools/image-format-converter/",
+        "label": "Convert JPG, PNG, or WebP"
+      },
+      {
+        "path": "/jpg-to-pdf/",
+        "label": "Put reduced photos into a PDF"
+      }
+    ]
+  },
+  "/pdf-converter/": {
+    "tasks": [
+      "Turn multiple JPG, PNG, or WebP photos into a single PDF for sharing or printing.",
+      "Convert PDF pages to PNG pictures for presentations, previews, or illustrations.",
+      "Combine separate PDFs in order, or extract just the pages you need from a long document.",
+      "Choose an image format converter instead if your source and destination are JPG, PNG, or WebP."
+    ],
+    "related": [
+      {
+        "path": "/jpg-to-pdf/",
+        "label": "Images to PDF"
+      },
+      {
+        "path": "/pdf-to-png/",
+        "label": "PDF to PNG images"
+      },
+      {
+        "path": "/merge-pdf/",
+        "label": "Combine PDF documents"
+      },
+      {
+        "path": "/extract-pdf-pages/",
+        "label": "Extract individual PDF pages"
+      },
+      {
+        "path": "/extra-tools/image-format-converter/",
+        "label": "Convert an image format"
+      }
+    ]
+  },
+  "/jpg-to-pdf/": {
+    "tasks": [
+      "Combine photos of receipts, invoices, or paperwork into one multi-page PDF in the order you selected them.",
+      "Turn phone screenshots or JPG and PNG images into a PDF for an application or an email attachment.",
+      "Choose fit to preserve the whole picture, or fill when you accept cropping at the page edges."
+    ],
+    "related": [
+      {
+        "path": "/compress-photo/",
+        "label": "Reduce photos before combining"
+      },
+      {
+        "path": "/compress-pdf/",
+        "label": "Reduce the finished PDF size"
+      },
+      {
+        "path": "/merge-pdf/",
+        "label": "Join the result with another PDF"
+      },
+      {
+        "path": "/extra-tools/photo-signature-resizer/",
+        "label": "Prepare application photo dimensions"
+      }
+    ]
+  },
+  "/pdf-to-png/": {
+    "tasks": [
+      "Save the first page of a PDF as a PNG image for a slide or preview.",
+      "Export every page of a PDF as a separate PNG image, then check that all files downloaded.",
+      "Choose a wider image for more pixels or a narrower image to reduce the file size; it cannot recover missing source detail."
+    ],
+    "related": [
+      {
+        "path": "/extra-tools/image-format-converter/",
+        "label": "Convert a PNG to JPG or WebP"
+      },
+      {
+        "path": "/compress-photo/",
+        "label": "Make the exported image smaller"
+      },
+      {
+        "path": "/jpg-to-pdf/",
+        "label": "Create a PDF from images"
+      }
+    ]
+  },
+  "/merge-pdf/": {
+    "tasks": [
+      "Combine a cover page, completed application, and supporting documents into a single PDF.",
+      "Join two or more PDF files in the chosen order before uploading them to an application website.",
+      "Open the result and confirm that the pages and any essential fields still work; merging is not the same as compression."
+    ],
+    "related": [
+      {
+        "path": "/compress-pdf/",
+        "label": "Compress the combined PDF"
+      },
+      {
+        "path": "/extract-pdf-pages/",
+        "label": "Extract selected pages first"
+      },
+      {
+        "path": "/pdf-editor/",
+        "label": "Add text or an image after merging"
+      }
+    ]
+  },
+  "/extract-pdf-pages/": {
+    "tasks": [
+      "Save just one page from a long PDF without changing the original.",
+      "Extract pages 1, 3-5, and 8 into a smaller document for sharing.",
+      "Keep only the relevant attachments or chapters of a document and check the downloaded page order."
+    ],
+    "related": [
+      {
+        "path": "/merge-pdf/",
+        "label": "Combine the extracted pages with another PDF"
+      },
+      {
+        "path": "/compress-pdf/",
+        "label": "Reduce the result size"
+      },
+      {
+        "path": "/pdf-to-png/",
+        "label": "Save extracted pages as images"
+      }
+    ]
+  },
+  "/digital-stamp-maker/": {
+    "tasks": [
+      "Create a round company stamp or a double-ring business seal with editable inside and outside borders.",
+      "Put an authorized company name around a curved ring and add optional English or Nepali text.",
+      "Make an oval or rectangular rubber-stamp-style design, adjusting the font, color, date, and logo.",
+      "Preview your stamp live on a mobile screen instead of scrolling back to the full design after every change.",
+      "Download a transparent PNG or SVG in the standard stamp maker; the advanced Stamp Studio also offers additional project and export options.",
+      "Use only for a business or organization you are authorized to represent. These designs do not substitute for legally required official seals."
+    ],
+    "related": [
+      {
+        "path": "/pdf-editor/",
+        "label": "Place your stamp image onto a PDF"
+      },
+      {
+        "path": "/extra-tools/pdf-esign-watermark/",
+        "label": "Add a visible signature or watermark"
+      },
+      {
+        "path": "/extra-tools/image-format-converter/",
+        "label": "Convert a saved image format"
+      }
+    ]
+  },
+  "/remove-background/": {
+    "tasks": [
+      "Remove the background from a portrait or product photo and save a transparent PNG.",
+      "Make an image cutout for a presentation, digital stamp, or simple graphic design.",
+      "Check hair, soft edges, and transparent objects in the preview, since automatic removal may miss difficult details."
+    ],
+    "related": [
+      {
+        "path": "/compress-photo/",
+        "label": "Reduce your transparent image size"
+      },
+      {
+        "path": "/extra-tools/image-format-converter/",
+        "label": "Change the output image format"
+      },
+      {
+        "path": "/digital-stamp-maker/",
+        "label": "Use the cutout as an authorized stamp logo"
+      }
+    ]
+  }
+};
+export const pages = pageDefinitions.map(page => ({ ...page, ...searchIntentGuides[page.path], path: sitePath(page.path) }));
 export const escapeHtml = value => String(value).replace(/[&<>"']/g, char => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'}[char]));
 export const pageFor = (tool, panel) => pages.find(page => page.tool === tool && (panel ? page.panel === panel : !page.panel)) || pages.find(page => page.tool === tool && !page.panel) || pages[0];
 
@@ -142,11 +423,17 @@ export function normalizeOrigin(value = site.origin) {
 }
 
 export function renderGuide(page, basePath = browserBasePath) {
-  const links = pages.filter(other => sitePath(other.path, basePath) !== sitePath(page.path, basePath)).map(other => `<a href="${sitePath(other.path, basePath)}">${escapeHtml(other.label)}</a>`).join('');
+  const path = sitePath(page.path, basePath);
+  const taskList = (page.tasks || []).length
+    ? `<h3>Common tasks this tool helps with</h3><ul class="seo-task-list">${page.tasks.map(task => `<li>${escapeHtml(task)}</li>`).join('')}</ul>`
+    : '';
+  const related = (page.related || []).filter(other => sitePath(other.path, basePath) !== path);
+  const links = related.map(other =>
+    `<a href="${sitePath(other.path, basePath)}">${escapeHtml(other.label)}</a>`).join('');
   const steps = page.steps.length ? `<ol>${page.steps.map(step => `<li>${escapeHtml(step)}</li>`).join('')}</ol>` : '';
   const breadcrumb = page.tool === 'home' ? '' : `<nav class="breadcrumbs" aria-label="Breadcrumb"><ol><li><a href="${sitePath('/', basePath)}">${escapeHtml(site.name)}</a></li><li aria-current="page">${escapeHtml(page.label)}</li></ol></nav>`;
   const example = page.example ? `<h3>Practical example</h3><p>${escapeHtml(page.example)}</p>` : '';
-  return `<section class="seo-guide" id="toolGuide" aria-labelledby="guideTitle">${breadcrumb}<h2 id="guideTitle">${escapeHtml(page.heading)}</h2><p>${escapeHtml(page.intro)}</p>${steps}${example}${page.notes.map(note => `<p>${escapeHtml(note)}</p>`).join('')}<h3>Common questions</h3>${page.faq.map(([question, answer]) => `<details><summary>${escapeHtml(question)}</summary><p>${escapeHtml(answer)}</p></details>`).join('')}<nav class="related-tools" aria-label="Related file tools">${links}</nav></section>`;
+  return `<section class="seo-guide" id="toolGuide" aria-labelledby="guideTitle">${breadcrumb}<h2 id="guideTitle">${escapeHtml(page.heading)}</h2><p>${escapeHtml(page.intro)}</p>${steps}${example}${taskList}${page.notes.map(note => `<p>${escapeHtml(note)}</p>`).join('')}<h3>Common questions</h3>${page.faq.map(([question, answer]) => `<details><summary>${escapeHtml(question)}</summary><p>${escapeHtml(answer)}</p></details>`).join('')}<nav class="related-tools" aria-label="Related file tools"><h3>Continue with a related tool</h3>${links}</nav></section>`;
 }
 
 export function structuredData(page, origin = site.origin, basePath = browserBasePath) {
