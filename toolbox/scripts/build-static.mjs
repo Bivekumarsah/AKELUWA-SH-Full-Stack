@@ -55,6 +55,23 @@ export async function buildStatic(outputUrl = new URL('../dist/', import.meta.ur
     // The existing tools keep their own pages and forms. Add relevant, readable
     // task guidance at build time: never generate duplicate search-only pages.
     const slug = path.split('/')[2];
+    // Preserve a single accessible name for the linked brand while giving the
+    // logo meaningful alt text for crawlers that do not recognize decorative images.
+    const brand = /<a class="extra-brand" href="([^"]+)"><img src="([^"]+)" alt="">AkeluwaToolBox<\/a>/;
+    if (!brand.test(html)) throw new Error('Missing extra-tool branding: ' + path);
+    html = html.replace(brand, (_, href, src) =>
+      '<a class="extra-brand" href="' + href + '" aria-label="Akeluwa ToolBox home"><img src="' + src + '" alt="Akeluwa ToolBox logo">AkeluwaToolBox</a>');
+    const shortTitles = {
+      'image-format-converter': 'Image Converter: JPG, PNG & WebP | Akeluwa ToolBox',
+      'pdf-to-word': 'PDF to Word (DOCX) Converter | Akeluwa ToolBox',
+      'photo-signature-resizer': 'Photo & Signature Resizer | Akeluwa ToolBox',
+      'unicode-preeti': 'Nepali Unicode to Preeti Converter | Akeluwa ToolBox',
+    };
+    if (slug && shortTitles[slug]) {
+      const title = escapeHtml(shortTitles[slug]);
+      html = html.replace(/<title>[^<]*<\/title>/, '<title>' + title + '</title>');
+      html = html.replace(/(<meta property="og:title" content=")[^"]*(")/, (_, prefix, suffix) => prefix + title + suffix);
+    }
     if (slug) {
       const guide = extraGuides[slug];
       const items = guide.tasks.map(task => '<li>' + escapeHtml(task) + '</li>').join('');
