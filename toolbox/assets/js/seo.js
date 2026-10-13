@@ -494,11 +494,11 @@ export function renderPage(template, page, origin = site.origin, noindex = false
   });
   html = html.replace(/<section class="converter-panel" id="([^"]+)"/g, (_, id) => `<section class="converter-panel${page.panel && page.panel !== id ? ' hidden' : ''}" id="${id}"`);
   if (page.tool === 'converter') {
-    html = html.replace(/(<h1 id="converterTitle">)[^<]*(<\/h1>)/, (_, open, close) => open + escapeHtml(page.title.split(' | ')[0]) + close);
+    html = html.replace(/(<h1 id="converterTitle"[^>]*>)[^<]*(<\/h1>)/, (_, open, close) => open + escapeHtml(page.title.split(' | ')[0]) + close);
   }
   // The template includes every workspace. Only the active workspace is an H1
   // in the server-rendered HTML; inactive workspace labels remain H2 headings.
-  html = html.replace(/<(h1|h2)([^>]*\\bdata-tool-heading="([^"]+)"[^>]*)>([\\s\\S]*?)<\\/\\1>/g, (_, tag, attributes, tool, contents) => {
+  html = html.replace(/<(h1|h2)([^>]*\bdata-tool-heading="([^"]+)"[^>]*)>([\s\S]*?)<\/\1>/g, (_, tag, attributes, tool, contents) => {
     const level = tool === page.tool ? 'h1' : 'h2';
     return `<${level}${attributes}>${contents}</${level}>`;
   });
