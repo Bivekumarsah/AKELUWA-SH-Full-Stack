@@ -28,6 +28,14 @@ const expertise = [
   { title: "Automation", description: "AI & everyday workflows", inquiry: "AI and workflow automation", icon: Workflow },
 ];
 
+const featuredFreeTools = [
+  { title: "Free digital stamp maker", href: "/akeluwatoolbox/digital-stamp-maker/", description: "Design an authorized round or business stamp with an instant preview and download as PNG or SVG." },
+  { title: "Compress PDF online", href: "/akeluwatoolbox/compress-pdf/", description: "Reduce PDF file size for email and forms. Compare actual savings and check readability before downloading." },
+  { title: "Compress photo to 100 KB", href: "/akeluwatoolbox/compress-photo/", description: "Choose a photo size target, including 20, 50, 100 or 200 KB, then inspect the result before saving." },
+  { title: "Edit PDF online free", href: "/akeluwatoolbox/pdf-editor/", description: "Add text, images and business logos to a PDF in your browser; preview the pages before exporting." },
+  { title: "Nepali Unicode to Preeti converter", href: "/akeluwatoolbox/extra-tools/unicode-preeti/", description: "Convert Nepali Unicode and legacy Preeti text for everyday document workflows. Review the result before use." },
+];
+
 export default function Home() {
   const servicesContent = usePublishedContent<Service>("services");
   const portfolioContent = usePublishedContent<PortfolioItem>("portfolio");
@@ -91,6 +99,20 @@ export default function Home() {
         <div className="company-work-grid">
           <ContentStatus {...portfolioContent} empty={!portfolioContent.items.length} emptyMessage="No additional projects are published yet." />
           {withToolbox(portfolioContent.items).slice(0, 3).map((item, index) => <PortfolioCard item={item} index={index} key={item.id} />)}
+        </div>
+      </section>
+      <section className="company-section company-services" id="free-tools" aria-labelledby="free-tools-title">
+        <div className="company-container">
+          <div className="company-section-heading">
+            <div><p className="company-eyebrow">Akeluwa ToolBox</p><h2 id="free-tools-title">Free tools for everyday files.</h2></div>
+            <div><p>Edit PDFs, prepare small photos, create authorized business stamps and convert Nepali text directly in your browser.</p><Link className="company-text-link" href="/akeluwatoolbox/">Explore all 21 free tools <ArrowRight size={18} aria-hidden="true" /></Link></div>
+          </div>
+          <div className="company-service-list">
+            {featuredFreeTools.map(({ title, href, description }) => <article className="company-service" key={href}>
+              <h3><Link href={href}>{title} <ArrowUpRight size={18} aria-hidden="true" /></Link></h3>
+              <p>{description}</p>
+            </article>)}
+          </div>
         </div>
       </section>
       <section className="company-section company-method" id="method" aria-labelledby="method-title">
