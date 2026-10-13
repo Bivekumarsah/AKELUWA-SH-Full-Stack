@@ -36,6 +36,13 @@ export async function buildStatic(outputUrl = new URL('../dist/', import.meta.ur
   await cp(join(source, 'assets'), join(output, 'assets'), { recursive: true });
   // Additive tools have independent static pages and never overwrite the stamp studio.
   const extraCatalog = JSON.parse(await readFile(join(source, 'extra-tools', 'catalog.json'), 'utf8'));
+  const extraGuides = JSON.parse(await readFile(join(source, 'scripts', 'extra-search-guides.json'), 'utf8'));
+  for (const { slug } of extraCatalog) {
+    const guide = extraGuides[slug];
+    if (!guide || !Array.isArray(guide.tasks) || guide.tasks.length < 2 || !Array.isArray(guide.related)) {
+      throw new Error('Missing helpful search guidance for extra tool: ' + slug);
+    }
+  }
   const extraPaths = ['/extra-tools/', ...extraCatalog.map(item => '/extra-tools/' + item.slug + '/')];
   await cp(join(source, 'extra-tools'), join(output, 'extra-tools'), { recursive: true });
   for (const path of extraPaths) {
@@ -43,8 +50,25 @@ export async function buildStatic(outputUrl = new URL('../dist/', import.meta.ur
     const original = await readFile(entry, 'utf8');
     // Build-time canonical is always the correct host/base path. The HTML uses
     // relative asset URLs so it works under the standalone or company route.
-    await writeFile(entry, original.replaceAll('__TOOLBOX_PUBLIC_ROOT__', origin + basePath)
-      .replace('<meta name="robots" content="index,follow">', '<meta name="robots" content="' + (noindex ? 'noindex,follow' : 'index,follow') + '">'));
+    let html = original.replaceAll('__TOOLBOX_PUBLIC_ROOT__', origin + basePath)
+      .replace('<meta name="robots" content="index,follow">', '<meta name="robots" content="' + (noindex ? 'noindex,follow' : 'index,follow') + '">');
+    // The existing tools keep their own pages and forms. Add relevant, readable
+    // task guidance at build time: never generate duplicate search-only pages.
+    const slug = path.split('/')[2];
+    if (slug) {
+      const guide = extraGuides[slug];
+      const items = guide.tasks.map(task => '<li>' + escapeHtml(task) + '</li>').join('');
+      const links = guide.related.map(item => '<a href="' + sitePath(item.path, basePath) + '">' +
+        escapeHtml(item.label) + '</a>').join('');
+      const guidance = '<section class="extra-intent-guide" aria-labelledby="extraIntentTitle">' +
+        '<h2 id="extraIntentTitle">Common tasks and practical tips</h2><ul>' + items + '</ul>' +
+        '<h3>Related tools for the next step</h3><div class="extra-intent-links">' + links + '</div></section>';
+      if (!html.includes('<section class="extra-related"')) {
+        throw new Error('Extra tool page lacks the related tools insertion point: ' + slug);
+      }
+      html = html.replace('<section class="extra-related"', guidance + '<section class="extra-related"');
+    }
+    await writeFile(entry, html);
   }
   await writeFile(join(output, 'robots.txt'), `User-agent: *\n${noindex ? 'Disallow: /' : 'Allow: /'}\n\nSitemap: ${origin}${sitePath('/sitemap.xml', basePath)}\n`);
   await writeFile(join(output, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${[...pages.map(page => page.path), ...extraPaths].map(path => `  <url><loc>${escapeHtml(origin + sitePath(path, basePath))}</loc></url>`).join('\n')}\n</urlset>\n`);

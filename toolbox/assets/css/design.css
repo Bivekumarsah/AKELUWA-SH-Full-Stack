@@ -352,3 +352,10 @@ aside,.bg-side { background:var(--panel2); }
  .pdf-mobile-actions button:focus-visible{outline:3px solid #1267b2;outline-offset:2px}
  .pdf-mobile-start p{margin:4px 0 0;font-size:12px;line-height:1.4;color:#53695d}
 }
+
+/* Search-intent guidance: readable tasks and a concise next-step navigation. */
+.seo-task-list{padding-left:24px;margin:8px 0 19px}
+.seo-task-list li{padding-left:3px;line-height:1.7}
+.related-tools>h3{flex-basis:100%;margin:0 0 2px}
+.related-tools>a{display:inline-flex;align-items:center;padding:9px 11px;min-height:44px;border:1px solid #d5e6d9;border-radius:9px;background:#f1f8f3;text-decoration:none;font-weight:650}
+.related-tools>a:hover{background:#e5f2e9;text-decoration:underline}
