@@ -211,7 +211,8 @@ test('Client-side navigation updates the unique H1 without losing stamp preview'
   await page.locator('.tool-card[data-launch-tool="stamp"]').click();
   await expect(page.locator('h1')).toHaveCount(1);
   await expect(page.locator('h1')).toHaveAttribute('data-tool-heading', 'stamp');
-  await expect(page.locator('#stampPreview')).toBeVisible();
+  await expect(page.locator('#stampTool')).toBeVisible();
+  await expect(page.locator('#stampPreview svg')).toHaveCount(1);
   await page.goBack();
   await expect(page.locator('h1')).toHaveAttribute('data-tool-heading', 'home');
   await page.goBack();
