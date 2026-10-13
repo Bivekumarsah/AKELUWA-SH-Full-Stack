@@ -1,0 +1,172 @@
+{
+  "photo-signature-resizer": {
+    "tasks": [
+      "Resize a photograph to the exact width and height specified by your application website, such as 300 × 400 pixels.",
+      "Prepare a handwritten signature image for an online form without stretching it: use fit rather than crop when important strokes reach the edges.",
+      "Set a target KB limit and check the final size and image quality; fixed dimensions may prevent reaching an exact limit."
+    ],
+    "related": [
+      {
+        "path": "/compress-photo/",
+        "label": "Compress an image without setting exact dimensions"
+      },
+      {
+        "path": "/jpg-to-pdf/",
+        "label": "Put prepared images into a PDF"
+      }
+    ]
+  },
+  "pdf-to-word": {
+    "tasks": [
+      "Turn a PDF with selectable text into an editable Word document when you need to revise its wording.",
+      "Check paragraphs, tables and formatting after conversion; a PDF is a fixed-layout format and DOCX reconstruction may differ.",
+      "For a photographed or scanned PDF, run OCR first because text extraction alone cannot recognize letters in an image."
+    ],
+    "related": [
+      {
+        "path": "/extra-tools/ocr-text-extractor/",
+        "label": "Recognize text from scanned pages"
+      },
+      {
+        "path": "/pdf-editor/",
+        "label": "Make visible edits in the original PDF"
+      }
+    ]
+  },
+  "pdf-esign-watermark": {
+    "tasks": [
+      "Draw a visible handwritten-style signature on your own PDF before sharing it.",
+      "Add a watermark such as Draft or Sample to a document you are authorized to modify.",
+      "A drawn signature is a visual mark, not a cryptographically verified digital signature; confirm your recipient's acceptance requirements."
+    ],
+    "related": [
+      {
+        "path": "/pdf-editor/",
+        "label": "Place text or logo images in a PDF"
+      },
+      {
+        "path": "/compress-pdf/",
+        "label": "Reduce the PDF size after editing"
+      }
+    ]
+  },
+  "ocr-text-extractor": {
+    "tasks": [
+      "Copy printed English or Nepali text from a photo into a format you can edit.",
+      "Extract text from a scanned PDF when ordinary copy and paste does not work.",
+      "Check names, numbers and spelling against the original document; OCR can make recognition errors."
+    ],
+    "related": [
+      {
+        "path": "/extra-tools/pdf-to-word/",
+        "label": "Convert selectable PDF text into Word"
+      },
+      {
+        "path": "/pdf-to-png/",
+        "label": "Export a PDF page as an image"
+      }
+    ]
+  },
+  "unicode-preeti": {
+    "tasks": [
+      "Convert text typed with the legacy Nepali Preeti font into Unicode characters for copying into modern apps.",
+      "Convert basic Nepali Unicode text toward Preeti-style encoding when working with older documents.",
+      "Proofread complex consonant combinations and vowel marks; the conversion is a basic mapping, not full typographic shaping."
+    ],
+    "related": [
+      {
+        "path": "/extra-tools/ocr-text-extractor/",
+        "label": "Extract Nepali text from a scan"
+      },
+      {
+        "path": "/extra-tools/resume-builder/",
+        "label": "Write a resume using copied text"
+      }
+    ]
+  },
+  "resume-builder": {
+    "tasks": [
+      "Prepare a straightforward resume or CV with your experience, education, and skills.",
+      "Review the print preview before saving a PDF so you can check line breaks and contact details.",
+      "Tailor the written content to the role; this tool formats information but does not guarantee hiring or applicant-tracking compatibility."
+    ],
+    "related": [
+      {
+        "path": "/jpg-to-pdf/",
+        "label": "Combine supporting documents into a PDF"
+      },
+      {
+        "path": "/compress-pdf/",
+        "label": "Reduce a CV file for emailing"
+      }
+    ]
+  },
+  "image-format-converter": {
+    "tasks": [
+      "Convert a JPG photo to PNG or WebP, or convert a PNG image to JPG when the destination requests that format.",
+      "Preserve transparency with PNG or WebP when possible; JPG does not support transparent pixels.",
+      "Reduce image width when converting large photos and check that the receiving website supports the new format."
+    ],
+    "related": [
+      {
+        "path": "/compress-photo/",
+        "label": "Choose a custom KB target"
+      },
+      {
+        "path": "/extra-tools/bulk-image-compressor/",
+        "label": "Process many images together"
+      }
+    ]
+  },
+  "qr-code-generator": {
+    "tasks": [
+      "Make a QR code for a website link or short text to include in a poster or business card.",
+      "Generate a QR image for contact details and verify that the intended device recognizes the content.",
+      "Test the finished QR code with a second device before printing it at a small size."
+    ],
+    "related": [
+      {
+        "path": "/digital-stamp-maker/",
+        "label": "Create a business stamp image"
+      },
+      {
+        "path": "/extra-tools/image-format-converter/",
+        "label": "Convert an image's format"
+      }
+    ]
+  },
+  "pdf-page-numbers": {
+    "tasks": [
+      "Add sequential page numbers to a PDF before submitting a report or document bundle.",
+      "Choose Page X of Y labels and select a top or bottom position appropriate for your page margins.",
+      "Numbering adds visible marks to pages; it does not alter the PDF's internal page labels and may invalidate signatures."
+    ],
+    "related": [
+      {
+        "path": "/merge-pdf/",
+        "label": "Combine PDFs before numbering"
+      },
+      {
+        "path": "/extract-pdf-pages/",
+        "label": "Keep selected numbered pages"
+      }
+    ]
+  },
+  "bulk-image-compressor": {
+    "tasks": [
+      "Reduce the file sizes of several JPG, PNG, or WebP images in one batch.",
+      "Download a ZIP archive of the processed images instead of downloading each picture individually.",
+      "Check the final dimensions and quality of important images; the largest reductions may not suit fine text or official photos."
+    ],
+    "related": [
+      {
+        "path": "/compress-photo/",
+        "label": "Compress and preview one photo"
+      },
+      {
+        "path": "/extra-tools/photo-signature-resizer/",
+        "label": "Set an exact photo or signature size"
+      }
+    ]
+  }
+}
