@@ -1,0 +1,27 @@
+name: PublicInfoHub directory checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  directory:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Validate directory data and static entry points
+        run: node --test tests/*.test.mjs
+      - name: Check JavaScript syntax
+        run: |
+          node --check data.js
+          node --check app.js
+          node --check offices.js
+          node --check share.js
+          node --check office-discovery.js
+          node --check i18n.js
+          node --check loksewa-data.js
+          node --check loksewa.js
