@@ -6,8 +6,8 @@ import { pages, site, normalizeOrigin, normalizeBasePath, sitePath, renderPage, 
 
 const source = fileURLToPath(new URL('../', import.meta.url));
 const websiteOutput = resolve(source, 'dist');
-const repositoryOutput = resolve(source, '..', 'dist');
-const companyOutput = resolve(source, '..', 'public', 'akeluwatoolbox');
+const repositoryOutput = resolve(source, 'dist');
+const companyOutput = resolve(source, '..', 'company', 'public', 'akeluwatoolbox');
 
 export async function buildStatic(outputUrl = new URL('../dist/', import.meta.url), options = {}) {
   const output = resolve(fileURLToPath(outputUrl));

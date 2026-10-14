@@ -4,7 +4,7 @@ import secrets
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-TOOLBOX_DIR = BASE_DIR.parent
+TOOLBOX_DIR = BASE_DIR.parents[1] / 'apps' / 'toolbox'
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY") or secrets.token_urlsafe(48)
 DEBUG = False
 ALLOWED_HOSTS = ["127.0.0.1", "localhost", "[::1]"]
