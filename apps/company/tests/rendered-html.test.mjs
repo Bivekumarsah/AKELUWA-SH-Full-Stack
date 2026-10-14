@@ -142,17 +142,21 @@ test('production Worker serves toolbox pages, assets, redirects and isolated 404
   assert.equal((await fetch('/akeluwatoolbox/', { method: 'HEAD' })).status, 200);
 });
 
-test("PublicInfoHub remains independently deployed rather than bundled into the company Worker", async () => {
-  const config = await readFile(new URL("../next.config.ts", import.meta.url), "utf8");
+test("PublicInfoHub is locally bundled with all directory and utility routes", async () => {
   const buildScript = await readFile(new URL("../scripts/build-static-sites.mjs", import.meta.url), "utf8");
-  assert.ok(!config.includes('source: "/publicinfohub"'));
-  const proxy = await readFile(new URL("../app/publicinfohub/[[...path]]/route.ts", import.meta.url), "utf8");
-  assert.ok(proxy.includes("PUBLIC_INFO_HUB_ORIGIN"));
-  assert.ok(proxy.includes("export async function GET"));
-  assert.ok(proxy.includes("upstreamUrl.host === incomingUrl.host"));
-  assert.ok(proxy.includes("publicinfohub.vercel.app"));
-  assert.doesNotMatch(buildScript, /(?:cp|mkdir|rm)\s*\([^\n]*publicinfohub/i);
-  assert.match(buildScript, /buildStatic/);
+  const route = await readFile(new URL("../app/publicinfohub/[[...path]]/route.ts", import.meta.url), "utf8");
+  assert.ok(buildScript.includes("publicinfohub"));
+  assert.ok(buildScript.includes("copyFile"));
+  assert.ok(route.includes("readFile(file)"));
+  assert.ok(!route.includes("PUBLIC_INFO_HUB_ORIGIN"));
+  assert.ok(!route.includes("publicinfohub.vercel.app"));
+  for (const page of ["index.html", "offices/index.html", "utilities/index.html",
+      "utilities/nepal-tax-ssf-calculator/index.html", "utilities/official-form-finder/index.html"]) {
+    const html = await readFile(new URL("../public/publicinfohub/" + page, import.meta.url), "utf8");
+    assert.match(html, /<html|<!doctype html/i, page);
+  }
+  const hubSitemap = await readFile(new URL("../public/publicinfohub/sitemap.xml", import.meta.url), "utf8");
+  assert.ok(hubSitemap.includes("/publicinfohub/utilities/nepal-tax-ssf-calculator/"));
 });
 
 test("renders SEO support pages", async () => {
