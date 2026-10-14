@@ -1,0 +1,121 @@
+name: akeluwa-lightsail
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?set POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    stop_grace_period: 30s
+    security_opt: ["no-new-privileges:true"]
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  api:
+    build:
+      context: ../../backend
+    restart: unless-stopped
+    environment:
+      APP_ENV: production
+      HTTP_ADDRESS: ":8080"
+      DATABASE_URL: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable"
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET}
+      JWT_ISSUER: akeluwa-api
+      MFA_ENCRYPTION_KEY: ${MFA_ENCRYPTION_KEY:?set MFA_ENCRYPTION_KEY}
+      SESSION_TTL: 24h
+      COOKIE_DOMAIN: .akeluwasoftwarehub.com.np
+      COOKIE_SECURE: "true"
+      COOKIE_SAME_SITE: lax
+      TRUST_PROXY_HEADERS: "true"
+      CORS_ORIGINS: https://www.akeluwasoftwarehub.com.np
+      FRONTEND_URL: https://www.akeluwasoftwarehub.com.np
+      SMTP_HOST: ${SMTP_HOST:?set SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USERNAME: ${SMTP_USERNAME:?set SMTP_USERNAME}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:?set SMTP_PASSWORD}
+      SMTP_FROM: ${SMTP_FROM:?set SMTP_FROM}
+      ADMIN_NAME: ${ADMIN_NAME:-AKELUWA Administrator}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/readyz"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: ["ALL"]
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,noexec,nosuid,nodev
+    stop_grace_period: 30s
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  frontend:
+    build:
+      context: ../..
+      dockerfile: deploy/lightsail/Dockerfile.frontend
+      args:
+        NEXT_PUBLIC_SITE_URL: https://www.akeluwasoftwarehub.com.np
+        NEXT_PUBLIC_API_URL: /api/v1
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      NODE_OPTIONS: "--max-old-space-size=1024"
+      PORT: "3000"
+      HOSTNAME: "0.0.0.0"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 20s
+      timeout: 10s
+      retries: 8
+      start_period: 35s
+    security_opt: ["no-new-privileges:true"]
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ${CADDYFILE_PATH:-./Caddyfile.http-test}:/etc/caddy/Caddyfile:ro
+      - ${PUBLICINFOHUB_PUBLISH_DIR:?set PUBLICINFOHUB_PUBLISH_DIR}:/srv/publicinfohub:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      frontend:
+        condition: service_healthy
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: ["ALL"]
+    cap_add: ["NET_BIND_SERVICE"]
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  postgres_data:
+  caddy_data:
+  caddy_config:
