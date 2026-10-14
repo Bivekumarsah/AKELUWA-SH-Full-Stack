@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PDF Size Reducer · Akeluwa ToolBox</title>
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/images/favicon.png">
+  <meta name="theme-color" content="#195443">
+  <style>
+    *{box-sizing:border-box}body{margin:0;background:#f7f9f7;color:#22342c;font:16px/1.6 "Segoe UI",sans-serif}main{max-width:700px;margin:40px auto;padding:28px}h1{font:40px Georgia,serif;margin:12px 0}form,.result{background:white;border:1px solid #dce5df;padding:24px;border-radius:8px;margin-top:24px}label{display:block;margin:14px 0}input[type=file],select{display:block;width:100%;padding:12px;border:1px solid #cdd3c8;background:#f7f9f7;border-radius:5px}input[type=range]{width:100%;accent-color:#195443}button,a.download{background:#195443;color:white;border:0;padding:12px 20px;border-radius:5px;font:inherit;cursor:pointer;text-decoration:none;display:inline-block}button:disabled{opacity:.5}small,p{color:#607067}.result strong{color:#195443}progress{width:100%;accent-color:#195443}:focus-visible{outline:3px solid #1267b2;outline-offset:3px}[hidden]{display:none!important}.brand{position:relative;display:block;width:min(280px,100%);height:52px;overflow:hidden}.brand img{position:absolute;top:50%;transform:translateY(-50%);width:100%;height:auto;display:block}
+  </style>
+</head>
+<body><main>
+  <a class="brand" href="/" aria-label="Akeluwa ToolBox home"><img src="/assets/images/logo.png" alt="Akeluwa ToolBox" width="2172" height="724"></a><h1>PDF size reducer</h1>
+  <p>Make your document easier to share. Processing happens on this computer; temporary files are removed after each request.</p>
+  <form id="form">
+    <label>Choose a PDF <input type="file" id="file" accept="application/pdf,.pdf" required></label>
+    <small>Maximum 60 MB · 200 pages. Keep the original of a signed document; compression can invalidate its signature.</small>
+    <label for="target">Reduction target <strong id="targetValue">50%</strong></label>
+    <input type="range" id="target" min="5" max="90" step="5" value="50">
+    <label>Compression mode <select id="mode"><option value="preserve">Preserve text · optimize images</option><option value="visual">Visual compression · flatten pages</option></select></label>
+    <p id="modeNote">Keeps selectable text and interactive content. Embedded image quality may decrease.</p>
+    <label><input id="automatic" type="checkbox" checked> Download automatically when finished</label>
+    <button id="run" type="submit">Compress PDF</button>
+    <p id="status" role="status" aria-live="polite">Choose a PDF to begin. The requested reduction is a target, not a guarantee.</p>
+    <progress id="progress" hidden aria-label="Compressing PDF"></progress>
+  </form>
+  <section class="result" id="result" hidden aria-label="Compression result"><h2 id="resultTitle"></h2><p id="stats"></p><p id="note"></p><a class="download" id="download">Download PDF</a></section>
+</main>
+<script>
+  const $ = id => document.getElementById(id);
+  let url = null;
+  function resetResult() { if(url) URL.revokeObjectURL(url); url = null; $('result').hidden = true; }
+  $('target').oninput = () => { $('targetValue').textContent = $('target').value + '%'; resetResult(); };
+  $('file').onchange = resetResult;
+  $('mode').onchange = () => {resetResult(); $('modeNote').textContent = $('mode').value === 'visual' ? 'Pages become images. Text selection, links, forms, and accessibility tags are lost. Keep your original.' : 'Keeps selectable text and interactive content. Embedded image quality may decrease.';};
+  $('form').onsubmit = async event => {
+    event.preventDefault(); const file = $('file').files[0];
+    if (!file || !file.size || file.size > 60*1024*1024) { $('status').textContent = 'Choose a nonempty PDF no larger than 60 MB.'; return; }
+    resetResult(); $('progress').hidden = false; $('status').textContent = 'Compressing on this computer…';
+    const form = new FormData(); form.append('file',file); form.append('target',$('target').value); form.append('mode',$('mode').value);
+    $('form').querySelectorAll('input,select,button').forEach(el => el.disabled = true);
+    try {
+      const capabilities = await fetch('/api/pdf-reducer/capabilities/',{cache:'no-store'});
+      if (!capabilities.ok) throw new Error('The local reducer is unavailable.');
+      const {csrf_token} = await capabilities.json();
+      const response = await fetch('/api/pdf-reducer/compress/',{method:'POST',body:form,headers:{'X-CSRFToken':csrf_token},credentials:'same-origin'});
+      if (!response.ok) { const data = await response.json(); throw new Error(data.error || 'Compression failed.'); }
+      const info = JSON.parse(response.headers.get('X-PDF-Result'));
+      const blob = await response.blob(); url = URL.createObjectURL(blob);
+      $('download').href = url; $('download').download = (file.name.replace(/\.pdf$/i,'') || 'document') + (info.reduction > 0 ? '-compressed.pdf' : '-original.pdf');
+      $('resultTitle').textContent = info.reduction > 0 ? 'Your PDF is ready' : 'Already optimized';
+      $('stats').textContent = `${(file.size/1024).toFixed(1)} KB → ${(blob.size/1024).toFixed(1)} KB · ${info.reduction}% saved · ${info.pages} pages`;
+      $('note').textContent = (info.target_met ? 'Reduction target reached.' : 'The target could not be reached. The smallest version is available below.') + (info.flattened ? ' Pages are images; interactive features are flattened.' : ' Original page content is retained.');
+      $('result').hidden = false; $('status').textContent = 'Finished. Your original file is kept.';
+      if ($('automatic').checked) $('download').click();
+    } catch (error) { $('status').textContent = error.message || 'Compression failed. Try another PDF.'; }
+    finally { $('progress').hidden = true; $('form').querySelectorAll('input,select,button').forEach(el => el.disabled = false); }
+  };
+</script></body></html>
