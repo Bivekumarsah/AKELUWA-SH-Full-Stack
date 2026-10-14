@@ -24,7 +24,7 @@ services:
 
   api:
     build:
-      context: ../backend
+      context: ../../services/api
     restart: unless-stopped
     environment:
       APP_ENV: ${APP_ENV}

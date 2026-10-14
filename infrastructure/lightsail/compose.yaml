@@ -24,7 +24,7 @@ services:
 
   api:
     build:
-      context: ../../backend
+      context: ../../services/api
     restart: unless-stopped
     environment:
       APP_ENV: production
@@ -70,7 +70,7 @@ services:
   frontend:
     build:
       context: ../..
-      dockerfile: deploy/lightsail/Dockerfile.frontend
+      dockerfile: infrastructure/lightsail/Dockerfile.frontend
       args:
         NEXT_PUBLIC_SITE_URL: https://www.akeluwasoftwarehub.com.np
         NEXT_PUBLIC_API_URL: /api/v1
