@@ -17,7 +17,7 @@ services:
 
   api:
     build:
-      context: ./backend
+      context: ../../services/api
     environment:
       APP_ENV: development
       HTTP_ADDRESS: :8080
