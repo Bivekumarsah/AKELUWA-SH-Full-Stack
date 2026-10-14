@@ -37,7 +37,7 @@ async function serve(request: Request, head = false): Promise<Response> {
   try {
     const info = await stat(location);
     const file = info.isDirectory() ? join(location, 'index.html') : location;
-    const content = await readFile(file);
+    const content = new Uint8Array(await readFile(file));
     return new Response(head ? null : content, {
       headers: {
         'content-type': types[extension(file)] || 'application/octet-stream',
