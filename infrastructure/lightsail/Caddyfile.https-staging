@@ -1,0 +1,57 @@
+# HTTPS integration staging only. The live apex/www domain remains on Vercel.
+# Requires: staging.akeluwasoftwarehub.com.np A -> 13.205.65.114
+# Ports 80/443 need to reach this instance for automatic TLS issuance.
+staging.akeluwasoftwarehub.com.np {
+    encode zstd gzip
+
+    @hub_no_slash path /publicinfohub
+    redir @hub_no_slash /publicinfohub/ 308
+
+    # Keep staging out of search results; don't index its copied live canonicals.
+    handle /robots.txt {
+        respond "User-agent: *\nDisallow: /" 200
+    }
+
+    handle_path /publicinfohub/* {
+        root * /srv/publicinfohub
+        file_server
+    }
+
+    # Backend remains on private Docker network; never publish port 8080.
+    handle /api/v1/* {
+        reverse_proxy api:8080
+    }
+
+    # Company site and integrated AKELUWA ToolBox.
+    handle {
+        reverse_proxy frontend:3000
+    }
+
+    header {
+        X-Robots-Tag "noindex, nofollow, noarchive"
+        X-Content-Type-Options "nosniff"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        Strict-Transport-Security "max-age=300"
+        -Server
+    }
+}
+
+# Preserve previous safe IP-based HTTP smoke checks; block API/auth there.
+http://13.205.65.114 {
+    encode zstd gzip
+
+    @private path /api/* /account* /admin* /login* /register* /forgot-password* /reset-password* /verify-email*
+    respond @private "Disabled during IP-based staging" 403
+
+    @hub_no_slash path /publicinfohub
+    redir @hub_no_slash /publicinfohub/ 308
+
+    handle_path /publicinfohub/* {
+        root * /srv/publicinfohub
+        file_server
+    }
+
+    handle {
+        reverse_proxy frontend:3000
+    }
+}

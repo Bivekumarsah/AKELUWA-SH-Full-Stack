@@ -88,3 +88,31 @@ until rollout monitoring is stable.
   claiming automated backup coverage.
 - The optional Django/PyMuPDF engine remains localhost-only and is not part of
   the default Docker stack; browser PDF compression continues to work without it.
+
+## HTTPS staging before changing production DNS
+
+1. Add an **A record for `staging.akeluwasoftwarehub.com.np`** pointing to the
+   Lightsail static IPv4 `13.205.65.114`. Do **not** change the existing apex
+   or `www` records; they must continue to point to Vercel during testing.
+2. In the existing private `infrastructure/lightsail/.env` set:
+   `CADDYFILE_PATH=./Caddyfile.https-staging`,
+   `COOKIE_DOMAIN=` (leave blank for staging host-only login cookies),
+   `CORS_ORIGINS=https://staging.akeluwasoftwarehub.com.np`, and
+   `FRONTEND_URL=https://staging.akeluwasoftwarehub.com.np`.
+3. Validate the Caddyfile with Caddy's `caddy validate --config` before
+   restarting the service. Confirm DNS resolves to the static IPv4 and ports
+   80/443 are open. Caddy will obtain a free public TLS certificate.
+4. Recreate `api` to apply the cookie/origin environment variables; recreate
+   `caddy` only after DNS propagation. Check container logs for cert issuance.
+5. Test `https://staging.akeluwasoftwarehub.com.np/api/v1/services` and
+   `/api/v1/portfolio`; verify `200` and the starter records. The staging
+   hostname sends `X-Robots-Tag: noindex` and serves a restrictive robots.txt.
+6. Staging is public with TLS: use test accounts, avoid sensitive uploads, and
+   finish authentication, outbound email, backup, and security testing before
+   moving production DNS. The temporary IP HTTP site still blocks account
+   and API routes. Keep PostgreSQL `5432` private.
+
+Caddy's certificate automation requires public staging DNS to resolve to the
+instance. Do not use the final production `Caddyfile` until apex/`www` DNS is
+ready to move. A snapshot is optional and has an extra charge; a tested,
+encrypted off-server PostgreSQL backup is still required for disaster recovery.

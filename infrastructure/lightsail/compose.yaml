@@ -34,12 +34,12 @@ services:
       JWT_ISSUER: akeluwa-api
       MFA_ENCRYPTION_KEY: ${MFA_ENCRYPTION_KEY:?set MFA_ENCRYPTION_KEY}
       SESSION_TTL: 24h
-      COOKIE_DOMAIN: .akeluwasoftwarehub.com.np
+      COOKIE_DOMAIN: ${COOKIE_DOMAIN-.akeluwasoftwarehub.com.np}
       COOKIE_SECURE: "true"
       COOKIE_SAME_SITE: lax
       TRUST_PROXY_HEADERS: "true"
-      CORS_ORIGINS: https://www.akeluwasoftwarehub.com.np
-      FRONTEND_URL: https://www.akeluwasoftwarehub.com.np
+      CORS_ORIGINS: ${CORS_ORIGINS:-https://www.akeluwasoftwarehub.com.np}
+      FRONTEND_URL: ${FRONTEND_URL:-https://www.akeluwasoftwarehub.com.np}
       SMTP_HOST: ${SMTP_HOST:?set SMTP_HOST}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USERNAME: ${SMTP_USERNAME:?set SMTP_USERNAME}
