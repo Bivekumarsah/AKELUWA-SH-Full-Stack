@@ -1,11 +1,20 @@
-# Build the canonical Next.js app plus its single shared Toolbox source.
+# Native Next.js monorepo image. Preserve each tracked legacy symlink target:
+# apps/company/toolbox -> ../toolbox
+# apps/company/docs    -> ../../docs/company
+# apps/company/backend -> ../../services/api
 FROM node:22-bookworm-slim AS build
 WORKDIR /workspace/apps/company
 COPY apps/company/package.json apps/company/package-lock.json apps/company/.npmrc ./
 RUN npm ci
+
 COPY apps/company/ ./
-COPY apps/toolbox/ ../toolbox/
-COPY apps/publicinfohub/ ../publicinfohub/
+COPY apps/toolbox/ /workspace/apps/toolbox/
+COPY apps/publicinfohub/ /workspace/apps/publicinfohub/
+COPY docs/company/ /workspace/docs/company/
+COPY services/api/ /workspace/services/api/
+# Fail early with a useful message if a monorepo symlink target is absent.
+RUN test -f toolbox/index.html && test -f docs/ARCHITECTURE.md && test -f backend/go.mod
+
 ARG NEXT_PUBLIC_SITE_URL=https://www.akeluwasoftwarehub.com.np
 ARG NEXT_PUBLIC_API_URL=/api/v1
 ENV NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL}
@@ -15,7 +24,12 @@ RUN npm run build:vercel
 
 FROM node:22-bookworm-slim
 ENV NODE_ENV=production
-WORKDIR /app
-COPY --from=build /workspace/apps/company /app
+WORKDIR /workspace/apps/company
+COPY --from=build /workspace/apps/company/ ./
+# Retain the same symlink layout at runtime. The Go API runs in its own
+# private container; these files are present only for legacy frontend paths.
+COPY --from=build /workspace/apps/toolbox/ /workspace/apps/toolbox/
+COPY --from=build /workspace/docs/company/ /workspace/docs/company/
+COPY --from=build /workspace/services/api/ /workspace/services/api/
 EXPOSE 3000
 CMD ["npm", "run", "start:vercel", "--", "-p", "3000", "-H", "0.0.0.0"]
