@@ -3,7 +3,6 @@ package httpapi
 import (
 	"net"
 	"net/http"
-	"github.com/akeluwa/software-hub/backend/internal/store"
 )
 
 func (a *API) accountInquiries(w http.ResponseWriter, r *http.Request) {

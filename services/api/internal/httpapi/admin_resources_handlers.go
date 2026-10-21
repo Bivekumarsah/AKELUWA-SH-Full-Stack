@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"strings"
 	"github.com/akeluwa/software-hub/backend/internal/model"
-	"github.com/akeluwa/software-hub/backend/internal/store"
 )
 
 func (a *API) adminDownloads(w http.ResponseWriter, r *http.Request) {

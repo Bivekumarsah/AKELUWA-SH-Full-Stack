@@ -25,6 +25,8 @@ test("public applications render without horizontal overflow on narrow phones", 
 test("mobile company and toolbox navigation support Escape", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
+  // Next.js must hydrate before the client-side menu can receive clicks.
+  await expect(page.locator(".system-list")).not.toContainText("Loading published content");
   const toggle = page.getByRole("button", { name: "Open navigation" });
   await expect(toggle).toBeVisible();
   await toggle.click();

@@ -2,7 +2,6 @@ package httpapi
 
 import (
 	"net/http"
-	"github.com/akeluwa/software-hub/backend/internal/store"
 )
 
 func (a *API) adminInquiries(w http.ResponseWriter, r *http.Request) {

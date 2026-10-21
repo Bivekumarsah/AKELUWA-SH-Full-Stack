@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"strings"
 	"time"
-	"github.com/akeluwa/software-hub/backend/internal/config"
 	"github.com/akeluwa/software-hub/backend/internal/model"
 	"github.com/akeluwa/software-hub/backend/internal/store"
 )
