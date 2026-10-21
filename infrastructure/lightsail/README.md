@@ -31,11 +31,6 @@ cd /opt/akeluwa
 git clone https://github.com/Bivekumarsah/AKELUWA-SH-Full-Stack.git
 cd AKELUWA-SH-Full-Stack
 git switch refactor/akeluwa-monorepo-2026-10
-sudo mkdir -p /opt/akeluwa/publicinfohub-publish
-sudo chown "$USER":"$USER" /opt/akeluwa/publicinfohub-publish
-rsync -a --delete --exclude='.git/' --exclude='.github/' --exclude='tests/' \
-  --exclude='scripts/' --exclude='*.md' --exclude='vercel.json' \
-  apps/publicinfohub/ /opt/akeluwa/publicinfohub-publish/
 cd infrastructure/lightsail
 cp env.sample .env
 chmod 600 .env
@@ -79,13 +74,18 @@ verification, sitemap and robots. Keep the previous Vercel route available
 until rollout monitoring is stable.
 
 ## Deployments and rollback
-- Pull reviewed commits on the monorepo branch, rerun the PublicInfoHub rsync
-  publication step, and rebuild/restart only changed containers.
-- Never overwrite a running production PostgreSQL volume with a blank one.
-- Record release SHAs; keep a rollback image and database-backup restore drill.
-- For production backups, adapt the existing verified PostgreSQL scripts in
-  `infrastructure/legacy-api-stack/` to this compose location **before**
-  claiming automated backup coverage.
+- All three public applications are served from the same immutable frontend build:
+  the company static-build step copies ToolBox and PublicInfoHub into the Next.js
+  public tree. Caddy no longer serves a separate, manually synchronized Hub copy.
+- Pull reviewed commits on this monorepo branch and rebuild the frontend/API
+  containers; confirm the same release SHA across all public routes.
+- Never overwrite a running PostgreSQL volume with a blank one. Record release SHAs
+  and retain a previous working image/configuration for rollback.
+- Run `./backup-db.sh` after configuring `.env`. Then run
+  `./verify-backup.sh backups/<filename>.dump` **on staging** to prove
+  the dump is restorable. These scripts are not automatically scheduled or
+  uploaded off-site. Set up daily scheduled backups, encrypted off-instance
+  copies, and failure alerts before any production cutover.
 - The optional Django/PyMuPDF engine remains localhost-only and is not part of
   the default Docker stack; browser PDF compression continues to work without it.
 
@@ -116,3 +116,23 @@ Caddy's certificate automation requires public staging DNS to resolve to the
 instance. Do not use the final production `Caddyfile` until apex/`www` DNS is
 ready to move. A snapshot is optional and has an extra charge; a tested,
 encrypted off-server PostgreSQL backup is still required for disaster recovery.
+
+## Backup and restore (manual until scheduling is configured)
+
+From `infrastructure/lightsail` on staging with a private, configured `.env`:
+
+```bash
+./backup-db.sh
+./verify-backup.sh backups/akeluwa-YYYYMMDDTHHMMSSZ.dump
+```
+
+The backup script makes a PostgreSQL custom-format archive, checks it with
+`pg_restore --list`, and creates a SHA-256 checksum; the restore script verifies
+the checksum and restores to a **new temporary database**, then removes it. It
+never restores into the production database. Ensure free disk space before
+running a restore test. These commands do not perform any off-site upload.
+
+Before live traffic, schedule the backup daily under an appropriate service
+account, securely copy encrypted dumps to separate storage, test an actual
+off-instance restore, set retention policies and failed-backup alerts, and
+record measured recovery time. See `docs/RELEASE_READINESS.md` for sign-off. 

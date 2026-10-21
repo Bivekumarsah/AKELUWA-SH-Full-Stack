@@ -103,4 +103,5 @@ apps/toolbox/dist/
 infrastructure/lightsail/.env
 infrastructure/legacy-api-stack/.env
 infrastructure/legacy-api-stack/backups/
+infrastructure/lightsail/backups/
 **/*.pyc

@@ -87,6 +87,7 @@ services:
       retries: 8
       start_period: 35s
     security_opt: ["no-new-privileges:true"]
+    cap_drop: ["ALL"]
     logging:
       options:
         max-size: "10m"
@@ -101,7 +102,6 @@ services:
       - "443:443/udp"
     volumes:
       - ${CADDYFILE_PATH:-./Caddyfile.http-test}:/etc/caddy/Caddyfile:ro
-      - ${PUBLICINFOHUB_PUBLISH_DIR:?set PUBLICINFOHUB_PUBLISH_DIR}:/srv/publicinfohub:ro
       - caddy_data:/data
       - caddy_config:/config
     depends_on:

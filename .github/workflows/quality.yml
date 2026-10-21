@@ -41,9 +41,11 @@ jobs:
       - run: npm run audit:production
       - name: Validate deployment files
         run: |
-          sh -n ../../infrastructure/legacy-api-stack/backup-db.sh ../../infrastructure/legacy-api-stack/verify-backup.sh
+          sh -n ../../infrastructure/legacy-api-stack/backup-db.sh ../../infrastructure/legacy-api-stack/verify-backup.sh ../../infrastructure/lightsail/backup-db.sh ../../infrastructure/lightsail/verify-backup.sh
           docker compose --env-file ../../infrastructure/legacy-api-stack/.env.example -f ../../infrastructure/legacy-api-stack/compose.prod.yaml config --quiet
           docker compose --env-file ../../infrastructure/lightsail/env.sample -f ../../infrastructure/lightsail/compose.yaml config --quiet
+          ! grep -R -q '/srv/publicinfohub' ../../infrastructure/lightsail/Caddyfile* ../../infrastructure/lightsail/compose.yaml
+          test ! -L ../../apps/publicinfohub # static hub source is a real directory
 
   publicinfohub:
     runs-on: ubuntu-latest

@@ -40,7 +40,7 @@ button, input, textarea, select { font: inherit; }
   padding: 10px 14px;
   background: var(--saffron);
   color: var(--ink);
-  font: 8px/1 ui-monospace, monospace;
+  font: 12px/1.25 ui-monospace, monospace;
   letter-spacing: .14em;
   text-transform: uppercase;
   transform: translateY(-140%);
@@ -61,7 +61,7 @@ button, input, textarea, select { font: inherit; }
   border-bottom: 1px solid var(--line);
   background: rgba(8,9,11,.82);
   backdrop-filter: blur(14px);
-  font: 9px/1 ui-monospace, monospace;
+  font: 11px/1.2 ui-monospace, monospace;
   letter-spacing: .12em;
   text-transform: uppercase;
 }
@@ -75,7 +75,7 @@ button, input, textarea, select { font: inherit; }
 .header-trust-badge { min-height: 32px; padding-left: 14px; display: flex; align-items: center; gap: 8px; border-left: 1px solid rgba(243,239,229,.2); color: var(--paper-dim); }
 .header-trust-badge svg { width: 17px; height: 20px; flex: 0 0 auto; fill: none; stroke: #1de9f2; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 7px rgba(29,233,242,.24)); }
 .header-trust-badge > span { display: grid; gap: 4px; }
-.header-trust-badge small { font: 5.5px/1 ui-monospace, monospace; letter-spacing: .14em; }
+.header-trust-badge small { font: 11px/1.25 ui-monospace, monospace; letter-spacing: .14em; }
 .header-trust-badge strong { color: var(--paper); font: 700 7px/1 ui-monospace, monospace; letter-spacing: .16em; }
 .nova-nav { display: flex; gap: 34px; color: var(--paper-dim); }
 .nova-nav a { position: relative; padding: 10px 0; transition: color 180ms ease; }

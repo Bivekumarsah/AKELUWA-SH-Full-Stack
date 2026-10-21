@@ -5,18 +5,12 @@ www.akeluwasoftwarehub.com.np {
     @hub_no_slash path /publicinfohub
     redir @hub_no_slash /publicinfohub/ 308
 
-    # Static site comes from the separately cloned PublicInfoHub repository.
-    handle_path /publicinfohub/* {
-        root * /srv/publicinfohub
-        file_server
-    }
-
     # Private Go backend: no separate public API port.
     handle /api/v1/* {
         reverse_proxy api:8080
     }
 
-    # Includes the company and the integrated /akeluwatoolbox/ pages.
+    # Single versioned frontend serves company, ToolBox and PublicInfoHub.
     handle {
         reverse_proxy frontend:3000
     }

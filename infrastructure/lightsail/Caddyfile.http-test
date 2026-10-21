@@ -7,10 +7,6 @@
 
     @hub_no_slash path /publicinfohub
     redir @hub_no_slash /publicinfohub/ 308
-    handle_path /publicinfohub/* {
-        root * /srv/publicinfohub
-        file_server
-    }
     handle {
         reverse_proxy frontend:3000
     }
