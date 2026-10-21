@@ -18,8 +18,6 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-package httpapi
-
 type contextKey string
 
 const (
