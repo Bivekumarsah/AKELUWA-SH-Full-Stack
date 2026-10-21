@@ -260,12 +260,13 @@ test("links client invoices to authenticated account access", async () => {
   const accountSource = await readFile(new URL("../app/account/page.tsx", import.meta.url), "utf8");
   const accountingSource = await readFile(new URL("../app/components/accounting-management.tsx", import.meta.url), "utf8");
   const apiSource = await readFile(new URL("../backend/internal/httpapi/api.go", import.meta.url), "utf8");
+  const accountHandlerSource = await readFile(new URL("../backend/internal/httpapi/account_handlers.go", import.meta.url), "utf8");
   const storeSource = await readFile(new URL("../backend/internal/store/store.go", import.meta.url), "utf8");
 
   assert.match(accountSource, /\/account\/invoices/);
   assert.match(accountingSource, /user_id: invoiceDraft\.user_id/);
   assert.match(apiSource, /GET \/api\/v1\/account\/invoices/);
-  assert.match(apiSource, /ListInvoicesForUser/);
+  assert.match(accountHandlerSource, /ListInvoicesForUser/);
   assert.match(storeSource, /WHERE i\.user_id=\$1/);
 });
 
