@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+
+# Sitemap lists only the canonical, indexable PublicInfoHub homepage.
+# The corporate domain's root robots.txt is owned by its separate website.
+Sitemap: https://www.akeluwasoftwarehub.com.np/publicinfohub/sitemap.xml

@@ -1,0 +1,30 @@
+# Switch to this only after HTTPS DNS records point to this instance.
+www.akeluwasoftwarehub.com.np {
+    encode zstd gzip
+
+    @hub_no_slash path /publicinfohub
+    redir @hub_no_slash /publicinfohub/ 308
+
+    # Private Go backend: no separate public API port.
+    handle /api/v1/* {
+        reverse_proxy api:8080
+    }
+
+    # Single versioned frontend serves company, ToolBox and PublicInfoHub.
+    handle {
+        reverse_proxy frontend:3000
+    }
+
+    header {
+        Strict-Transport-Security "max-age=31536000"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "SAMEORIGIN"
+        Permissions-Policy "camera=(), geolocation=(), microphone=()"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        -Server
+    }
+}
+
+akeluwasoftwarehub.com.np {
+    redir https://www.akeluwasoftwarehub.com.np{uri} 308
+}

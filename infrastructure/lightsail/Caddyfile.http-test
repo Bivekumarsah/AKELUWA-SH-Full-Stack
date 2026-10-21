@@ -1,0 +1,13 @@
+# Temporary HTTP-only staging endpoint by instance IP. Never enter passwords,
+# test private accounts, or submit personal information here.
+:80 {
+    encode zstd gzip
+    @private path /api/* /account* /admin* /login* /register* /forgot-password* /reset-password* /verify-email*
+    respond @private "Disabled during IP-based staging" 403
+
+    @hub_no_slash path /publicinfohub
+    redir @hub_no_slash /publicinfohub/ 308
+    handle {
+        reverse_proxy frontend:3000
+    }
+}

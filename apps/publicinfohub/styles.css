@@ -1,0 +1,400 @@
+:root{font-family:Inter,system-ui,sans-serif;color:#152a43;background:#f6f8fc}*{box-sizing:border-box}body{margin:0}a{color:inherit;text-decoration:none}button,input,select{font:inherit}button{cursor:pointer}.wrap{max-width:1180px;margin:auto;padding:0 24px}.top{background:#fff;border-bottom:1px solid #e5eaf2;position:sticky;top:0;z-index:5}.nav{display:flex;justify-content:space-between;align-items:center;height:76px;gap:16px}.brand{font-weight:850;font-size:20px;letter-spacing:-.7px}.brand span{color:#117b93}.links{display:flex;gap:24px;font-size:14px;color:#44576d}.links a:hover{color:#087d9a}.pill{background:#102c48;color:white;padding:12px 18px;border-radius:10px;font-weight:700;border:0}.hero{background:linear-gradient(115deg,#0b2946,#0d4a65);color:white;padding:78px 0 90px}.eyebrow{color:#8be0e7;text-transform:uppercase;letter-spacing:2px;font-size:12px;font-weight:800}.hero h1{font-size:clamp(36px,5vw,62px);line-height:1.08;letter-spacing:-2.3px;max-width:780px;margin:18px 0}.hero p{color:#c8dce6;max-width:630px;line-height:1.8}.search{display:flex;background:#fff;padding:8px;border-radius:14px;max-width:710px;margin-top:32px;box-shadow:0 15px 35px #08213960}.search input{border:0;outline:0;flex:1;min-width:0;padding:14px;color:#152a43}.search button{background:#10a7b7;color:white;border:0;border-radius:9px;padding:0 24px;font-weight:800}.stats{display:flex;gap:36px;margin-top:32px;color:#c5d8e3}.stats strong{color:white;display:block;font-size:22px}.section{padding:60px 0}.heading{display:flex;justify-content:space-between;align-items:end;gap:16px;margin-bottom:22px}.heading h2{font-size:29px;margin:0 0 7px;letter-spacing:-.7px}.muted{color:#64758b;line-height:1.7;font-size:14px;margin:0}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}.card{background:white;border:1px solid #e4eaf1;border-radius:15px;padding:22px;transition:.2s;text-align:left}.card:hover{border-color:#17a1b4;transform:translateY(-2px);box-shadow:0 10px 25px #17355014}.symbol{width:46px;height:46px;background:#e8f6f7;color:#0f8699;border-radius:12px;display:grid;place-items:center;font-size:24px;margin-bottom:20px}.card h3{margin:0 0 8px;font-size:16px}.province{background:white;border:1px solid #e4eaf1;border-radius:11px;padding:15px 18px;display:flex;justify-content:space-between;align-items:center;color:#213a50;font-weight:700}.province:hover,.province.active{border-color:#12a8b5;color:#088898;background:#edfbfc}.provinces{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.services{display:grid;grid-template-columns:repeat(3,1fr);gap:17px}.tag{display:inline-block;border-radius:7px;background:#eaf7f8;color:#008095;font-size:11px;padding:6px 9px;font-weight:800;margin-bottom:14px}.service p{font-size:13px;color:#69798b;line-height:1.65;min-height:44px}.service footer{border-top:1px solid #e8edf3;margin-top:18px;padding-top:16px;color:#087f93;font-size:13px;font-weight:800}.filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:22px}.filter{border:1px solid #dbe4ee;background:white;color:#38516a;border-radius:999px;padding:9px 14px}.filter.active{background:#0b405a;color:white;border-color:#0b405a}.notice{background:#eaf6fa;border:1px solid #cde7ed;border-radius:14px;padding:22px;color:#244a5d;margin:20px 0 60px;line-height:1.8;font-size:14px}.bottom{background:#09283f;color:#bacbd8;padding:40px 0}.bottom strong{color:white}.empty{background:white;border:1px dashed #cad6e3;padding:34px;border-radius:14px;text-align:center;grid-column:1/-1}.modal{position:fixed;inset:0;background:#051e33b0;display:none;align-items:center;justify-content:center;z-index:10;padding:20px}.modal.show{display:flex}.dialog{background:white;max-width:610px;width:100%;border-radius:18px;padding:30px;max-height:90vh;overflow:auto}.dialog .close{float:right;background:#e9eff4;border:0;border-radius:8px;padding:8px 12px}.dialog li{margin-bottom:9px;color:#566a7a}.dialog a{color:#047c9c;text-decoration:underline}.soft{background:#edf4f8}.hidden{display:none!important}@media(max-width:850px){.grid,.provinces{grid-template-columns:repeat(2,1fr)}.services{grid-template-columns:repeat(2,1fr)}.links{display:none}}@media(max-width:580px){.grid,.provinces,.services{grid-template-columns:1fr}.hero{padding:52px 0}.stats{flex-wrap:wrap;gap:24px}.search button{padding:0 12px}.section{padding:40px 0}.brand{font-size:17px}.nav{height:66px}.pill{font-size:12px;padding:10px}}
+/* Phase 2: browsable geographic index */
+.districts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:20px 0}
+.district{border:1px solid #d7e5ee;border-radius:10px;background:#fff;padding:12px 14px;text-align:left;color:#24455d;min-height:49px}
+.district:hover,.district.active{background:#def5f5;border-color:#16a4b5;color:#075b6c}
+.district small{display:block;color:#64758b;margin-top:4px}
+#districtMessage{margin:12px 0 4px;min-height:1.5em}
+#clearFilters{margin:-8px 0 22px}
+#clearFilters:hover{border-color:#0b405a}
+a:focus-visible,button:focus-visible,input:focus-visible{outline:3px solid #ffb548;outline-offset:3px}
+@media(max-width:850px){.districts{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:580px){.districts{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(prefers-reduced-motion:reduce){.card{transition:none}.card:hover{transform:none}}
+
+/* Source-backed government office directory */
+.office-toolbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:0 0 16px}
+.office-toolbar label{font-weight:700;font-size:14px}
+.office-toolbar input,.office-toolbar select{background:#fff;border:1px solid #cad6e3;border-radius:10px;padding:12px 14px;color:#213a50}
+.office-toolbar input{flex:1;min-width:220px}
+.office-list{margin-top:16px}
+.office-card{display:flex;flex-direction:column;gap:5px}
+.office-card:hover{transform:none}
+.office-card .tag{margin:0}
+.office-card p{min-height:auto;margin:7px 0}
+.office-card .office-ne{color:#27546f;font-size:14px}
+.office-card .office-source{font-size:12px;margin-top:7px}
+.office-card .office-source a{text-decoration:underline}
+.office-meta{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:13px}
+.verified-label{font-size:11px;font-weight:700;color:#0b765f;background:#dff5eb;border-radius:7px;padding:5px 7px}
+.office-link{display:inline-block;background:#0b405a;color:white;padding:12px 14px;border-radius:9px;margin-top:auto;font-weight:700;text-align:center}
+.office-link:hover{background:#09637b;color:white}
+.office-caution{margin-top:17px}
+
+/* Brand assets for AKELUWA PublicInfoHub; confined to this independent site. */
+.brand{display:inline-flex;align-items:center;gap:9px;white-space:nowrap;flex-shrink:0}
+.brand-logo{display:block;width:92px;height:auto;max-height:43px;object-fit:contain}
+.brand-name{display:inline-block}
+.brand-name>span{color:#117b93}
+@media(max-width:1100px){.brand-logo{width:70px}.nav{gap:10px}.links{gap:14px}}
+@media(max-width:700px){.brand-logo{width:62px}.brand{gap:5px}.brand-name{font-size:15px}}
+@media(max-width:400px){.brand-logo{width:48px}.brand-name{font-size:13px}.pill{padding:9px 8px}}
+
+/* Phase 7: navigation, readable controls and small-screen layouts */
+html{scroll-behavior:smooth;scroll-padding-top:90px}
+.skip-link{position:fixed;left:12px;top:-100px;z-index:30;background:#102c48;color:#fff;padding:12px 16px;border-radius:9px}
+.skip-link:focus{top:10px}
+.menu-toggle{display:none;align-items:center;gap:7px;background:#f0f6fa;border:1px solid #cbdce8;border-radius:10px;padding:10px 13px;font-weight:700;color:#173b54}
+.links a{padding:8px 2px;border-radius:5px}
+.links a:focus-visible,.search input:focus-visible{outline:3px solid #ffb548;outline-offset:3px}
+.section:target,.hero:target{scroll-margin-top:90px}
+.card.service{display:flex;flex-direction:column;min-height:245px}
+.card.service footer{margin-top:auto}
+.office-toolbar{background:#fff;border:1px solid #d9e5ed;padding:16px;border-radius:15px}
+.office-toolbar label{width:100%}
+.office-toolbar select,.office-toolbar input{min-height:46px;max-width:100%}
+.office-toolbar select{min-width:160px;flex:1}
+.office-toolbar input{flex:2 1 260px}
+#officeCount{padding:8px 0}
+.office-card{min-width:0;overflow-wrap:anywhere}
+.office-card h3{font-size:18px;line-height:1.35}
+.office-card .office-link{display:block}
+.filter,.district,.province,.search button{min-height:44px}
+@media(max-width:1020px){
+  .links{gap:10px;font-size:13px}
+  .brand-logo{width:62px}
+  .brand-name{font-size:16px}
+}
+@media(max-width:850px){
+  .nav{position:relative;justify-content:space-between}
+  .menu-toggle{display:inline-flex;margin-left:auto}
+  .links{display:none;position:absolute;top:calc(100% - 2px);left:24px;right:24px;background:#fff;border:1px solid #d8e5ed;border-radius:14px;box-shadow:0 20px 36px #0b294626;padding:12px;flex-direction:column;align-items:stretch;gap:2px;z-index:8}
+  .links.open{display:flex}
+  .links a{display:block;padding:13px 12px;font-size:15px}
+  .links a:hover{background:#f0f8fb}
+  .nav>.pill{display:none}
+  .office-toolbar{gap:10px}
+}
+@media(max-width:580px){
+  .hero{padding:44px 0 58px}
+  .hero h1{letter-spacing:-1.4px}
+  .search{display:flex;gap:5px;padding:6px}
+  .search input{padding:12px 8px;font-size:14px}
+  .search button{padding:10px 12px;font-size:14px}
+  .office-toolbar input,.office-toolbar select,.office-toolbar button{width:100%;flex:1 0 100%}
+  .services{grid-template-columns:1fr}
+  .card.service{min-height:0}
+  .stats{gap:18px;font-size:13px}
+  .stats strong{font-size:20px}
+  .brand-name{font-size:14px}
+  .brand-logo{width:52px}
+}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+
+/* Phase 8: Discover checked local-government websites from the district index. */
+.district-office-action{display:inline-flex;align-items:center;justify-content:center;margin:14px 0 5px;min-height:44px}
+.district-office-action[hidden]{display:none!important}
+.district-office-action:hover{background:#09637b}
+@media(max-width:580px){.district-office-action{width:100%;text-align:center}}
+
+/* Phase 9: compact language switch available on desktop and mobile. */
+.language-switch{background:#eef7fa;color:#0b405a;border:1px solid #b5dce5;border-radius:10px;padding:10px 12px;font-size:13px;font-weight:800;min-height:44px;white-space:nowrap}
+.language-switch:hover{background:#d7f0f5}
+@media(min-width:851px){.language-switch{order:3}.nav>.pill{order:2}.links{order:1}}
+@media(max-width:850px){.language-switch{margin-left:0;order:1}.menu-toggle{order:2;margin-left:0}.brand{margin-right:auto}.links{order:4}}
+@media(max-width:430px){.language-switch{padding:9px 8px;font-size:12px}.menu-toggle{padding:9px 8px}.brand-logo{width:42px}.brand-name{font-size:12px}.nav{gap:6px}}
+
+/* Phase 12: source-backed Lok Sewa navigation with responsive commission cards. */
+.loksewa-guide{background:#eef7fa;border:1px solid #cee4ea;padding:20px 24px;border-radius:15px;margin:18px 0 22px}
+.loksewa-guide h3{margin:0 0 8px}.loksewa-guide p{margin:0;line-height:1.65}
+.loksewa-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin:20px 0 12px}
+.loksewa-toolbar label{font-weight:700}.loksewa-toolbar select{min-height:44px;min-width:190px;max-width:100%;padding:9px 12px;border:1px solid #b7cfd6;border-radius:10px;background:#fff}
+.loksewa-grid{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.loksewa-card{display:flex;flex-direction:column;gap:12px}
+.loksewa-card h3,.loksewa-card p{margin:0}
+.loksewa-actions{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:auto}
+.loksewa-actions a{display:inline-flex;align-items:center;min-height:44px;font-weight:700}
+.loksewa-apply{border-radius:9px;background:#075e79;color:#fff!important;padding:10px 12px;text-decoration:none}
+.loksewa-apply:hover{background:#06475a}.loksewa-uncertain{font-size:.9rem;color:#535d65}
+@media(max-width:580px){.loksewa-toolbar{align-items:stretch}.loksewa-toolbar label,.loksewa-toolbar select{width:100%;min-width:0}.loksewa-guide{padding:16px}.loksewa-actions{flex-direction:column;align-items:stretch}}
+
+/* Phase 13: original premium civic-service visual system, preserving the branded logo. */
+:root{font-family:Inter,"Noto Sans Devanagari",ui-sans-serif,system-ui,sans-serif;color:#142d45;background:#f8fbfd;--ink:#102c46;--navy:#09263f;--teal:#057b92;--mist:#eff7fa;--line:#dce8f0}
+html{scroll-behavior:smooth;scroll-padding-top:94px}
+body{background:#f8fbfd}
+:focus-visible{outline:3px solid #2aa9c5;outline-offset:3px}
+.wrap{max-width:1250px}
+.top{border-bottom:1px solid #d9e8ef;box-shadow:0 3px 18px rgba(9,38,63,.045)}
+.nav{height:84px;gap:14px}
+.brand{display:flex;align-items:center;gap:9px;min-width:0}
+.brand-name{display:flex;flex-direction:column;font-size:17px;line-height:1.12;letter-spacing:-.35px;white-space:nowrap}
+.brand-name>span{font-size:15px;letter-spacing:-.2px}
+.brand-tagline{font-size:9px;font-weight:550;letter-spacing:.05px;margin-top:5px;color:#647b8b}
+.links{gap:18px;color:#29445b;font-weight:650}
+.links a{padding:10px 0;transition:color .18s}
+.links a:hover{color:#066a80}
+.nav>.pill{background:#0a3856;border:1px solid #0a3856;box-shadow:0 4px 12px #08213918}
+.language-switch{background:#eaf5f9;border:1px solid #c5e1e8}
+.hero{position:relative;isolation:isolate;overflow:hidden;background:radial-gradient(ellipse at 83% 18%,rgba(29,144,163,.42),transparent 35%),linear-gradient(114deg,#071f38 8%,#0a3150 52%,#0b576b 100%);padding:84px 0 0;color:#fff}
+.hero::before{content:"";position:absolute;z-index:-1;right:-4%;bottom:24%;width:min(55vw,620px);height:78%;opacity:.16;background:linear-gradient(140deg,transparent 34%,#b5e4eb 34% 36%,transparent 36%),linear-gradient(25deg,transparent 42%,#b5e4eb 42% 45%,transparent 45%);clip-path:polygon(0 100%,18% 69%,35% 82%,57% 22%,73% 59%,84% 37%,100% 84%,100% 100%)}
+.hero::after{content:"";position:absolute;z-index:-1;inset:0;background-image:radial-gradient(#c3f0f4 0.65px,transparent .65px);background-size:26px 26px;opacity:.05;pointer-events:none}
+.hero>.wrap{position:relative}
+.hero-badge{display:inline-flex;max-width:100%;border:1px solid #4e8ca0;background:#0c4962a8;padding:8px 13px;border-radius:99px;color:#ccecf3;font-size:12px;font-weight:700;margin-bottom:25px}
+.eyebrow{color:#7fe0e4;font-size:11px;letter-spacing:2.4px}
+.hero h1{max-width:850px;line-height:1.07;letter-spacing:-2.6px;margin:15px 0 19px;font-size:clamp(39px,5vw,70px)}
+.hero h1 span{color:#d4eef2}
+.hero p{font-size:clamp(15px,1.45vw,18px);line-height:1.8;max-width:710px;color:#d2e6ee}
+.search{max-width:810px;margin-top:34px;border-radius:15px;padding:7px;box-shadow:0 20px 60px #05172788;align-items:center}
+.search-mark{color:#186f82;font-size:30px;line-height:1;margin-left:13px}
+.search input{border-radius:10px;min-height:50px}
+.search button{background:#0d6982;border-radius:10px;min-height:50px}
+.search button:hover{background:#075069}
+.popular-searches{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:16px;font-size:12px;color:#d5e6ef}
+.popular-searches a{border:1px solid #7db7c055;border-radius:999px;padding:6px 10px;background:#ffffff0e;transition:background .2s}
+.popular-searches a:hover{background:#ffffff27}
+.stats{margin-top:74px;background:#fff;color:#415b6c;display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-radius:18px 18px 0 0;box-shadow:0 -8px 35px #031a2f21;overflow:hidden}
+.stats>div{position:relative;padding:22px 14px 24px 74px;border-right:1px solid #e4edf2;min-height:94px;font-size:12px}
+.stats>div:last-child{border-right:0}
+.stats strong{color:#073552;font-size:25px;line-height:1.15;margin-bottom:4px}
+.stat-icon{position:absolute;left:25px;top:28px;display:grid;place-items:center;background:#e7f4fa;color:#08789b;width:37px;height:37px;border-radius:10px;font-size:23px}
+.section{padding:76px 0}
+.section-kicker{display:block;font-size:11px;letter-spacing:2px;font-weight:850;color:#0e7b94;margin-bottom:11px}
+.heading h2{font-size:clamp(24px,2.9vw,36px);letter-spacing:-.85px;color:#0e2c47}
+.heading .muted{font-size:14px;max-width:780px}
+.grid.category-grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:14px}
+.category-grid .card{position:relative;min-height:204px;padding:22px 18px;overflow:hidden;border-radius:16px;box-shadow:0 5px 25px rgba(20,61,86,.04)}
+.category-grid .card::after{content:"↗";position:absolute;right:18px;bottom:13px;color:#136580;font-size:18px}
+.category-grid .card:nth-child(1){background:#f1f5ff}
+.category-grid .card:nth-child(2){background:#eef8fe}
+.category-grid .card:nth-child(3){background:#eefaf4}
+.category-grid .card:nth-child(4){background:#fff8ed}
+.category-grid .card:nth-child(5){background:#fff3f4}
+.category-grid .card:hover{box-shadow:0 16px 36px #163e5d19}
+.category-grid .card p{padding-right:8px;font-size:13px}
+.symbol{width:48px;height:48px;margin-bottom:24px;border-radius:14px;box-shadow:inset 0 0 0 1px #ffffffaa}
+.icon-office{background:#e1e7ff}.icon-identity{background:#dff1fc}.icon-business{background:#d9f5e4}.icon-transport{background:#ffebc9}.icon-loksewa{background:#f9dfe5}
+.soft{background:#f0f7fa}
+.province-panel{background:#fff;border:1px solid #dbeaf1;border-radius:19px;padding:24px;box-shadow:0 10px 32px #10374e09}
+.province-panel-intro{display:flex;justify-content:space-between;gap:15px;margin-bottom:16px;font-size:13px;color:#617b8c}
+.province-panel-intro strong{color:#0b4661}
+.provinces{grid-template-columns:repeat(4,minmax(0,1fr))}
+.province{min-height:73px;border-radius:12px;transition:box-shadow .18s,transform .18s}
+.province:hover{transform:translateY(-2px);box-shadow:0 8px 20px #0e5b7c16}
+#services .filters,#offices .office-toolbar{background:#fff;border:1px solid #e2edf2;border-radius:14px;padding:15px}
+.services .card{box-shadow:0 5px 24px #0c345008;border-radius:15px}
+.loksewa-guide{border-radius:15px;background:#eaf6fa}
+.loksewa-grid .card{background:#fff}
+.notice{background:#fff8e9;border-color:#f1dba8;color:#584b34}
+.policy-section{padding-top:0}
+.policy-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.policy-grid article{background:#fff;border:1px solid #e1edf1;border-radius:14px;padding:22px}
+.policy-grid h2{font-size:17px;color:#103b56;margin:0 0 9px}
+.policy-grid p{margin:0;color:#536a79;font-size:13px;line-height:1.75}
+.bottom{padding:56px 0 0;background:linear-gradient(135deg,#071f38,#0a3552);color:#c5d8e5}
+.footer-layout{display:grid;grid-template-columns:1.45fr .78fr .87fr 1.3fr;gap:38px;padding-bottom:44px}
+.footer-logo{display:flex;align-items:center;gap:12px;color:#fff}
+.footer-logo img{object-fit:contain;max-width:82px}
+.footer-logo span{display:flex;flex-direction:column;gap:1px}
+.footer-logo strong{font-size:19px;line-height:1}
+.footer-logo b{color:#81d3df;font-size:16px}
+.footer-brand p,.footer-contact p{line-height:1.75;font-size:13px;color:#bfceda;margin:19px 0}
+.footer-owner{display:block;font-size:12px;line-height:1.8}
+.footer-owner a{color:#a1e6ef;text-decoration:underline;text-underline-offset:3px}
+.footer-links{display:flex;flex-direction:column;align-items:flex-start;gap:13px}
+.bottom h2{font-size:14px;color:white;margin:0 0 9px}
+.footer-links a{font-size:13px;color:#cadbe5}
+.footer-links a:hover,.footer-legal a:hover{color:#8ae5ed;text-decoration:underline}
+.footer-contact-link{display:inline-flex;align-items:center;border:1px solid #6da9bb;padding:12px 14px;border-radius:9px;color:#e5f9fc;font-size:13px;font-weight:750}
+.footer-disclaimer{border-top:1px solid #41627a;padding-top:16px}
+.footer-legal{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;border-top:1px solid #35536c;padding-top:20px;padding-bottom:24px;font-size:12px}
+.footer-legal a{color:#e0f7fb}
+@media(max-width:1100px){.grid.category-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.footer-layout{grid-template-columns:repeat(2,minmax(0,1fr))}.brand-tagline{display:none}.links{gap:12px}.nav>.pill{display:none}}
+@media(max-width:850px){.nav{height:72px}.grid.category-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.stats{grid-template-columns:repeat(2,1fr)}.stats>div:nth-child(2){border-right:0}.stats>div:nth-child(-n+2){border-bottom:1px solid #e4edf2}.provinces{grid-template-columns:repeat(2,minmax(0,1fr))}.hero{padding-top:55px}.hero h1{letter-spacing:-1.7px}.footer-layout{gap:32px}}
+@media(max-width:580px){.wrap{padding:0 17px}.hero{padding-top:43px}.hero-badge{font-size:10px}.hero h1{font-size:clamp(34px,8vw,46px);letter-spacing:-1.2px}.hero p{font-size:15px}.hero .search{margin-top:24px}.search-mark{display:none}.popular-searches{gap:6px}.stats{margin-top:45px}.stats>div{padding:19px 10px 19px 55px;min-height:84px;font-size:11px}.stat-icon{left:12px;top:23px;width:30px;height:30px;font-size:18px}.stats strong{font-size:21px}.section{padding:54px 0}.grid.category-grid{gap:10px}.category-grid .card{padding:16px 13px;min-height:198px}.category-grid .card h3{font-size:14px}.category-grid .card p{font-size:12px}.category-grid .card::after{right:12px}.province-panel{padding:15px}.province-panel-intro{flex-direction:column;gap:5px}.policy-grid,.footer-layout{grid-template-columns:1fr}.policy-grid{gap:10px}.footer-layout{gap:27px}.footer-legal{align-items:flex-start;flex-direction:column}.brand-name{font-size:14px}.brand-name>span{font-size:12px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+
+/* Heritage hero uses the current self-hosted responsive WebP images. */
+.hero{background-image:linear-gradient(93deg,rgba(5,27,50,.98) 0%,rgba(7,39,64,.94) 37%,rgba(7,48,72,.72) 58%,rgba(7,41,63,.16) 100%);background-color:#0b2b47;background-size:cover;background-position:center center}
+.hero::before,.hero::after{display:none}
+.hero>.wrap{position:relative}
+.heritage-caption{position:absolute;right:25px;top:38px;padding:7px 11px;border-radius:99px;background:rgba(5,32,48,.56);border:1px solid rgba(223,243,248,.48);color:#fff;font-size:10px;letter-spacing:1.8px;font-weight:800}
+.hero h1{max-width:790px}
+.hero p{max-width:660px}
+.category-grid .card:nth-child(6){background:#e9f8f4}
+.grid.category-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+.category-grid .card{min-height:190px;padding:21px 21px}
+.icon-local{background:#d9f1e8}
+.province{display:grid;grid-template-columns:44px minmax(0,1fr);grid-template-rows:auto auto;column-gap:13px;row-gap:4px;align-items:center;justify-content:start;text-align:left}
+.province .province-icon{grid-row:1/3;grid-column:1;display:grid;place-items:center;width:44px;height:44px;border-radius:12px;background:var(--province-bg,#e7f4fa);color:var(--province-accent,#087d95);font-size:19px;font-weight:800}
+.province .province-title{grid-column:2;grid-row:1;font-weight:800}
+.province .province-count{grid-column:2;grid-row:2;font-size:12px;color:#5f7585;font-weight:600}
+.province:nth-child(1){--province-bg:#e5f2ff;--province-accent:#246ab8}
+.province:nth-child(2){--province-bg:#fff1ed;--province-accent:#b7505d}
+.province:nth-child(3){--province-bg:#e5f6e9;--province-accent:#298a56}
+.province:nth-child(4){--province-bg:#fff4df;--province-accent:#bf841d}
+.province:nth-child(5){--province-bg:#f2eafe;--province-accent:#7a54ae}
+.province:nth-child(6){--province-bg:#e7f4ff;--province-accent:#4a80ac}
+.province:nth-child(7){--province-bg:#e3f7f2;--province-accent:#238777}
+.province.active .province-icon{color:white;background:#0b708a}
+@media(max-width:850px){.heritage-caption{display:none}.hero{background-position:63% center}.grid.category-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:580px){.hero{background-image:linear-gradient(95deg,rgba(6,31,53,.94) 0%,rgba(7,37,60,.88) 74%,rgba(7,36,53,.67));background-position:62% center}.category-grid .card{min-height:193px;padding:17px 14px}.province{column-gap:8px;grid-template-columns:35px minmax(0,1fr)}.province .province-icon{width:35px;height:35px;font-size:16px}.province .province-count{font-size:11px}}
+
+/* Phase 13 photo-reference fidelity. Optimized user image can be placed at assets/nepal-temple-banner.webp. */
+.hero{padding:48px 0 0;background-image:linear-gradient(90deg,rgba(4,32,61,.92) 0%,rgba(6,46,79,.78) 34%,rgba(5,48,75,.35) 63%,rgba(4,33,53,.04) 100%),url("assets/nepal-temple-banner.webp");background-size:cover,cover,cover;background-position:center center}
+.hero>.wrap{max-width:1250px}
+.hero-badge{font-size:11px;margin-bottom:16px;padding:5px 11px;background:rgba(7,43,69,.68)}
+.hero .eyebrow{font-size:11px;letter-spacing:2.1px;font-weight:800;color:#d1edf4}
+.hero h1{max-width:830px;font-size:clamp(33px,3.9vw,55px);letter-spacing:-1.6px;line-height:1.1;margin:13px 0}
+.hero h1 span{color:#fff}
+.hero p{max-width:640px;font-size:15px;line-height:1.65;margin-bottom:0}
+.hero .search{max-width:720px;margin-top:20px}
+.hero .popular-searches{margin-top:10px;max-width:830px}
+.hero .stats{margin-top:39px}
+.heritage-caption{display:none}
+.stats{border-radius:0;margin-inline:-24px;box-shadow:0 8px 18px rgba(8,34,49,.08)}
+.stats>div{min-height:84px;padding-top:18px;padding-bottom:15px}
+.stats>div strong{font-size:26px}
+.stats small{display:block;color:#70879b;font-size:11px;margin-top:2px}
+.section{padding:40px 0}
+.section-kicker{font-size:10px;letter-spacing:1.4px;margin-bottom:5px}
+.heading{margin-bottom:14px}
+.heading h2{font-size:clamp(22px,2.3vw,29px);margin-bottom:4px}
+.grid.category-grid{grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}
+.category-grid .card{min-width:0;min-height:158px;padding:17px 14px;border:0;box-shadow:0 4px 16px #143e6010;border-radius:12px}
+.category-grid .card h3{font-size:14px;color:#102c55;margin-bottom:5px}
+.category-grid .card p{font-size:12px;line-height:1.45;color:#566878}
+.category-grid .card::after{bottom:10px;right:11px}
+.category-grid .symbol{height:44px;width:44px;border-radius:50%;font-size:23px;margin-bottom:15px}
+.category-grid .card:nth-child(1){background:#eaf5fe}
+.category-grid .card:nth-child(2){background:#e9fbf5}
+.category-grid .card:nth-child(3){background:#fff8eb}
+.category-grid .card:nth-child(4){background:#f5f0ff}
+.category-grid .card:nth-child(5){background:#fff0f1}
+.category-grid .card:nth-child(6){background:#e8f9f5}
+.discovery-layout{display:grid;grid-template-columns:minmax(0,2.4fr) minmax(240px,1fr);gap:13px;align-items:stretch}
+.province-panel,.district-finder{background:#eef7fd;border:1px solid #e3eef6;border-radius:12px;padding:16px}
+.province-panel-intro{align-items:baseline;margin-bottom:12px}
+.province-panel-intro strong{font-size:16px;color:#102f58}
+.province-panel-intro span{font-size:12px}
+.provinces{grid-template-columns:repeat(7,minmax(0,1fr));gap:7px}
+.province{display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;min-height:130px;border-radius:9px;padding:10px 4px;gap:6px;background:#fff}
+.province .province-icon{width:42px;height:42px;font-size:20px;border-radius:10px}
+.province .province-title{font-size:12px;line-height:1.2}
+.province .province-count{font-size:10px;line-height:1.35}
+.district-finder h3{font-size:17px;margin:0 0 3px;color:#123253}
+.district-finder p{font-size:12px;color:#627889;margin:0 0 13px;line-height:1.5}
+.district-finder select{background:#fff;border:1px solid #d2e4f1;width:100%;min-height:43px;border-radius:8px;padding:10px;color:#1b3b55}
+.district-map-art{margin-top:12px;border-radius:12px;min-height:90px;background:radial-gradient(ellipse at 47% 45%,#7fb2d3 0 21%,transparent 22%),linear-gradient(135deg,#e6f4fc,#d9edfa);display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:9px;color:#1c6384}
+.district-map-art span{font-weight:850;letter-spacing:3px;font-size:18px}
+.district-map-art strong{font-size:28px}
+.district-map-art small{font-size:11px;max-width:90px}
+.visually-hidden{position:absolute!important;width:1px;height:1px;clip:rect(0,0,0,0);white-space:nowrap;overflow:hidden}
+#loksewa .loksewa-guide:first-of-type{padding:13px 16px}
+.loksewa-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+.loksewa-card{min-height:235px;padding:16px}
+.loksewa-card h3{font-size:15px;line-height:1.4}
+.loksewa-actions{gap:7px}
+.loksewa-actions a{font-size:12px;flex:1;justify-content:center;border:1px solid #dbe7ee;border-radius:9px;padding:9px;text-align:center}
+.loksewa-actions a:first-child{background:#0b3961;color:#fff}
+.office-list{grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.office-list .card{padding:15px}
+.office-list .card h3{font-size:14px}
+.office-list .card p{font-size:12px}
+.office-list .office-link{font-size:12px}
+#about .notice{margin:10px 0 38px}
+@media(max-width:1100px){.grid.category-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.provinces{grid-template-columns:repeat(4,minmax(0,1fr))}.office-list{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:850px){.discovery-layout{grid-template-columns:1fr}.provinces{grid-template-columns:repeat(4,minmax(0,1fr))}.stats{margin-inline:-24px}.hero{background-position:center,70% center,center}}
+@media(max-width:580px){.hero{background-image:linear-gradient(95deg,rgba(5,28,51,.94),rgba(7,39,65,.74)),url("assets/nepal-temple-banner-mobile.webp");background-position:center,66% center,center;padding-top:34px}.hero-badge{font-size:10px}.hero h1{font-size:clamp(29px,7.9vw,42px)}.hero p{font-size:14px}.hero .search{margin-top:17px}.stats{margin-inline:-17px;grid-template-columns:repeat(2,1fr)}.stats>div{padding:14px 8px 14px 47px;min-height:81px}.stats .stat-icon{left:9px;top:18px}.stats strong{font-size:22px}.stats small{font-size:9px}.grid.category-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.category-grid .card{min-height:168px;padding:14px 12px}.provinces{grid-template-columns:repeat(2,minmax(0,1fr))}.province{min-height:100px}.loksewa-grid,.office-list{grid-template-columns:1fr}.province-panel-intro{flex-direction:column}.section{padding:35px 0}}
+
+
+
+
+/* Phase 13 mobile presentation repair: prevent header/hero overflow. */
+html,body{max-width:100%;overflow-x:clip}
+.hero{background-image:linear-gradient(95deg,rgba(5,28,51,.88),rgba(7,39,65,.7)),url("assets/nepal-temple-banner.webp");background-size:cover;background-position:center}
+.brand{min-width:0}
+.brand-name{min-width:0;white-space:normal;line-height:1.2}
+.brand-tagline{display:block;white-space:normal}
+.popular-searches{display:flex;align-items:center;gap:8px 12px;flex-wrap:wrap}
+.popular-searches a{display:inline-flex;white-space:nowrap}
+@media(max-width:850px){
+  .nav{gap:8px}
+  .nav>.pill{display:none}
+  .brand{flex:1 1 auto;overflow:hidden}
+  .brand-logo{flex:0 0 auto}
+  .language-switch,.menu-toggle{flex:0 0 auto}
+  .hero{background-image:linear-gradient(95deg,rgba(5,28,51,.93),rgba(7,39,65,.79)),url("assets/nepal-temple-banner-mobile.webp")}
+}
+@media(max-width:580px){
+  .wrap{padding-left:18px;padding-right:18px}
+  .nav{height:auto;min-height:68px;gap:6px}
+  .brand{gap:5px}
+  .brand-logo{width:39px;max-height:37px}
+  .brand-name{font-size:12px;letter-spacing:-.35px}
+  .brand-name>span{font-size:12px}
+  .brand-tagline{display:none}
+  .menu-toggle{font-size:13px;padding:9px 8px}
+  .language-switch{font-size:12px;padding:9px 7px}
+  .hero{padding:36px 0 48px;background-position:center}
+  .hero .heritage-caption{display:none}
+  .hero-badge{display:inline-flex;max-width:100%;white-space:normal}
+  .hero h1{font-size:clamp(30px,8vw,39px);letter-spacing:-1px;overflow-wrap:break-word}
+  .hero h1 br{display:none}
+  .hero p{font-size:15px;line-height:1.65}
+  .hero .search{width:100%;max-width:100%;gap:4px}
+  .hero .search input{width:0;min-width:0;padding:11px 7px}
+  .hero .search button{flex-shrink:0;padding:0 13px}
+  .popular-searches{gap:8px 10px;font-size:12px;line-height:1.5}
+  .popular-searches>span{flex-basis:100%}
+  .stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:28px 0 0;box-shadow:none}
+  .stats>div{min-width:0;padding:14px 10px;min-height:92px;border-radius:12px}
+  .stats .stat-icon{position:static;display:inline-block;margin-bottom:4px}
+  .stats strong{font-size:21px}
+  .stats small{overflow-wrap:anywhere}
+  .grid.category-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:360px){
+  .brand-logo{width:32px}
+  .brand-name,.brand-name>span{font-size:10px}
+  .menu-toggle span{display:none}
+  .hero .search button{padding:0 9px}
+}
+
+/* Directory discovery enhancements: keep the sort control accessible on all widths. */
+.office-toolbar .office-sort-label{
+  display:flex;flex-direction:column;gap:6px;align-items:stretch;
+  flex:1 1 180px;min-width:170px;color:#24445d;font-size:13px;font-weight:700
+}
+.office-toolbar .office-sort-label select{
+  width:100%;min-width:0;min-height:44px;flex:0 0 auto;
+  background:#fff;border:1px solid #cbdbe5;border-radius:9px;padding:10px
+}
+.office-card{display:flex;flex-direction:column;gap:3px}
+.office-card .office-source{overflow-wrap:anywhere}
+.popular-searches a:focus-visible,.office-toolbar select:focus-visible{
+  outline:3px solid #ffbf50;outline-offset:3px
+}
+@media(max-width:700px){
+  .office-toolbar .office-sort-label{flex:1 0 100%;min-width:0;width:100%}
+}
+
+/* Source-backed, JavaScript-free index entry from the interactive directory. */
+.office-directory-entry{margin:12px 0 18px}
+.office-directory-entry a{display:inline-flex;align-items:center;min-height:44px;
+ padding:10px 14px;background:#e6f4f9;border:1px solid #bee2ef;border-radius:10px;
+ color:#0d4a70;font-weight:750;text-decoration:none}
+.office-directory-entry a:hover{background:#d7edf6}
+.office-directory-entry a:focus-visible{outline:3px solid #c67518;outline-offset:3px}
+
+/* Independent Nepal utilities: accessible card directory integrated with homepage. */
+.utilities-home-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.utilities-home-card{display:flex;flex-direction:column;gap:8px;background:white;padding:22px;border:1px solid #dfe8f0;border-radius:15px;min-width:0;text-decoration:none;transition:box-shadow .18s,border-color .18s}
+.utilities-home-card:hover{border-color:#0e96aa;box-shadow:0 10px 25px #102f451a}
+.utilities-home-card>span{font-size:25px}.utilities-home-card strong{font-size:16px;color:#123e56;line-height:1.35}
+.utilities-home-card small{font-size:13px;line-height:1.6;color:#596f7f;flex:1}
+.utilities-home-card em{font-style:normal;font-weight:780;color:#057893;font-size:12px;margin-top:8px}
+.utilities-all-link{display:inline-flex;align-items:center;padding:12px 15px;border:1px solid #b9d8e2;border-radius:10px;color:#0f6984;font-weight:750;text-decoration:none;white-space:nowrap}
+.utilities-home-card:focus-visible,.utilities-all-link:focus-visible{outline:3px solid #d89324;outline-offset:3px}
+.utilities-disclaimer{margin-top:20px!important}
+@media(max-width:950px){.utilities-home-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:540px){.utilities-home-grid{gap:10px}.utilities-home-card{padding:14px}.utilities-home-card strong{font-size:14px}.utilities-home-card small{font-size:12px}.utilities-all-link{margin-top:15px;white-space:normal}}

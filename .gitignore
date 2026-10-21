@@ -88,3 +88,20 @@ backend/*.test
 backend/*.out
 backend/*.prof
 backend/.gocache/
+
+# Monorepo subproject generated directories and local environments
+**/node_modules/
+**/.next/
+**/dist/
+**/.wrangler/
+**/.vinext/
+**/.venv/
+**/__pycache__/
+apps/company/public/akeluwatoolbox/
+apps/company/public/publicinfohub/
+apps/toolbox/dist/
+infrastructure/lightsail/.env
+infrastructure/legacy-api-stack/.env
+infrastructure/legacy-api-stack/backups/
+infrastructure/lightsail/backups/
+**/*.pyc

@@ -1,9 +1,12 @@
-name: Quality and security
+name: Monorepo quality and security
 
 on:
   pull_request:
+  workflow_dispatch:
   push:
-    branches: [main]
+    branches:
+      - main
+      - refactor/akeluwa-monorepo-2026-10
   schedule:
     - cron: "17 3 * * 1"
 
@@ -11,15 +14,24 @@ permissions:
   contents: read
 
 jobs:
-  frontend:
+  company-toolbox:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: apps/company
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
+          cache-dependency-path: apps/company/package-lock.json
+      - name: Validate shared source symlinks
+        run: |
+          test -L toolbox && test -f toolbox/index.html
+          test -L backend && test -f backend/go.mod
+          test -L docs && test -f docs/ARCHITECTURE.md
       - run: npm ci
       - run: npm run lint
       - run: npm test
@@ -28,21 +40,100 @@ jobs:
       - run: npm run test:browser
       - run: npm run deploy:frontend:dry-run
       - run: npm run audit:production
-      - run: sh -n deploy/backup-db.sh deploy/verify-backup.sh
-      - run: docker compose --env-file deploy/.env.example -f deploy/compose.prod.yaml config --quiet
+      - name: Validate deployment files
+        run: |
+          sh -n ../../infrastructure/legacy-api-stack/backup-db.sh ../../infrastructure/legacy-api-stack/verify-backup.sh ../../infrastructure/lightsail/backup-db.sh ../../infrastructure/lightsail/verify-backup.sh ../../infrastructure/lightsail/smoke-staging.sh
+          docker compose --env-file ../../infrastructure/legacy-api-stack/.env.example -f ../../infrastructure/legacy-api-stack/compose.prod.yaml config --quiet
+          docker compose --env-file ../../infrastructure/lightsail/env.sample -f ../../infrastructure/lightsail/compose.yaml config --quiet
+          ! grep -R -q '/srv/publicinfohub' ../../infrastructure/lightsail/Caddyfile* ../../infrastructure/lightsail/compose.yaml
+          test ! -L ../../apps/publicinfohub # static hub source is a real directory
 
-  backend:
+  # Repeatable dependency scans before production review; production npm
+  # dependencies are already audited by the company-toolbox job.
+  security-scans:
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: services/api/go.mod
+          cache-dependency-path: services/api/go.sum
+      - name: Audit Go vulnerabilities
+        run: |
+          go version
+          go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+        working-directory: services/api
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Audit Django and PyMuPDF dependencies
+        run: |
+          python -m pip install --disable-pip-version-check pip-audit
+          python -m pip_audit -r services/pdf-engine/requirements.txt
+
+  # Release-image verification runs on PRs and via an explicit manual dispatch,
+  # rather than spending build minutes for every development branch push.
+  container-images:
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Go API image
+        run: docker build -t akeluwa-api:release-check services/api
+      - name: Build Next.js monorepo frontend image
+        run: docker build -f infrastructure/lightsail/Dockerfile.frontend -t akeluwa-frontend:release-check .
+
+  cross-browser-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    defaults:
+      run:
+        working-directory: apps/company
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/company/package-lock.json
+      - run: npm ci
+      - run: npx playwright install --with-deps firefox webkit
+      - run: npx playwright test tests/browser/cross-browser-smoke.spec.ts --browser=firefox
+      - run: npx playwright test tests/browser/cross-browser-smoke.spec.ts --browser=webkit
+
+  publicinfohub:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: apps/publicinfohub
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node --test tests/*.test.mjs
+      - run: |
+          node --check app.js
+          node --check data.js
+          node --check i18n.js
+          node --check offices.js
+          node --check utilities/utility.js
+
+  go-api:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
     services:
       postgres:
-        image: postgres:17-alpine
+        image: postgres:18-alpine
         env:
           POSTGRES_DB: akeluwa_test
           POSTGRES_USER: akeluwa_test
           POSTGRES_PASSWORD: integration-test-password
-        ports:
-          - 5432:5432
+        ports: ["5432:5432"]
         options: >-
           --health-cmd "pg_isready -U akeluwa_test -d akeluwa_test"
           --health-interval 5s
@@ -52,28 +143,27 @@ jobs:
       TEST_DATABASE_URL: postgres://akeluwa_test:integration-test-password@localhost:5432/akeluwa_test?sslmode=disable
     defaults:
       run:
-        working-directory: backend
+        working-directory: services/api
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version-file: backend/go.mod
-          cache-dependency-path: backend/go.sum
+          go-version-file: services/api/go.mod
+          cache-dependency-path: services/api/go.sum
       - run: go test -race ./...
       - run: go vet ./...
 
   full-stack:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     services:
       postgres:
-        image: postgres:17-alpine
+        image: postgres:18-alpine
         env:
           POSTGRES_DB: akeluwa_test
           POSTGRES_USER: akeluwa_test
           POSTGRES_PASSWORD: integration-test-password
-        ports:
-          - 5432:5432
+        ports: ["5432:5432"]
         options: >-
           --health-cmd "pg_isready -U akeluwa_test -d akeluwa_test"
           --health-interval 5s
@@ -96,13 +186,15 @@ jobs:
         with:
           node-version: 22
           cache: npm
+          cache-dependency-path: apps/company/package-lock.json
       - uses: actions/setup-go@v5
         with:
-          go-version-file: backend/go.mod
-          cache-dependency-path: backend/go.sum
+          go-version-file: services/api/go.mod
+          cache-dependency-path: services/api/go.sum
       - run: npm ci
+        working-directory: apps/company
       - run: go run ./cmd/api > "$RUNNER_TEMP/api.log" 2>&1 &
-        working-directory: backend
+        working-directory: services/api
       - run: |
           for attempt in $(seq 1 60); do
             if curl --fail --silent http://localhost:8080/readyz > /dev/null; then exit 0; fi
@@ -111,4 +203,20 @@ jobs:
           cat "$RUNNER_TEMP/api.log"
           exit 1
       - run: npx playwright install --with-deps chromium
+        working-directory: apps/company
       - run: npx playwright test tests/browser/full-stack.spec.ts
+        working-directory: apps/company
+
+  django-local-engine:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    defaults:
+      run:
+        working-directory: services/pdf-engine
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install -r requirements.txt
+      - run: python manage.py test
