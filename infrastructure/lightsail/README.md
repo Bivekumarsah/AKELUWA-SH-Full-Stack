@@ -105,7 +105,10 @@ until rollout monitoring is stable.
 4. Recreate `api` to apply the cookie/origin environment variables; recreate
    `caddy` only after DNS propagation. Check container logs for cert issuance.
 5. Test `https://staging.akeluwasoftwarehub.com.np/api/v1/services` and
-   `/api/v1/portfolio`; verify `200` and the starter records. The staging
+   `/api/v1/portfolio`; verify `200` and the starter records.
+   Run `./smoke-staging.sh https://staging.akeluwasoftwarehub.com.np` from the
+   Lightsail directory; this script rejects cross-host redirects to production,
+   requires the expected API JSON fields, and checks noindex and TLS headers. The staging
    hostname sends `X-Robots-Tag: noindex` and serves a restrictive robots.txt.
 6. Staging is public with TLS: use test accounts, avoid sensitive uploads, and
    finish authentication, outbound email, backup, and security testing before
