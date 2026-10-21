@@ -226,7 +226,7 @@ func isUniqueViolation(err error) bool {
 func isCareerApplicationReference(err error) bool {
 	var databaseError *pgconn.PgError
 	return errors.As(err, &databaseError) &&
-		databaseError.Code == "23503" &&
+		(databaseError.Code == "23503" || databaseError.Code == "23001") &&
 		databaseError.ConstraintName == "career_applications_career_id_fkey"
 }
 
