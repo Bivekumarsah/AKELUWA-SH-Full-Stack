@@ -2,6 +2,7 @@ name: Monorepo quality and security
 
 on:
   pull_request:
+  workflow_dispatch:
   push:
     branches:
       - main
@@ -47,6 +48,19 @@ jobs:
           ! grep -R -q '/srv/publicinfohub' ../../infrastructure/lightsail/Caddyfile* ../../infrastructure/lightsail/compose.yaml
           test ! -L ../../apps/publicinfohub # static hub source is a real directory
 
+  # Release-image verification runs on PRs and via an explicit manual dispatch,
+  # rather than spending build minutes for every development branch push.
+  container-images:
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Go API image
+        run: docker build -t akeluwa-api:release-check services/api
+      - name: Build Next.js monorepo frontend image
+        run: docker build -f infrastructure/lightsail/Dockerfile.frontend -t akeluwa-frontend:release-check .
+
   cross-browser-smoke:
     runs-on: ubuntu-latest
     timeout-minutes: 22
@@ -89,7 +103,7 @@ jobs:
     timeout-minutes: 18
     services:
       postgres:
-        image: postgres:17-alpine
+        image: postgres:18-alpine
         env:
           POSTGRES_DB: akeluwa_test
           POSTGRES_USER: akeluwa_test
@@ -119,7 +133,7 @@ jobs:
     timeout-minutes: 25
     services:
       postgres:
-        image: postgres:17-alpine
+        image: postgres:18-alpine
         env:
           POSTGRES_DB: akeluwa_test
           POSTGRES_USER: akeluwa_test
