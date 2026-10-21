@@ -48,6 +48,29 @@ jobs:
           ! grep -R -q '/srv/publicinfohub' ../../infrastructure/lightsail/Caddyfile* ../../infrastructure/lightsail/compose.yaml
           test ! -L ../../apps/publicinfohub # static hub source is a real directory
 
+  # Repeatable dependency scans before production review; production npm
+  # dependencies are already audited by the company-toolbox job.
+  security-scans:
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: services/api/go.mod
+          cache-dependency-path: services/api/go.sum
+      - name: Audit Go vulnerabilities
+        run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+        working-directory: services/api
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Audit Django and PyMuPDF dependencies
+        run: |
+          python -m pip install --disable-pip-version-check pip-audit
+          python -m pip_audit -r services/pdf-engine/requirements.txt
+
   # Release-image verification runs on PRs and via an explicit manual dispatch,
   # rather than spending build minutes for every development branch push.
   container-images:

@@ -8,6 +8,7 @@ work. Sign-off requires test evidence from the *exact SHA* intended for release.
 - [ ] The five GitHub Actions jobs all passed on the release SHA (frontend/browser,
   PublicInfoHub, Go with race checks and PostgreSQL, full-stack, local Django).
 - [ ] Production dependency audit and Docker Compose validation passed.
+- [ ] The Go `govulncheck` and Python `pip-audit` results on the release candidate have no unresolved actionable findings.
 - [ ] Run the manual `Monorepo quality and security` workflow with `workflow_dispatch`, or open a reviewed pull request; ensure **both Docker release images build** successfully using the same production Dockerfiles.
 - [ ] Code review accepted; branch protection and release rollback tag established.
 
